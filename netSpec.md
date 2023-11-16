@@ -188,6 +188,7 @@ a mine is otherwise revealed
 | 1      | 4    | Int  | x position of square                                              |
 | 5      | 4    | Int  | y position of square                                              |
 | 9      | 4    | Bool | True if a flag should be added, False if a flag should be removed |
+| 13     | 4    | Bool | Is Pencil flag                                                    |
 
 #### Server -> Client
 | Offset | Size | Type | Description                                                       |
@@ -196,6 +197,7 @@ a mine is otherwise revealed
 | 5      | 4    | Int  | x position of square                                              |
 | 9      | 4    | Int  | y position of square                                              |
 | 13     | 4    | Bool | True if a flag should be added, False if a flag should be removed |
+| 17     | 4    | Bool | Is Pencil flag                                                    |
 
 ### Cursor Location
 I'll let the exact meaning of the cursor positions be handled by the client.
@@ -231,8 +233,8 @@ Name must be specified, if user ID specified is negative, the server assigns an 
 
 board specification is the same as in [Starting Game](#Board-Format), but revealed squares will be increased by 10. For
 example, a square adjacent to no mines will be 10. Flag states are laid out the same as the board, and represent if that
-square has been flagged, and if so by who. A negative value means that the square is not flagged, otherwise it is the ID
-of the player that placed the flag.
+square has been flagged, and if so by who. A value of zero means that the square is not flagged, otherwise it is the ID
+of the player that placed the flag. Negative values represent pencil flags.
 
 | Offset    | Size      | Type       | Description                                     |
 |-----------|-----------|------------|-------------------------------------------------|
