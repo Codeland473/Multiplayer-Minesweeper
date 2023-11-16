@@ -17,7 +17,7 @@ Client -> Server
 | 8   | [Reveal square/chord](#Revealing-Squares) |
 | 9   | [Flag square](#Flagging-Squares)          |
 | 10  | [Cursor Location](#Cursor-Location)       |
-| 50  | [Greeting](#)
+| 50  | [Greeting](#Joining)                      |
 
 Server -> Client events
 
