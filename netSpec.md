@@ -17,6 +17,7 @@ Client -> Server
 | 8   | [Reveal square/chord](#Revealing-Squares) |
 | 9   | [Flag square](#Flagging-Squares)          |
 | 10  | [Cursor Location](#Cursor-Location)       |
+| 50  | [Greeting](#)
 
 Server -> Client events
 
@@ -210,6 +211,22 @@ I'll let the exact meaning of the cursor positions be handled by the client.
 |--------|----------|-----------------------|-----------------------------|
 | 1      | Variable | [(Int, Float, Float)] | User ID, cursor X, cursor Y |
 
+## Exclusive Messages (Client -> Server)
+
+### Joining
+
+Name must be specified, if user ID specified is negative, the server assigns an id and color (color given is ignored).
+
+| Offset | Size     | Type   | Description |
+|--------|----------|--------|-------------|
+| 1      | 4        | Int    | User ID     |
+| 5      | 4        | Int    | Red         |
+| 9      | 4        | Int    | Green       |
+| 13     | 4        | Int    | Blue        |
+| 17     | Variable | String | Name        |
+
+## Exclusive Messages (Server -> Client)
+
 ### Update New Player
 
 board specification is the same as in [Starting Game](#Board-Format), but revealed squares will be increased by 10. For
@@ -217,30 +234,35 @@ example, a square adjacent to no mines will be 10. Flag states are laid out the 
 square has been flagged, and if so by who. A negative value means that the square is not flagged, otherwise it is the ID
 of the player that placed the flag.
 
-| Offset    | Size      | Type       | Description                                 |
-|-----------|-----------|------------|---------------------------------------------|
-| 1         | 4         | Int        | Cursor update rate (hz)                     |
-| 5         | 4         | Int        | Is no guessing                              |
-| 9         | 4         | Int        | If a team loses when a member clicks a mine |
-| 13        | 4         | Int        | Game timer                                  |
-| 17        | 8         | (Int, Int) | Board size (x, y)                           |
-| 25        | 4         | Int        | Number of players (p)                       |
-| 29        | 4         | Int        | Number of teams (t)                         |
-| 33        | 4 * p     | [Int]      | Active player IDs                           |
-| Dependant | 12 * p    | [Int]      | Player Colors                               |
-| Dependant | 4 * t     | [Int]      | Active team IDs                             |
-| Dependant | x * y     | [byte]     | Board (described above)                     |
-| Dependant | 4 * x * y | [Int]      | Flag states (described above)               |
-| Dependant | Dependant | [String]   | Player Usernames (each null terminated)     |
-| Dependant | Dependant | [String]   | Team Names (each null terminated)           |
+| Offset    | Size      | Type       | Description                                     |
+|-----------|-----------|------------|-------------------------------------------------|
+| 1         | 4         | Int        | Cursor update rate (hz)                         |
+| 5         | 4         | Int        | Is no guessing                                  |
+| 9         | 4         | Int        | If a team loses when a member clicks a mine     |
+| 13        | 4         | Int        | Game timer                                      |
+| 17        | 8         | (Int, Int) | Board size (x, y)                               |
+| 25        | 4         | Int        | Number of players (p)                           |
+| 29        | 4         | Int        | Number of teams (t)                             |
+| 33        | 4         | Int        | ID of new user                                  |
+| 37        | 4 * p     | [Int]      | Active player IDs                               |
+| Dependant | 12 * p    | [Int]      | Player Colors                                   |
+| Dependant | 4 * t     | [Int]      | Active team IDs                                 |
+| Dependant | x * y     | [byte]     | Board (described above)                         |
+| Dependant | x * y     | [byte]     | Revealed board mask (1 = revealed, 0 otherwise) |
+| Dependant | 4 * x * y | [Int]      | Flag states (described above)                   |
+| Dependant | Dependant | [String]   | Player Usernames (each null terminated)         |
+| Dependant | Dependant | [String]   | Team Names (each null terminated)               |
 
 
 ### Player Joined
 
-
-| Offset | Size | Type | Description      |
-|--------|------|------|------------------|
-| 1      | 4    | Int  | ID of new player |
+| Offset | Size     | Type   | Description |
+|--------|----------|--------|-------------|
+| 1      | 4        | Int    | User ID     |
+| 5      | 4        | Int    | Red         |
+| 9      | 4        | Int    | Green       |
+| 13     | 4        | Int    | Blue        |
+| 17     | Variable | String | Name        |
 
 ### Player Left
 
