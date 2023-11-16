@@ -7,37 +7,37 @@ Client -> Server
 
 | ID  | Type                                      |
 |-----|-------------------------------------------|
-| 1   | [Create Team](#Creating a Team)           |
-| 2   | [Remove Team](#Removing a Team)           |
-| 3   | [Change Name](#Changing Names)            |
-| 4   | [Change User Color](#Changing Colors)     |
-| 5   | [Join Team](#Changing Teams)              |
-| 6   | [Change Setting](#Changing Settings)      |
-| 7   | [Start Game](#Starting Game)              |
-| 8   | [Reveal square/chord](#Revealing Squares) |
-| 9   | [Flag square](#Flagging Squares)          |
-| 10  | [Cursor Location](#Cursor Location)       |
+| 1   | [Create Team](#Creating-a-Team)           |
+| 2   | [Remove Team](#Removing-a-Team)           |
+| 3   | [Change Name](#Changing-Names)            |
+| 4   | [Change User Color](#Changing-Colors)     |
+| 5   | [Join Team](#Changing-Teams)              |
+| 6   | [Change Setting](#Changing-Settings)      |
+| 7   | [Start Game](#Starting-Game)              |
+| 8   | [Reveal square/chord](#Revealing-Squares) |
+| 9   | [Flag square](#Flagging-Squares)          |
+| 10  | [Cursor Location](#Cursor-Location)       |
 
 Server -> Client events
 
 | ID  | Type                                        |
 |-----|---------------------------------------------|
-| 1   | [Team Created](#Creating a Team)            |
-| 2   | [Team Removed](#Removing a Team)            |
-| 3   | [Name Changed](#Changing Names)             |
-| 4   | [User Color Changed](#Changing Colors)      |
-| 5   | [Team Joined](#Changing Teams)              |
-| 6   | [Setting Changed](#Changing Settings)       |
-| 7   | [Game Start](#Starting Game)                |
-| 8   | [Square/chord Revealed](#Revealing Squares) |
-| 9   | [Square Flagged](#Flagging Squares)         |
-| 10  | [Cursor Locations Update](#Cursor Location) |
-| 50  | [Update New Player](#Update New Player)     |
-| 51  | [Player Joined]()                           |
-| 52  | [Player Left]()                             |
-| 53  | [Team Finished]()                           |
-| 54  | [Player Lost]()                             |
-| 55  | [Team Lost]()                               |
+| 1   | [Team Created](#Creating-a-Team)            |
+| 2   | [Team Removed](#Removing-a-Team)            |
+| 3   | [Name Changed](#Changing-Names)             |
+| 4   | [User Color Changed](#Changing-Colors)      |
+| 5   | [Team Joined](#Changing-Teams)              |
+| 6   | [Setting Changed](#Changing-Settings)       |
+| 7   | [Game Start](#Starting-Game)                |
+| 8   | [Square/chord Revealed](#Revealing-Squares) |
+| 9   | [Square Flagged](#Flagging-Squares)         |
+| 10  | [Cursor Locations Update](#Cursor-Location) |
+| 50  | [Update New Player](#Update-New-Player)     |
+| 51  | [Player Joined](#Player-Joined)             |
+| 52  | [Player Left](#Player-Left)                 |
+| 53  | [Team Finished](#Team-Finished)             |
+| 54  | [Player Lost](#Player-Lost)                 |
+| 55  | [Team Lost](#Team-Lost)                     |
 
 ### Creating a Team
 
@@ -53,7 +53,7 @@ Team names can be updated with the same set of packets.
 | Offset | Size     | Type   | Description |
 |--------|----------|--------|-------------|
 | 1      | 4        | Int    | Team index  |
-| 5      | 4        | Int    | Sender id   |
+| 5      | 4        | Int    | Sender ID   |
 | 9      | Variable | String | Team name   |
 
 ### Removing a Team
@@ -67,7 +67,7 @@ Team names can be updated with the same set of packets.
 | Offset | Size     | Type   | Description |
 |--------|----------|--------|-------------|
 | 1      | 4        | Int    | Team index  |
-| 5      | 4        | Int    | Sender id   |
+| 5      | 4        | Int    | Sender ID   |
 
 ### Changing Names
 
@@ -79,7 +79,7 @@ Team names can be updated with the same set of packets.
 #### Server -> Client
 | Offset | Size     | Type   | Description |
 |--------|----------|--------|-------------|
-| 1      | 4        | Int    | User id     |
+| 1      | 4        | Int    | User ID     |
 | 5      | Variable | String | New name    |
 
 
@@ -95,7 +95,7 @@ Team names can be updated with the same set of packets.
 #### Server -> Client
 | Offset | Size | Type  | Description |
 |--------|------|-------|-------------|
-| 1      | 4    | Int   | User id     |
+| 1      | 4    | Int   | User ID     |
 | 5      | 4    | Int   | Red         |
 | 9      | 4    | Int   | Green       |
 | 13     | 4    | Int   | Blue        |
@@ -107,13 +107,13 @@ Team 0 is spectating team. Users are automatically put on the spectator team whe
 #### Client -> Server
 | Offset | Size | Type | Description        |
 |--------|------|------|--------------------|
-| 1      | 4    | Int  | Id of team to join |
+| 1      | 4    | Int  | ID of team to join |
 
 #### Server -> Client
 | Offset | Size | Type | Description       |
 |--------|------|------|-------------------|
-| 1      | 4    | Int  | User id           |
-| 5      | 4    | Int  | Id of joined team |
+| 1      | 4    | Int  | User ID           |
+| 5      | 4    | Int  | ID of joined team |
 
 ### Changing Settings
 
@@ -212,7 +212,7 @@ I'll let the exact meaning of the cursor positions be handled by the client.
 
 ### Update New Player
 
-board specification is the same as in [Starting Game](#Board Format), but revealed squares will be increased by 10. For
+board specification is the same as in [Starting Game](#Board-Format), but revealed squares will be increased by 10. For
 example, a square adjacent to no mines will be 10. Flag states are laid out the same as the board, and represent if that
 square has been flagged, and if so by who. A negative value means that the square is not flagged, otherwise it is the ID
 of the player that placed the flag.
@@ -243,6 +243,25 @@ of the player that placed the flag.
 | 1      | 4    | Int  | ID of new player |
 
 ### Player Left
+
+| Offset | Size | Type | Description            |
+|--------|------|------|------------------------|
+| 1      | 4    | Int  | ID of player that left |
+
 ### Team Finished
+
+| Offset | Size | Type | Description          |
+|--------|------|------|----------------------|
+| 1      | 4    | Int  | ID of team that won  |
+
 ### Player Lost
+
+| Offset | Size | Type | Description            |
+|--------|------|------|------------------------|
+| 1      | 4    | Int  | ID of player that Lost |
+
 ### Team Lost
+
+| Offset | Size | Type | Description            |
+|--------|------|------|------------------------|
+| 1      | 4    | Int  | ID of player that Lost |
