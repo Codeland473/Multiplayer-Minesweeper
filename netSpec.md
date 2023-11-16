@@ -1,0 +1,248 @@
+
+# Messages
+
+the first char/byte in any message should be an id for what kind of message it is, as shown below.
+
+Client -> Server
+
+| ID  | Type                                      |
+|-----|-------------------------------------------|
+| 1   | [Create Team](#Creating a Team)           |
+| 2   | [Remove Team](#Removing a Team)           |
+| 3   | [Change Name](#Changing Names)            |
+| 4   | [Change User Color](#Changing Colors)     |
+| 5   | [Join Team](#Changing Teams)              |
+| 6   | [Change Setting](#Changing Settings)      |
+| 7   | [Start Game](#Starting Game)              |
+| 8   | [Reveal square/chord](#Revealing Squares) |
+| 9   | [Flag square](#Flagging Squares)          |
+| 10  | [Cursor Location](#Cursor Location)       |
+
+Server -> Client events
+
+| ID  | Type                                        |
+|-----|---------------------------------------------|
+| 1   | [Team Created](#Creating a Team)            |
+| 2   | [Team Removed](#Removing a Team)            |
+| 3   | [Name Changed](#Changing Names)             |
+| 4   | [User Color Changed](#Changing Colors)      |
+| 5   | [Team Joined](#Changing Teams)              |
+| 6   | [Setting Changed](#Changing Settings)       |
+| 7   | [Game Start](#Starting Game)                |
+| 8   | [Square/chord Revealed](#Revealing Squares) |
+| 9   | [Square Flagged](#Flagging Squares)         |
+| 10  | [Cursor Locations Update](#Cursor Location) |
+| 50  | [Update New Player](#Update New Player)     |
+| 51  | [Player Joined]()                           |
+| 52  | [Player Left]()                             |
+| 53  | [Team Finished]()                           |
+| 54  | [Player Lost]()                             |
+| 55  | [Team Lost]()                               |
+
+### Creating a Team
+
+Team names can be updated with the same set of packets.
+
+#### Client -> Server
+| Offset | Size     | Type   | Description |
+|--------|----------|--------|-------------|
+| 1      | 4        | Int    | Team index  |
+| 5      | Variable | String | Team name   |
+
+#### Server -> Client
+| Offset | Size     | Type   | Description |
+|--------|----------|--------|-------------|
+| 1      | 4        | Int    | Team index  |
+| 5      | 4        | Int    | Sender id   |
+| 9      | Variable | String | Team name   |
+
+### Removing a Team
+
+#### Client -> Server
+| Offset | Size     | Type   | Description |
+|--------|----------|--------|-------------|
+| 1      | 4        | Int    | Team index  |
+
+#### Server -> Client
+| Offset | Size     | Type   | Description |
+|--------|----------|--------|-------------|
+| 1      | 4        | Int    | Team index  |
+| 5      | 4        | Int    | Sender id   |
+
+### Changing Names
+
+#### Client -> Server
+| Offset | Size     | Type   | Description |
+|--------|----------|--------|-------------|
+| 1      | Variable | String | New name    |
+
+#### Server -> Client
+| Offset | Size     | Type   | Description |
+|--------|----------|--------|-------------|
+| 1      | 4        | Int    | User id     |
+| 5      | Variable | String | New name    |
+
+
+### Changing Colors
+
+#### Client -> Server
+| Offset | Size | Type | Description |
+|--------|------|------|-------------|
+| 1      | 4    | Int  | Red         |
+| 5      | 4    | Int  | Green       |
+| 9      | 4    | Int  | Blue        |
+
+#### Server -> Client
+| Offset | Size | Type  | Description |
+|--------|------|-------|-------------|
+| 1      | 4    | Int   | User id     |
+| 5      | 4    | Int   | Red         |
+| 9      | 4    | Int   | Green       |
+| 13     | 4    | Int   | Blue        |
+
+### Changing Teams
+
+Team 0 is spectating team. Users are automatically put on the spectator team when joining
+
+#### Client -> Server
+| Offset | Size | Type | Description        |
+|--------|------|------|--------------------|
+| 1      | 4    | Int  | Id of team to join |
+
+#### Server -> Client
+| Offset | Size | Type | Description       |
+|--------|------|------|-------------------|
+| 1      | 4    | Int  | User id           |
+| 5      | 4    | Int  | Id of joined team |
+
+### Changing Settings
+
+Settings are Listed below
+
+| ID  | Size | Type       | Description                                 |
+|-----|------|------------|---------------------------------------------|
+| 0   | 4    | Int        | Update rate of onscreen cursors (hz)        |
+| 1   | 4    | Bool       | Is no guessing                              |
+| 3   | 4    | Bool       | If a team loses when a member clicks a mine |
+| 2   | 8    | (Int, Int) | Board size                                  |
+
+#### Client -> Server
+| Offset | Size      | Type      | Description              |
+|--------|-----------|-----------|--------------------------|
+| 1      | 4         | Int       | Setting ID               |
+| 5      | Dependant | Dependant | New value of the setting |
+
+#### Server -> Client
+| Offset | Size      | Type      | Description              |
+|--------|-----------|-----------|--------------------------|
+| 1      | 4         | Int       | Setting ID               |
+| 5      | 4         | Int       | Sender ID                |
+| 9      | Dependant | Dependant | New value of the setting |
+
+### Starting Game
+
+#### Board Format
+each byte represents one square as if it was fully revealed. A Value of 9 means that it is a mine. Format is rows-first,
+so [0, 1, 1, 0, 2, 9, 0, 2, 9] would be:
+
+- 0 1 1 
+- 0 2 9
+- 0 2 9
+
+#### Client -> Server
+
+Nothing other than the message ID needs to be sent
+
+#### Server -> Client
+| Offset | Size      | Type       | Description                       |
+|--------|-----------|------------|-----------------------------------|
+| 1      | 4         | Int        | Sender ID                         |
+| 1      | 8         | (Int, Int) | Start position (-1, -1 if not NG) |
+| 5      | Dependant | [byte]     | Board (described above)           |
+
+### Revealing Squares
+
+If the square specified is already revealed, then it should be interpreted as a chord. Protections for not chording
+squares with insufficient or excess flags should be handled by the client. If a chord is done using incorrect flags, or
+a mine is otherwise revealed 
+
+#### Client -> Server
+| Offset | Size | Type | Description          |
+|--------|------|------|----------------------|
+| 1      | 4    | Int  | x position of square |
+| 5      | 4    | Int  | y position of square |
+
+#### Server -> Client
+| Offset | Size | Type | Description          |
+|--------|------|------|----------------------|
+| 1      | 4    | Int  | User ID              |
+| 5      | 4    | Int  | x position of square |
+| 9      | 4    | Int  | y position of square |
+
+### Flagging Squares
+
+#### Client -> Server
+| Offset | Size | Type | Description                                                       |
+|--------|------|------|-------------------------------------------------------------------|
+| 1      | 4    | Int  | x position of square                                              |
+| 5      | 4    | Int  | y position of square                                              |
+| 9      | 4    | Bool | True if a flag should be added, False if a flag should be removed |
+
+#### Server -> Client
+| Offset | Size | Type | Description                                                       |
+|--------|------|------|-------------------------------------------------------------------|
+| 1      | 4    | Int  | User ID                                                           |
+| 5      | 4    | Int  | x position of square                                              |
+| 9      | 4    | Int  | y position of square                                              |
+| 13     | 4    | Bool | True if a flag should be added, False if a flag should be removed |
+
+### Cursor Location
+I'll let the exact meaning of the cursor positions be handled by the client.
+
+#### Client -> Server
+| Offset | Size | Type  | Description          |
+|--------|------|-------|----------------------|
+| 1      | 4    | Float | x position of cursor |
+| 5      | 4    | Float | y position of cursor |
+
+#### Server -> Client
+| Offset | Size     | Type                  | Description                 |
+|--------|----------|-----------------------|-----------------------------|
+| 1      | Variable | [(Int, Float, Float)] | User ID, cursor X, cursor Y |
+
+### Update New Player
+
+board specification is the same as in [Starting Game](#Board Format), but revealed squares will be increased by 10. For
+example, a square adjacent to no mines will be 10. Flag states are laid out the same as the board, and represent if that
+square has been flagged, and if so by who. A negative value means that the square is not flagged, otherwise it is the ID
+of the player that placed the flag.
+
+| Offset    | Size      | Type       | Description                                 |
+|-----------|-----------|------------|---------------------------------------------|
+| 1         | 4         | Int        | Cursor update rate (hz)                     |
+| 5         | 4         | Int        | Is no guessing                              |
+| 9         | 4         | Int        | If a team loses when a member clicks a mine |
+| 13        | 4         | Int        | Game timer                                  |
+| 17        | 8         | (Int, Int) | Board size (x, y)                           |
+| 25        | 4         | Int        | Number of players (p)                       |
+| 29        | 4         | Int        | Number of teams (t)                         |
+| 33        | 4 * p     | [Int]      | Active player IDs                           |
+| Dependant | 12 * p    | [Int]      | Player Colors                               |
+| Dependant | 4 * t     | [Int]      | Active team IDs                             |
+| Dependant | x * y     | [byte]     | Board (described above)                     |
+| Dependant | 4 * x * y | [Int]      | Flag states (described above)               |
+| Dependant | Dependant | [String]   | Player Usernames (each null terminated)     |
+| Dependant | Dependant | [String]   | Team Names (each null terminated)           |
+
+
+### Player Joined
+
+
+| Offset | Size | Type | Description      |
+|--------|------|------|------------------|
+| 1      | 4    | Int  | ID of new player |
+
+### Player Left
+### Team Finished
+### Player Lost
+### Team Lost
