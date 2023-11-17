@@ -276,9 +276,13 @@ if the color given is #000000
 
 ### Update New Gamer
 
-board specification is the same as in [Starting Game](#Board-Format). Flag states are laid out the same as the board, 
+Board specification is the same as in [Starting Game](#Board-Format). Flag states are laid out the same as the board, 
 and represent if that square has been flagged, and if so by who. A value of zero means that the square is not flagged, 
 otherwise it is the ID of the gamer that placed the flag. Negative values represent pencil flags.
+
+The final two values (revealed board mask and flag states) will only show the state for the team the new player is on
+unless the player is on the spectator team, in which case the player will be given all the board states for each team in
+the same order as the team IDs.
 
 | Offset    | Size      | Type       | Description                                                              |
 |-----------|-----------|------------|--------------------------------------------------------------------------|
@@ -288,20 +292,20 @@ otherwise it is the ID of the gamer that placed the flag. Negative values repres
 | 6         | 1         | Bool       | If a team loses when a member clicks a mine                              |
 | 7         | 8         | (Int, Int) | Board size (x, y)                                                        |
 | 15        | 4         | Int        | Mine Count                                                               |
-| 19        | 4         | Int        | Number of gamers (p)                                                     |
+| 19        | 4         | Int        | Number of gamers (g)                                                     |
 | 23        | 4         | Int        | Number of teams (t)                                                      |
 | 27        | 4         | Int        | ID of new gamer                                                          |
 | 31        | 4 * t     | [Int]      | Active team IDs                                                          |
-| Dependant | 4 * p     | [Int]      | Active gamer IDs                                                         |
-| Dependant | 12 * p    | [Int]      | Gamer Colors                                                             |
-| Dependant | 4 * t     | [Int]      | Gamer team IDs (0 means no team/spectator team)                          |
+| Dependant | 4 * g     | [Int]      | Active gamer IDs                                                         |
+| Dependant | 3 * g     | [Byte]     | Gamer Colors                                                             |
+| Dependant | 4 * g     | [Int]      | Gamer team IDs (0 means no team/spectator team)                          |
 | Dependant | Dependant | [String]   | Team Names                                                               |
 | Dependant | Dependant | [String]   | gamer gamernames                                                         |
 | Dependant | 1         | Bool       | True if a game is going (if false, the rest of this message is not sent) |
-| Dependant | 4         | Int        | Game Timer                                                               |
-| Dependant | x * y     | [byte]     | Board (described above)                                                  |
-| Dependant | x * y     | [byte]     | Revealed board mask (1 = revealed, 0 otherwise)                          |
-| Dependant | 4 * x * y | [Int]      | Flag states (described above)                                            |
+| Dependant | 4         | Float      | Game Timer (seconds)                                                     |
+| Dependant | x * y     | [Byte]     | Board (described above)                                                  |
+| Dependant | x * y     | [[Bool]]   | Revealed board mask (1 = revealed, 0 otherwise)                          |
+| Dependant | 4 * x * y | [[Int]]    | Flag states (described above)                                            |
 
 
 ### Gamer Joined

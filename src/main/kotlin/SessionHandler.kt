@@ -13,7 +13,7 @@ class SessionHandler {
 		val requestedColor = message.getColor()
 		val name = message.getString()
 		val givenID = if (requestedID <= 0 || gamers.any {it.id == requestedID}) ++nextID else requestedID
-		val color = if (requestedColor.r == 0 && requestedColor.g == 0 && requestedColor.b == 0)
+		val color = if (requestedColor.r == 0.toByte() && requestedColor.g == 0.toByte() && requestedColor.b == 0.toByte())
 			Color.random() else requestedColor
 
 		val gamer = Gamer(sender, givenID, color, name)
