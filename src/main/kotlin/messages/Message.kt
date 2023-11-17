@@ -25,7 +25,7 @@ interface Message {
 	}
 }
 
-class TeamCreatedMessage(val teamID : Int, val creatorID : Int, val name : String) : Message {
+class TeamCreateMessage(val teamID : Int, val creatorID : Int, val name : String) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(11 + name.length)
 		buffer.put(1.toByte())
@@ -36,7 +36,7 @@ class TeamCreatedMessage(val teamID : Int, val creatorID : Int, val name : Strin
 	}
 }
 
-class TeamRemovedMessage(val teamID : Int, val removerID : Int) : Message {
+class TeamRemoveMessage(val teamID : Int, val removerID : Int) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(9)
 		buffer.put(2.toByte())
@@ -46,39 +46,39 @@ class TeamRemovedMessage(val teamID : Int, val removerID : Int) : Message {
 	}
 }
 
-class NameChangedMessage(val userID : Int, val newName : String) : Message {
+class GamerNameUpdateMessage(val gamerID : Int, val newName : String) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(7 + newName.length)
 		buffer.put(3.toByte())
-		buffer.putInt(userID)
+		buffer.putInt(gamerID)
 		buffer.putString(newName)
 		return buffer.array()
 	}
 }
 
 
-class UserColorChangedMessage(val userID : Int, val color : Color) : Message {
+class GamerColorUpdateMessage(val gamerID : Int, val color : Color) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(8)
 		buffer.put(4.toByte())
-		buffer.putInt(userID)
+		buffer.putInt(gamerID)
 		buffer.putColor(color)
 		return buffer.array()
 	}
 }
 
 
-class TeamJoinedMessage(val userID : Int, val teamID : Int) : Message {
+class GamerTeamUpdateMessage(val gamerID : Int, val teamID : Int) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(9)
 		buffer.put(5.toByte())
-		buffer.putInt(userID)
+		buffer.putInt(gamerID)
 		buffer.putInt(teamID)
 		return buffer.array()
 	}
 }
 
-class SettingChangedMessage(val settingID : Int, val userID : Int, val settings : Settings) : Message {
+class SettingUpdateMessage(val settingID : Int, val gamerID : Int, val settings : Settings) : Message {
 	override fun toFrame() : ByteArray {
 		val size = when (settingID) {
 			SETTING_UPDATE_RATE -> 4
@@ -91,7 +91,7 @@ class SettingChangedMessage(val settingID : Int, val userID : Int, val settings 
 		val buffer = ByteBuffer.allocate(size)
 		buffer.put(6.toByte())
 		buffer.putInt(settingID)
-		buffer.putInt(userID)
+		buffer.putInt(gamerID)
 		when (settingID) {
 			SETTING_UPDATE_RATE -> buffer.putInt(settings.cursorUpdateRate)
 			SETTING_IS_NO_GUESSING -> buffer.putBool(settings.isNoGuessing)
@@ -106,11 +106,11 @@ class SettingChangedMessage(val settingID : Int, val userID : Int, val settings 
 	}
 }
 
-class GameStartMessage(val userID : Int, val startX : Int, val startY : Int, val board : Board) : Message {
+class GameStartMessage(val gamerID : Int, val startX : Int, val startY : Int, val board : Board) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(9)
 		buffer.put(7.toByte())
-		buffer.putInt(userID)
+		buffer.putInt(gamerID)
 		buffer.putInt(startX)
 		buffer.putInt(startY)
 		buffer.put(board.mineCounts)
@@ -119,11 +119,11 @@ class GameStartMessage(val userID : Int, val startX : Int, val startY : Int, val
 }
 
 
-class SquareRevealedMessage(val userID : Int, val squareX : Int, val squareY : Int) : Message {
+class SquareRevealMessage(val gamerID : Int, val squareX : Int, val squareY : Int) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(13)
 		buffer.put(8.toByte())
-		buffer.putInt(userID)
+		buffer.putInt(gamerID)
 		buffer.putInt(squareX)
 		buffer.putInt(squareY)
 		return buffer.array()
@@ -131,11 +131,11 @@ class SquareRevealedMessage(val userID : Int, val squareX : Int, val squareY : I
 }
 
 
-class SquareFlaggedMessage(val userID : Int, val squareX : Int, val squareY : Int, val isPlacing : Boolean, val isPencil : Boolean) : Message {
+class SquareFlagMessage(val gamerID : Int, val squareX : Int, val squareY : Int, val isPlacing : Boolean, val isPencil : Boolean) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(15)
 		buffer.put(9.toByte())
-		buffer.putInt(userID)
+		buffer.putInt(gamerID)
 		buffer.putInt(squareX)
 		buffer.putInt(squareY)
 		buffer.putBool(isPlacing)
@@ -144,7 +144,7 @@ class SquareFlaggedMessage(val userID : Int, val squareX : Int, val squareY : In
 	}
 }
 
-class CursorLocationsUpdateMessage(val gamers : Collection<Gamer>) : Message {
+class CursorUpdateMessage(val gamers : Collection<Gamer>) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(5 + 12 * gamers.size)
 		buffer.put(10.toByte())
@@ -169,10 +169,10 @@ class TeamNameUpdateMessage(val teamID : Int, val senderID : Int, val teamName :
 	}
 }
 
-class UpdateNewPlayerMessage(
+class UpdateNewGamerMessage(
 	val settings : Settings,
-	val gamers : Collection<Gamer>,
-	val teams : Collection<Team>,
+	val gamers : Array<Gamer>,
+	val teams : Array<Team>,
 	val newGamer : Gamer,
 	val board : Board?
 	) : Message {
@@ -215,13 +215,13 @@ class UpdateNewPlayerMessage(
 			buffer.putInt(1)
 			buffer.putFloat(board.currentTime())
 			buffer.put(board.mineCounts)
-			val playersTeam = teams.find { it.id == newGamer.id }
-			if (playersTeam == null) {
+			val gamersTeam = teams.find { it.id == newGamer.id }
+			if (gamersTeam == null) {
 				for (team in teams) buffer.putBoolArray(team.boardMask ?: BooleanArray(board.width * board.height) {false})
 				for (team in teams) buffer.putIntArray(team.flagStates ?: IntArray(board.width * board.height) {0})
 			} else {
-				buffer.putBoolArray(playersTeam.boardMask ?: BooleanArray(board.width * board.height) {false})
-				buffer.putIntArray(playersTeam.flagStates ?: IntArray(board.width * board.height) {0})
+				buffer.putBoolArray(gamersTeam.boardMask ?: BooleanArray(board.width * board.height) {false})
+				buffer.putIntArray(gamersTeam.flagStates ?: IntArray(board.width * board.height) {0})
 			}
 		} else {
 			buffer.putInt(0)
@@ -232,28 +232,29 @@ class UpdateNewPlayerMessage(
 }
 
 
-class PlayerJoinedMessage(val userID : Int, val color : Color, val name : String) : Message {
+class GamerCreateMessage(val gamer : Gamer) : Message {
 	override fun toFrame() : ByteArray {
-		val buffer = ByteBuffer.allocate(10 + name.length)
+		val buffer = ByteBuffer.allocate(14 + gamer.name.length)
 		buffer.put(51.toByte())
-		buffer.putInt(userID)
-		buffer.putColor(color)
-		buffer.putString(name)
+		buffer.putInt(gamer.id)
+		buffer.putInt(gamer.team)
+		buffer.putColor(gamer.color)
+		buffer.putString(gamer.name)
 		return buffer.array()
 	}
 }
 
 
-class PlayerLeftMessage(val userID : Int) : Message {
+class GamerRemoveMessage(val gamerID : Int) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(5)
 		buffer.put(52.toByte())
-		buffer.putInt(userID)
+		buffer.putInt(gamerID)
 		return buffer.array()
 	}
 }
 
-class TeamFinishedMessage(val teamID : Int) : Message {
+class TeamFinishMessage(val teamID : Int) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(5)
 		buffer.put(53.toByte())
@@ -263,21 +264,21 @@ class TeamFinishedMessage(val teamID : Int) : Message {
 }
 
 
-class PlayerLostMessage(val userID : Int) : Message {
+class GamerLostMessage(val gamerID : Int) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(5)
 		buffer.put(54.toByte())
-		buffer.putInt(userID)
+		buffer.putInt(gamerID)
 		return buffer.array()
 	}
 }
 
 
-class TeamLostMessage(val userID : Int) : Message {
+class TeamLostMessage(val gamerID : Int) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(5)
 		buffer.put(55.toByte())
-		buffer.putInt(userID)
+		buffer.putInt(gamerID)
 		return buffer.array()
 	}
 }

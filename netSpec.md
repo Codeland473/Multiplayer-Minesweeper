@@ -313,11 +313,12 @@ the same order as the team IDs.
 | Offset | Size     | Type   | Description                     |
 |--------|----------|--------|---------------------------------|
 | 0      | 1        | Byte   | Message type (Gamer Create: 51) |
-| 1      | 4        | Int    | gamer ID                        |
-| 5      | 1        | Byte   | Red                             |
-| 6      | 1        | Byte   | Green                           |
-| 7      | 1        | Byte   | Blue                            |
-| 8      | Variable | String | Name                            |
+| 1      | 4        | Int    | Gamer ID                        |
+| 5      | 4        | Int    | Team of gamer                   |
+| 9      | 1        | Byte   | Red                             |
+| 10     | 1        | Byte   | Green                           |
+| 11     | 1        | Byte   | Blue                            |
+| 12     | Variable | String | Name                            |
 
 ### Gamer Left
 

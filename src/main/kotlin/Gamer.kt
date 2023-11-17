@@ -30,7 +30,7 @@ fun ByteBuffer.putColor(c : Color) {
 	put(c.b)
 }
 
-data class CursorLocation(val x : Float, val y : Float)
+data class CursorLocation(var x : Float, var y : Float)
 
 fun ByteBuffer.getCursorLocation() = CursorLocation(getFloat(), getFloat())
 fun ByteBuffer.putCursorLocation(loc : CursorLocation) {

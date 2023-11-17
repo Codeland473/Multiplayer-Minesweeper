@@ -19,7 +19,7 @@ fun Application.module() {
 	val handler  = SessionHandler()
 	routing {
 		webSocket("/") {
-			println("User connected")
+			println("Gamer connected")
 			var gamer : Gamer? = null
 			try {
 				for (frame in incoming) {
@@ -27,18 +27,19 @@ fun Application.module() {
 					if (gamer == null && type != 50.toByte()) continue
 
 					when (type) {
-						1.toByte() -> handler.onCreateTeamMessage(gamer ?: continue, frame.buffer)
-						2.toByte() -> handler.onRemoveTeamMessage(gamer ?: continue, frame.buffer)
-						3.toByte() -> handler.onChangeNameMessage(gamer ?: continue, frame.buffer)
-						4.toByte() -> handler.onChangeUserColorMessage(gamer ?: continue, frame.buffer)
-						5.toByte() -> handler.onJoinTeamMessage(gamer ?: continue, frame.buffer)
-						6.toByte() -> handler.onChangeSettingMessage(gamer ?: continue, frame.buffer)
-						7.toByte() -> handler.onStartGameMessage(gamer ?: continue, frame.buffer)
-						8.toByte() -> handler.onRevealSquareMessage(gamer ?: continue, frame.buffer)
-						9.toByte() -> handler.onFlagSquareMessage(gamer ?: continue, frame.buffer)
-						10.toByte() -> handler.onCursorLocationMessage(gamer ?: continue, frame.buffer)
+						1.toByte() -> handler.onTeamCreateMessage(gamer ?: continue, frame.buffer)
+						2.toByte() -> handler.onTeamRemoveMessage(gamer ?: continue, frame.buffer)
+						3.toByte() -> handler.onGamerNameUpdateMessage(gamer ?: continue, frame.buffer)
+						4.toByte() -> handler.onGamerColorUpdateMessage(gamer ?: continue, frame.buffer)
+						5.toByte() -> handler.onGamerTeamUpdateMessage(gamer ?: continue, frame.buffer)
+						6.toByte() -> handler.onSettingUpdateMessage(gamer ?: continue, frame.buffer)
+						7.toByte() -> handler.onGameStartMessage(gamer ?: continue, frame.buffer)
+						8.toByte() -> handler.onSquareRevealMessage(gamer ?: continue, frame.buffer)
+						9.toByte() -> handler.onSquareFlagMessage(gamer ?: continue, frame.buffer)
+						10.toByte() -> handler.onCursorUpdateMessage(gamer ?: continue, frame.buffer)
+						11.toByte() -> handler.onTeamNameUpdateMessage(gamer ?: continue, frame.buffer)
 
-						50.toByte() -> gamer = handler.onPlayerJoin(this, frame.buffer)
+						50.toByte() -> gamer = handler.onGamerJoin(this, frame.buffer)
 
 						else -> println("unknown message")
 					}
@@ -46,7 +47,7 @@ fun Application.module() {
 			} catch (e: Exception) {
 				println(e.localizedMessage)
 			} finally {
-				handler.onPlayerLeave(gamer)
+				handler.onGamerLeave(gamer)
 			}
 		}
 	}
