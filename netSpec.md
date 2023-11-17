@@ -90,7 +90,7 @@ Server -> Client events
 | Offset | Size     | Type   | Description                         |
 |--------|----------|--------|-------------------------------------|
 | 0      | 1        | Byte   | Message type (Gamer Name Update: 3) |
-| 1      | 4        | Int    | User ID                             |
+| 1      | 4        | Int    | gamer ID                            |
 | 5      | Variable | String | New name                            |
 
 
@@ -108,14 +108,14 @@ Server -> Client events
 | Offset | Size | Type | Description                          |
 |--------|------|------|--------------------------------------|
 | 0      | 1    | Byte | Message type (Gamer Color Update: 4) |
-| 1      | 4    | Int  | User ID                              |
+| 1      | 4    | Int  | gamer ID                             |
 | 5      | 1    | Byte | Red                                  |
 | 6      | 1    | Byte | Green                                |
 | 7      | 1    | Byte | Blue                                 |
 
 ### Changing Teams
 
-Team 0 is spectating team. Users are automatically put on the spectator team when joining
+Team 0 is spectating team. gamers are automatically put on the spectator team when joining
 
 #### Client -> Server
 | Offset | Size | Type | Description                         |
@@ -127,7 +127,7 @@ Team 0 is spectating team. Users are automatically put on the spectator team whe
 | Offset | Size | Type | Description                         |
 |--------|------|------|-------------------------------------|
 | 0      | 1    | Byte | Message type (Gamer Team Update: 5) |
-| 1      | 4    | Int  | User ID                             |
+| 1      | 4    | Int  | gamer ID                            |
 | 5      | 4    | Int  | ID of joined team                   |
 
 ### Changing Settings
@@ -195,7 +195,7 @@ a mine is otherwise revealed
 | Offset | Size | Type | Description                     |
 |--------|------|------|---------------------------------|
 | 0      | 1    | Byte | Message type (Square Reveal: 8) |
-| 1      | 4    | Int  | User ID                         |
+| 1      | 4    | Int  | gamer ID                        |
 | 5      | 4    | Int  | x position of square            |
 | 9      | 4    | Int  | y position of square            |
 
@@ -214,7 +214,7 @@ a mine is otherwise revealed
 | Offset | Size | Type | Description                                                       |
 |--------|------|------|-------------------------------------------------------------------|
 | 0      | 1    | Byte | Message type (Square Flag: 9)                                     |
-| 1      | 4    | Int  | User ID                                                           |
+| 1      | 4    | Int  | gamer ID                                                          |
 | 5      | 4    | Int  | x position of square                                              |
 | 9      | 4    | Int  | y position of square                                              |
 | 13     | 1    | Bool | True if a flag should be added, False if a flag should be removed |
@@ -235,7 +235,7 @@ I'll let the exact meaning of the cursor positions be handled by the client.
 |--------|----------|-----------------------|----------------------------------|
 | 0      | 1        | Byte                  | Message type (Cursor Update: 10) |
 | 1      | 4        | Int                   | Number of cursors given          |
-| 5      | Variable | [(Int, Float, Float)] | User ID, cursor X, cursor Y      |
+| 5      | Variable | [(Int, Float, Float)] | gamer ID, cursor X, cursor Y     |
 
 ### Changing Team Name
 
@@ -258,13 +258,13 @@ I'll let the exact meaning of the cursor positions be handled by the client.
 
 ### Joining
 
-Name must be specified, if user ID specified is negative, the server assigns an id. Similarly, a color will be specified
+Name must be specified, if gamer ID specified is negative, the server assigns an id. Similarly, a color will be specified
 if the color given is #000000
 
 | Offset | Size     | Type   | Description                   |
 |--------|----------|--------|-------------------------------|
 | 0      | 1        | Byte   | Message type (Gamer Join: 50) |
-| 1      | 4        | Int    | User ID                       |
+| 1      | 4        | Int    | gamer ID                      |
 | 5      | 1        | Byte   | Red                           |
 | 6      | 1        | Byte   | Green                         |
 | 7      | 1        | Byte   | Blue                          |
@@ -289,14 +289,14 @@ of the gamer that placed the flag. Negative values represent pencil flags.
 | 17        | 8         | (Int, Int) | Board size (x, y)                               |
 | 25        | 4         | Int        | Number of gamers (p)                            |
 | 29        | 4         | Int        | Number of teams (t)                             |
-| 33        | 4         | Int        | ID of new user                                  |
+| 33        | 4         | Int        | ID of new gamer                                 |
 | 37        | 4 * p     | [Int]      | Active gamer IDs                                |
 | Dependant | 12 * p    | [Int]      | gamer Colors                                    |
 | Dependant | 4 * t     | [Int]      | Active team IDs                                 |
 | Dependant | x * y     | [byte]     | Board (described above)                         |
 | Dependant | x * y     | [byte]     | Revealed board mask (1 = revealed, 0 otherwise) |
 | Dependant | 4 * x * y | [Int]      | Flag states (described above)                   |
-| Dependant | Dependant | [String]   | gamer Usernames                                 |
+| Dependant | Dependant | [String]   | gamer gamernames                                |
 | Dependant | Dependant | [String]   | Team Names                                      |
 
 
@@ -305,7 +305,7 @@ of the gamer that placed the flag. Negative values represent pencil flags.
 | Offset | Size     | Type   | Description                     |
 |--------|----------|--------|---------------------------------|
 | 0      | 1        | Byte   | Message type (Gamer Create: 51) |
-| 1      | 4        | Int    | User ID                         |
+| 1      | 4        | Int    | gamer ID                        |
 | 5      | 1        | Byte   | Red                             |
 | 6      | 1        | Byte   | Green                           |
 | 7      | 1        | Byte   | Blue                            |
