@@ -47,13 +47,12 @@ Team names can be updated with the same set of packets.
 #### Client -> Server
 | Offset | Size     | Type   | Description |
 |--------|----------|--------|-------------|
-| 1      | 4        | Int    | Team index  |
-| 5      | Variable | String | Team name   |
+| 1      | Variable | String | Team name   |
 
 #### Server -> Client
 | Offset | Size     | Type   | Description |
 |--------|----------|--------|-------------|
-| 1      | 4        | Int    | Team index  |
+| 1      | 4        | Int    | Team ID     |
 | 5      | 4        | Int    | Sender ID   |
 | 9      | Variable | String | Team name   |
 
@@ -123,8 +122,8 @@ Settings are Listed below
 | ID  | Size | Type       | Description                                 |
 |-----|------|------------|---------------------------------------------|
 | 0   | 4    | Int        | Update rate of onscreen cursors (hz)        |
-| 1   | 4    | Bool       | Is no guessing                              |
-| 3   | 4    | Bool       | If a team loses when a member clicks a mine |
+| 1   | 1    | Bool       | Is no guessing                              |
+| 3   | 1    | Bool       | If a team loses when a member clicks a mine |
 | 2   | 8    | (Int, Int) | Board size                                  |
 
 #### Client -> Server
@@ -187,8 +186,8 @@ a mine is otherwise revealed
 |--------|------|------|-------------------------------------------------------------------|
 | 1      | 4    | Int  | x position of square                                              |
 | 5      | 4    | Int  | y position of square                                              |
-| 9      | 4    | Bool | True if a flag should be added, False if a flag should be removed |
-| 13     | 4    | Bool | Is Pencil flag                                                    |
+| 9      | 1    | Bool | True if a flag should be added, False if a flag should be removed |
+| 10     | 1    | Bool | Is Pencil flag                                                    |
 
 #### Server -> Client
 | Offset | Size | Type | Description                                                       |
@@ -196,8 +195,8 @@ a mine is otherwise revealed
 | 1      | 4    | Int  | User ID                                                           |
 | 5      | 4    | Int  | x position of square                                              |
 | 9      | 4    | Int  | y position of square                                              |
-| 13     | 4    | Bool | True if a flag should be added, False if a flag should be removed |
-| 17     | 4    | Bool | Is Pencil flag                                                    |
+| 13     | 1    | Bool | True if a flag should be added, False if a flag should be removed |
+| 14     | 1    | Bool | Is Pencil flag                                                    |
 
 ### Cursor Location
 I'll let the exact meaning of the cursor positions be handled by the client.
@@ -217,7 +216,8 @@ I'll let the exact meaning of the cursor positions be handled by the client.
 
 ### Joining
 
-Name must be specified, if user ID specified is negative, the server assigns an id and color (color given is ignored).
+Name must be specified, if user ID specified is negative, the server assigns an id. Similarly, a color will be specified
+if the color given is #000000
 
 | Offset | Size     | Type   | Description |
 |--------|----------|--------|-------------|
