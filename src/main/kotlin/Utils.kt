@@ -1,19 +1,17 @@
 import java.nio.ByteBuffer
 
-fun ByteBuffer.getCString() : String {
+fun ByteBuffer.getString() : String {
 	val s = StringBuilder()
-	var c = getChar()
-	while (c != Char.MIN_VALUE) {
-		s.append(c)
-		if (!hasRemaining()) break
-		c = getChar()
+	val length = getShort()
+	repeat(length.toInt()) {
+		s.append(getChar())
 	}
 	return s.toString()
 }
 
-fun ByteBuffer.putCString(s : String) {
+fun ByteBuffer.putString(s : String) {
+	putShort(s.length.toShort())
 	for (char in s) {
 		putChar(char)
 	}
-	put(0)
 }

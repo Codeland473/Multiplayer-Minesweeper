@@ -11,7 +11,7 @@ class SessionHandler {
 	fun onPlayerJoin(sender : DefaultWebSocketServerSession, message : ByteBuffer) : Gamer {
 		val requestedID = message.getInt()
 		val requestedColor = message.getColor()
-		val name = message.getCString()
+		val name = message.getString()
 		val givenID = if (requestedID <= 0 || gamers.any {it.id == requestedID}) ++nextID else requestedID
 		val color = if (requestedColor.r == 0 && requestedColor.g == 0 && requestedColor.b == 0)
 			Color.random() else requestedColor

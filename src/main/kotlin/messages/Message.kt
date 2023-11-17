@@ -4,7 +4,7 @@ import Board
 import Color
 import Gamer
 import io.ktor.websocket.*
-import putCString
+import putString
 import putColor
 import java.nio.ByteBuffer
 
@@ -17,11 +17,11 @@ interface Message {
 
 class TeamCreatedMessage(val teamID : Int, val creatorID : Int, val name : String) : Message {
 	override fun toFrame() : ByteArray {
-		val buffer = ByteBuffer.allocate(10 + name.length)
+		val buffer = ByteBuffer.allocate(11 + name.length)
 		buffer.put(1.toByte())
 		buffer.putInt(teamID)
 		buffer.putInt(creatorID)
-		buffer.putCString(name)
+		buffer.putString(name)
 		return buffer.array()
 	}
 }
@@ -38,10 +38,10 @@ class TeamRemovedMessage(val teamID : Int, val removerID : Int) : Message {
 
 class NameChangedMessage(val userID : Int, val newName : String) : Message {
 	override fun toFrame() : ByteArray {
-		val buffer = ByteBuffer.allocate(6 + newName.length)
+		val buffer = ByteBuffer.allocate(7 + newName.length)
 		buffer.put(3.toByte())
 		buffer.putInt(userID)
-		buffer.putCString(newName)
+		buffer.putString(newName)
 		return buffer.array()
 	}
 }
@@ -49,7 +49,7 @@ class NameChangedMessage(val userID : Int, val newName : String) : Message {
 
 class UserColorChangedMessage(val userID : Int, val color : Color) : Message {
 	override fun toFrame() : ByteArray {
-		val buffer = ByteBuffer.allocate(17)
+		val buffer = ByteBuffer.allocate(8)
 		buffer.put(4.toByte())
 		buffer.putInt(userID)
 		buffer.putColor(color)
@@ -117,8 +117,9 @@ class SquareFlaggedMessage(val userID : Int, val squareX : Int, val squareY : In
 
 class CursorLocationsUpdateMessage(val gamers : Collection<Gamer>) : Message {
 	override fun toFrame() : ByteArray {
-		val buffer = ByteBuffer.allocate(1 + 12 * gamers.size)
+		val buffer = ByteBuffer.allocate(5 + 12 * gamers.size)
 		buffer.put(10.toByte())
+		buffer.putInt(gamers.size)
 		for (gamer in gamers) {
 			buffer.putInt(gamer.id)
 			buffer.putFloat(gamer.cursorLocation.x)
@@ -141,11 +142,11 @@ class UpdateNewPlayerMessage() : Message {
 
 class PlayerJoinedMessage(val userID : Int, val color : Color, val name : String) : Message {
 	override fun toFrame() : ByteArray {
-		val buffer = ByteBuffer.allocate(18 + name.length)
+		val buffer = ByteBuffer.allocate(10 + name.length)
 		buffer.put(51.toByte())
 		buffer.putInt(userID)
 		buffer.putColor(color)
-		buffer.putCString(name)
+		buffer.putString(name)
 		return buffer.array()
 	}
 }

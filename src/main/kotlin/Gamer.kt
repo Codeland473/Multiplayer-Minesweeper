@@ -11,20 +11,23 @@ class Gamer(
 	var cursorUpdated = false
 }
 
-data class Color(val r : Int, val g : Int, val b : Int) {
+data class Color(val r : Byte, val g : Byte, val b : Byte) {
 	companion object  {
 		fun random() : Color {
 			val r = Random()
-			return Color(r.nextInt(), r.nextInt(), r.nextInt())
+			return Color(
+				r.nextInt(Byte.MIN_VALUE.toInt(), Byte.MAX_VALUE.toInt()).toByte(),
+				r.nextInt(Byte.MIN_VALUE.toInt(), Byte.MAX_VALUE.toInt()).toByte(),
+				r.nextInt(Byte.MIN_VALUE.toInt(), Byte.MAX_VALUE.toInt()).toByte())
 		}
 	}
 }
 
-fun ByteBuffer.getColor() = Color(getInt(), getInt(), getInt())
+fun ByteBuffer.getColor() = Color(get(), get(), get())
 fun ByteBuffer.putColor(c : Color) {
-	putInt(c.r)
-	putInt(c.g)
-	putInt(c.b)
+	put(c.r)
+	put(c.g)
+	put(c.b)
 }
 
 data class CursorLocation(val x : Float, val y : Float)

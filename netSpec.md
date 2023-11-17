@@ -100,18 +100,18 @@ Server -> Client events
 | Offset | Size | Type | Description                          |
 |--------|------|------|--------------------------------------|
 | 0      | 1    | Byte | Message type (Gamer Color Update: 4) |
-| 1      | 4    | Int  | Red                                  |
-| 5      | 4    | Int  | Green                                |
-| 9      | 4    | Int  | Blue                                 |
+| 1      | 1    | Byte | Red                                  |
+| 2      | 1    | Byte | Green                                |
+| 3      | 1    | Byte | Blue                                 |
 
 #### Server -> Client
 | Offset | Size | Type | Description                          |
 |--------|------|------|--------------------------------------|
 | 0      | 1    | Byte | Message type (Gamer Color Update: 4) |
 | 1      | 4    | Int  | User ID                              |
-| 5      | 4    | Int  | Red                                  |
-| 9      | 4    | Int  | Green                                |
-| 13     | 4    | Int  | Blue                                 |
+| 5      | 1    | Byte | Red                                  |
+| 6      | 1    | Byte | Green                                |
+| 7      | 1    | Byte | Blue                                 |
 
 ### Changing Teams
 
@@ -265,10 +265,10 @@ if the color given is #000000
 |--------|----------|--------|-------------------------------|
 | 0      | 1        | Byte   | Message type (Gamer Join: 50) |
 | 1      | 4        | Int    | User ID                       |
-| 5      | 4        | Int    | Red                           |
-| 9      | 4        | Int    | Green                         |
-| 13     | 4        | Int    | Blue                          |
-| 17     | Variable | String | Name                          |
+| 5      | 1        | Byte   | Red                           |
+| 6      | 1        | Byte   | Green                         |
+| 7      | 1        | Byte   | Blue                          |
+| 8      | Variable | String | Name                          |
 
 ## Exclusive Messages (Server -> Client)
 
@@ -306,10 +306,10 @@ of the player that placed the flag. Negative values represent pencil flags.
 |--------|----------|--------|---------------------------------|
 | 0      | 1        | Byte   | Message type (Gamer Create: 51) |
 | 1      | 4        | Int    | User ID                         |
-| 5      | 4        | Int    | Red                             |
-| 9      | 4        | Int    | Green                           |
-| 13     | 4        | Int    | Blue                            |
-| 17     | Variable | String | Name                            |
+| 5      | 1        | Byte   | Red                             |
+| 6      | 1        | Byte   | Green                           |
+| 7      | 1        | Byte   | Blue                            |
+| 8      | Variable | String | Name                            |
 
 ### Player Left
 
