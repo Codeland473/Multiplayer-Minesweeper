@@ -315,7 +315,7 @@ of the player that placed the flag. Negative values represent pencil flags.
 
 | Offset | Size | Type | Description                     |
 |--------|------|------|---------------------------------|
-| 0      | 1    | Byte | Message type (Gamer Remove: 51) |
+| 0      | 1    | Byte | Message type (Gamer Remove: 52) |
 | 1      | 4    | Int  | ID of player that left          |
 
 ### Team Finished
