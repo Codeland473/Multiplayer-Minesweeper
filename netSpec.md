@@ -40,11 +40,11 @@ Server -> Client events
 | 9   | [Square Flag](#Flagging-Squares)        |
 | 10  | [Cursor Update](#Cursor-Location)       |
 | 11  | [Team Name Update](#Changing-Team-Name) |
-| 50  | [Gamer Join](#Update-New-Player)        |
-| 51  | [Gamer Create](#Player-Joined)          |
-| 52  | [Gamer Remove](#Player-Left)            |
+| 50  | [Gamer Join](#Update-New-gamer)         |
+| 51  | [Gamer Create](#gamer-Joined)           |
+| 52  | [Gamer Remove](#gamer-Left)             |
 | 53  | [Team Finish](#Team-Finished)           |
-| 54  | [Gamer Lost](#Player-Lost)              |
+| 54  | [Gamer Lost](#gamer-Lost)               |
 | 55  | [Team Lost](#Team-Lost)                 |
 
 ### Creating a Team
@@ -272,12 +272,12 @@ if the color given is #000000
 
 ## Exclusive Messages (Server -> Client)
 
-### Update New Player
+### Update New gamer
 
 board specification is the same as in [Starting Game](#Board-Format), but revealed squares will be increased by 10. For
 example, a square adjacent to no mines will be 10. Flag states are laid out the same as the board, and represent if that
 square has been flagged, and if so by who. A value of zero means that the square is not flagged, otherwise it is the ID
-of the player that placed the flag. Negative values represent pencil flags.
+of the gamer that placed the flag. Negative values represent pencil flags.
 
 | Offset    | Size      | Type       | Description                                     |
 |-----------|-----------|------------|-------------------------------------------------|
@@ -287,20 +287,20 @@ of the player that placed the flag. Negative values represent pencil flags.
 | 9         | 4         | Int        | If a team loses when a member clicks a mine     |
 | 13        | 4         | Int        | Game timer                                      |
 | 17        | 8         | (Int, Int) | Board size (x, y)                               |
-| 25        | 4         | Int        | Number of players (p)                           |
+| 25        | 4         | Int        | Number of gamers (p)                            |
 | 29        | 4         | Int        | Number of teams (t)                             |
 | 33        | 4         | Int        | ID of new user                                  |
-| 37        | 4 * p     | [Int]      | Active player IDs                               |
-| Dependant | 12 * p    | [Int]      | Player Colors                                   |
+| 37        | 4 * p     | [Int]      | Active gamer IDs                                |
+| Dependant | 12 * p    | [Int]      | gamer Colors                                    |
 | Dependant | 4 * t     | [Int]      | Active team IDs                                 |
 | Dependant | x * y     | [byte]     | Board (described above)                         |
 | Dependant | x * y     | [byte]     | Revealed board mask (1 = revealed, 0 otherwise) |
 | Dependant | 4 * x * y | [Int]      | Flag states (described above)                   |
-| Dependant | Dependant | [String]   | Player Usernames                                |
+| Dependant | Dependant | [String]   | gamer Usernames                                 |
 | Dependant | Dependant | [String]   | Team Names                                      |
 
 
-### Player Joined
+### gamer Joined
 
 | Offset | Size     | Type   | Description                     |
 |--------|----------|--------|---------------------------------|
@@ -311,12 +311,12 @@ of the player that placed the flag. Negative values represent pencil flags.
 | 7      | 1        | Byte   | Blue                            |
 | 8      | Variable | String | Name                            |
 
-### Player Left
+### gamer Left
 
 | Offset | Size | Type | Description                     |
 |--------|------|------|---------------------------------|
 | 0      | 1    | Byte | Message type (Gamer Remove: 52) |
-| 1      | 4    | Int  | ID of player that left          |
+| 1      | 4    | Int  | ID of gamer that left           |
 
 ### Team Finished
 
@@ -325,16 +325,16 @@ of the player that placed the flag. Negative values represent pencil flags.
 | 0      | 1    | Byte | Message type (Team Finish: 53) |
 | 1      | 4    | Int  | ID of team that won            |
 
-### Player Lost
+### gamer Lost
 
 | Offset | Size | Type | Description                   |
 |--------|------|------|-------------------------------|
 | 0      | 1    | Byte | Message type (Gamer Lost: 54) |
-| 1      | 4    | Int  | ID of player that Lost        |
+| 1      | 4    | Int  | ID of gamer that Lost         |
 
 ### Team Lost
 
 | Offset | Size | Type | Description                  |
 |--------|------|------|------------------------------|
 | 0      | 1    | Byte | Message type (Team Lost: 55) |
-| 1      | 4    | Int  | ID of player that Lost       |
+| 1      | 4    | Int  | ID of gamer that Lost        |
