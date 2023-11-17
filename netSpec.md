@@ -1,119 +1,134 @@
 
+# Data types
+
+Strings are a short followed by a byte array. The short specifies the length of the byte array (not including the 
+prefix).
+
 # Messages
 
 the first char/byte in any message should be an id for what kind of message it is, as shown below.
 
 Client -> Server
 
-| ID  | Type                                      |
-|-----|-------------------------------------------|
-| 1   | [Create Team](#Creating-a-Team)           |
-| 2   | [Remove Team](#Removing-a-Team)           |
-| 3   | [Change Name](#Changing-Names)            |
-| 4   | [Change User Color](#Changing-Colors)     |
-| 5   | [Join Team](#Changing-Teams)              |
-| 6   | [Change Setting](#Changing-Settings)      |
-| 7   | [Start Game](#Starting-Game)              |
-| 8   | [Reveal square/chord](#Revealing-Squares) |
-| 9   | [Flag square](#Flagging-Squares)          |
-| 10  | [Cursor Location](#Cursor-Location)       |
-| 50  | [Greeting](#Joining)                      |
+| ID  | Type                                    |
+|-----|-----------------------------------------|
+| 1   | [Team Create](#Creating-a-Team)         |
+| 2   | [Team Remove](#Removing-a-Team)         |
+| 3   | [Gamer Name Update](#Changing-Names)    |
+| 4   | [Gamer Color Update](#Changing-Colors)  |
+| 5   | [Gamer Team Update](#Changing-Teams)    |
+| 6   | [Setting Update](#Changing-Settings)    |
+| 7   | [Game Start](#Starting-Game)            |
+| 8   | [Square Reveal](#Revealing-Squares)     |
+| 9   | [Square Flag](#Flagging-Squares)        |
+| 10  | [Cursor Update](#Cursor-Location)       |
+| 11  | [Team Name Update](#Changing-Team-Name) |
+| 50  | [Gamer Join](#Joining)                  |
 
 Server -> Client events
 
-| ID  | Type                                        |
-|-----|---------------------------------------------|
-| 1   | [Team Created](#Creating-a-Team)            |
-| 2   | [Team Removed](#Removing-a-Team)            |
-| 3   | [Name Changed](#Changing-Names)             |
-| 4   | [User Color Changed](#Changing-Colors)      |
-| 5   | [Team Joined](#Changing-Teams)              |
-| 6   | [Setting Changed](#Changing-Settings)       |
-| 7   | [Game Start](#Starting-Game)                |
-| 8   | [Square/chord Revealed](#Revealing-Squares) |
-| 9   | [Square Flagged](#Flagging-Squares)         |
-| 10  | [Cursor Locations Update](#Cursor-Location) |
-| 50  | [Update New Player](#Update-New-Player)     |
-| 51  | [Player Joined](#Player-Joined)             |
-| 52  | [Player Left](#Player-Left)                 |
-| 53  | [Team Finished](#Team-Finished)             |
-| 54  | [Player Lost](#Player-Lost)                 |
-| 55  | [Team Lost](#Team-Lost)                     |
+| ID  | Type                                    |
+|-----|-----------------------------------------|
+| 1   | [Team Create](#Creating-a-Team)         |
+| 2   | [Team Remove](#Removing-a-Team)         |
+| 3   | [Gamer Name Update](#Changing-Names)    |
+| 4   | [Gamer Color Update](#Changing-Colors)  |
+| 5   | [Gamer Team Update](#Changing-Teams)    |
+| 6   | [Setting Update](#Changing-Settings)    |
+| 7   | [Game Start](#Starting-Game)            |
+| 8   | [Square Reveal](#Revealing-Squares)     |
+| 9   | [Square Flag](#Flagging-Squares)        |
+| 10  | [Cursor Update](#Cursor-Location)       |
+| 11  | [Team Name Update](#Changing-Team-Name) |
+| 50  | [Gamer Join](#Update-New-Player)        |
+| 51  | [Gamer Create](#Player-Joined)          |
+| 52  | [Gamer Remove](#Player-Left)            |
+| 53  | [Team Finish](#Team-Finished)           |
+| 54  | [Gamer Lost](#Player-Lost)              |
+| 55  | [Team Lost](#Team-Lost)                 |
 
 ### Creating a Team
 
-Team names can be updated with the same set of packets.
-
 #### Client -> Server
-| Offset | Size     | Type   | Description |
-|--------|----------|--------|-------------|
-| 1      | Variable | String | Team name   |
+| Offset | Size     | Type   | Description                   |
+|--------|----------|--------|-------------------------------|
+| 0      | 1        | Byte   | Message type (Team Create: 1) |
+| 1      | Variable | String | Team name                     |
 
 #### Server -> Client
-| Offset | Size     | Type   | Description |
-|--------|----------|--------|-------------|
-| 1      | 4        | Int    | Team ID     |
-| 5      | 4        | Int    | Sender ID   |
-| 9      | Variable | String | Team name   |
+| Offset | Size     | Type   | Description                   |
+|--------|----------|--------|-------------------------------|
+| 0      | 1        | Byte   | Message type (Team Create: 1) |
+| 1      | 4        | Int    | Team ID                       |
+| 5      | 4        | Int    | Sender ID                     |
+| 9      | Variable | String | Team name                     |
 
 ### Removing a Team
 
 #### Client -> Server
-| Offset | Size     | Type   | Description |
-|--------|----------|--------|-------------|
-| 1      | 4        | Int    | Team index  |
+| Offset | Size     | Type   | Description                   |
+|--------|----------|--------|-------------------------------|
+| 0      | 1        | Byte   | Message type (Team Remove: 2) |
+| 1      | 4        | Int    | Team ID                       |
 
 #### Server -> Client
-| Offset | Size     | Type   | Description |
-|--------|----------|--------|-------------|
-| 1      | 4        | Int    | Team index  |
-| 5      | 4        | Int    | Sender ID   |
+| Offset | Size     | Type   | Description                   |
+|--------|----------|--------|-------------------------------|
+| 0      | 1        | Byte   | Message type (Team Remove: 2) |
+| 1      | 4        | Int    | Team ID                       |
+| 5      | 4        | Int    | Sender ID                     |
 
 ### Changing Names
 
 #### Client -> Server
-| Offset | Size     | Type   | Description |
-|--------|----------|--------|-------------|
-| 1      | Variable | String | New name    |
+| Offset | Size     | Type   | Description                         |
+|--------|----------|--------|-------------------------------------|
+| 0      | 1        | Byte   | Message type (Gamer Name Update: 3) |
+| 1      | Variable | String | New name                            |
 
 #### Server -> Client
-| Offset | Size     | Type   | Description |
-|--------|----------|--------|-------------|
-| 1      | 4        | Int    | User ID     |
-| 5      | Variable | String | New name    |
+| Offset | Size     | Type   | Description                         |
+|--------|----------|--------|-------------------------------------|
+| 0      | 1        | Byte   | Message type (Gamer Name Update: 3) |
+| 1      | 4        | Int    | User ID                             |
+| 5      | Variable | String | New name                            |
 
 
 ### Changing Colors
 
 #### Client -> Server
-| Offset | Size | Type | Description |
-|--------|------|------|-------------|
-| 1      | 4    | Int  | Red         |
-| 5      | 4    | Int  | Green       |
-| 9      | 4    | Int  | Blue        |
+| Offset | Size | Type | Description                          |
+|--------|------|------|--------------------------------------|
+| 0      | 1    | Byte | Message type (Gamer Color Update: 4) |
+| 1      | 4    | Int  | Red                                  |
+| 5      | 4    | Int  | Green                                |
+| 9      | 4    | Int  | Blue                                 |
 
 #### Server -> Client
-| Offset | Size | Type  | Description |
-|--------|------|-------|-------------|
-| 1      | 4    | Int   | User ID     |
-| 5      | 4    | Int   | Red         |
-| 9      | 4    | Int   | Green       |
-| 13     | 4    | Int   | Blue        |
+| Offset | Size | Type | Description                          |
+|--------|------|------|--------------------------------------|
+| 0      | 1    | Byte | Message type (Gamer Color Update: 4) |
+| 1      | 4    | Int  | User ID                              |
+| 5      | 4    | Int  | Red                                  |
+| 9      | 4    | Int  | Green                                |
+| 13     | 4    | Int  | Blue                                 |
 
 ### Changing Teams
 
 Team 0 is spectating team. Users are automatically put on the spectator team when joining
 
 #### Client -> Server
-| Offset | Size | Type | Description        |
-|--------|------|------|--------------------|
-| 1      | 4    | Int  | ID of team to join |
+| Offset | Size | Type | Description                         |
+|--------|------|------|-------------------------------------|
+| 0      | 1    | Byte | Message type (Gamer Team Update: 5) |
+| 1      | 4    | Int  | ID of team to join                  |
 
 #### Server -> Client
-| Offset | Size | Type | Description       |
-|--------|------|------|-------------------|
-| 1      | 4    | Int  | User ID           |
-| 5      | 4    | Int  | ID of joined team |
+| Offset | Size | Type | Description                         |
+|--------|------|------|-------------------------------------|
+| 0      | 1    | Byte | Message type (Gamer Team Update: 5) |
+| 1      | 4    | Int  | User ID                             |
+| 5      | 4    | Int  | ID of joined team                   |
 
 ### Changing Settings
 
@@ -127,17 +142,19 @@ Settings are Listed below
 | 2   | 8    | (Int, Int) | Board size                                  |
 
 #### Client -> Server
-| Offset | Size      | Type      | Description              |
-|--------|-----------|-----------|--------------------------|
-| 1      | 4         | Int       | Setting ID               |
-| 5      | Dependant | Dependant | New value of the setting |
+| Offset | Size      | Type      | Description                      |
+|--------|-----------|-----------|----------------------------------|
+| 0      | 1         | Byte      | Message type (Setting Update: 6) |
+| 1      | 4         | Int       | Setting ID                       |
+| 5      | Dependant | Dependant | New value of the setting         |
 
 #### Server -> Client
-| Offset | Size      | Type      | Description              |
-|--------|-----------|-----------|--------------------------|
-| 1      | 4         | Int       | Setting ID               |
-| 5      | 4         | Int       | Sender ID                |
-| 9      | Dependant | Dependant | New value of the setting |
+| Offset | Size      | Type      | Description                      |
+|--------|-----------|-----------|----------------------------------|
+| 0      | 1         | Byte      | Message type (Setting Update: 6) |
+| 1      | 4         | Int       | Setting ID                       |
+| 5      | 4         | Int       | Sender ID                        |
+| 9      | Dependant | Dependant | New value of the setting         |
 
 ### Starting Game
 
@@ -156,6 +173,7 @@ Nothing other than the message ID needs to be sent
 #### Server -> Client
 | Offset | Size      | Type       | Description                       |
 |--------|-----------|------------|-----------------------------------|
+| 0      | 1         | Byte       | Message type (Game Start: 7)      |
 | 1      | 4         | Int        | Sender ID                         |
 | 1      | 8         | (Int, Int) | Start position (-1, -1 if not NG) |
 | 5      | Dependant | [byte]     | Board (described above)           |
@@ -167,23 +185,26 @@ squares with insufficient or excess flags should be handled by the client. If a 
 a mine is otherwise revealed 
 
 #### Client -> Server
-| Offset | Size | Type | Description          |
-|--------|------|------|----------------------|
-| 1      | 4    | Int  | x position of square |
-| 5      | 4    | Int  | y position of square |
+| Offset | Size | Type | Description                     |
+|--------|------|------|---------------------------------|
+| 0      | 1    | Byte | Message type (Square Reveal: 8) |
+| 1      | 4    | Int  | x position of square            |
+| 5      | 4    | Int  | y position of square            |
 
 #### Server -> Client
-| Offset | Size | Type | Description          |
-|--------|------|------|----------------------|
-| 1      | 4    | Int  | User ID              |
-| 5      | 4    | Int  | x position of square |
-| 9      | 4    | Int  | y position of square |
+| Offset | Size | Type | Description                     |
+|--------|------|------|---------------------------------|
+| 0      | 1    | Byte | Message type (Square Reveal: 8) |
+| 1      | 4    | Int  | User ID                         |
+| 5      | 4    | Int  | x position of square            |
+| 9      | 4    | Int  | y position of square            |
 
 ### Flagging Squares
 
 #### Client -> Server
 | Offset | Size | Type | Description                                                       |
 |--------|------|------|-------------------------------------------------------------------|
+| 0      | 1    | Byte | Message type (Square Flag: 9)                                     |
 | 1      | 4    | Int  | x position of square                                              |
 | 5      | 4    | Int  | y position of square                                              |
 | 9      | 1    | Bool | True if a flag should be added, False if a flag should be removed |
@@ -192,6 +213,7 @@ a mine is otherwise revealed
 #### Server -> Client
 | Offset | Size | Type | Description                                                       |
 |--------|------|------|-------------------------------------------------------------------|
+| 0      | 1    | Byte | Message type (Square Flag: 9)                                     |
 | 1      | 4    | Int  | User ID                                                           |
 | 5      | 4    | Int  | x position of square                                              |
 | 9      | 4    | Int  | y position of square                                              |
@@ -202,15 +224,35 @@ a mine is otherwise revealed
 I'll let the exact meaning of the cursor positions be handled by the client.
 
 #### Client -> Server
-| Offset | Size | Type  | Description          |
-|--------|------|-------|----------------------|
-| 1      | 4    | Float | x position of cursor |
-| 5      | 4    | Float | y position of cursor |
+| Offset | Size | Type  | Description                      |
+|--------|------|-------|----------------------------------|
+| 0      | 1    | Byte  | Message type (Cursor Update: 10) |
+| 1      | 4    | Float | x position of cursor             |
+| 5      | 4    | Float | y position of cursor             |
 
 #### Server -> Client
-| Offset | Size     | Type                  | Description                 |
-|--------|----------|-----------------------|-----------------------------|
-| 1      | Variable | [(Int, Float, Float)] | User ID, cursor X, cursor Y |
+| Offset | Size     | Type                  | Description                      |
+|--------|----------|-----------------------|----------------------------------|
+| 0      | 1        | Byte                  | Message type (Cursor Update: 10) |
+| 1      | 4        | Int                   | Number of cursors given          |
+| 5      | Variable | [(Int, Float, Float)] | User ID, cursor X, cursor Y      |
+
+### Changing Team Name
+
+#### Client -> Server
+| Offset | Size     | Type   | Description                         |
+|--------|----------|--------|-------------------------------------|
+| 0      | 1        | Byte   | Message type (Team Name Update: 11) |
+| 1      | 4        | Int    | Team ID                             |
+| 5      | Variable | String | Team name                           |
+
+#### Server -> Client
+| Offset | Size     | Type   | Description                         |
+|--------|----------|--------|-------------------------------------|
+| 0      | 1        | Byte   | Message type (Team Name Update: 11) |
+| 1      | 4        | Int    | Team ID                             |
+| 5      | 4        | Int    | Sender ID                           |
+| 9      | Variable | String | Team name                           |
 
 ## Exclusive Messages (Client -> Server)
 
@@ -219,13 +261,14 @@ I'll let the exact meaning of the cursor positions be handled by the client.
 Name must be specified, if user ID specified is negative, the server assigns an id. Similarly, a color will be specified
 if the color given is #000000
 
-| Offset | Size     | Type   | Description |
-|--------|----------|--------|-------------|
-| 1      | 4        | Int    | User ID     |
-| 5      | 4        | Int    | Red         |
-| 9      | 4        | Int    | Green       |
-| 13     | 4        | Int    | Blue        |
-| 17     | Variable | String | Name        |
+| Offset | Size     | Type   | Description                   |
+|--------|----------|--------|-------------------------------|
+| 0      | 1        | Byte   | Message type (Gamer Join: 50) |
+| 1      | 4        | Int    | User ID                       |
+| 5      | 4        | Int    | Red                           |
+| 9      | 4        | Int    | Green                         |
+| 13     | 4        | Int    | Blue                          |
+| 17     | Variable | String | Name                          |
 
 ## Exclusive Messages (Server -> Client)
 
@@ -238,6 +281,7 @@ of the player that placed the flag. Negative values represent pencil flags.
 
 | Offset    | Size      | Type       | Description                                     |
 |-----------|-----------|------------|-------------------------------------------------|
+| 0         | 1         | Byte       | Message type (Gamer Join: 50)                   |
 | 1         | 4         | Int        | Cursor update rate (hz)                         |
 | 5         | 4         | Int        | Is no guessing                                  |
 | 9         | 4         | Int        | If a team loses when a member clicks a mine     |
@@ -252,40 +296,45 @@ of the player that placed the flag. Negative values represent pencil flags.
 | Dependant | x * y     | [byte]     | Board (described above)                         |
 | Dependant | x * y     | [byte]     | Revealed board mask (1 = revealed, 0 otherwise) |
 | Dependant | 4 * x * y | [Int]      | Flag states (described above)                   |
-| Dependant | Dependant | [String]   | Player Usernames (each null terminated)         |
-| Dependant | Dependant | [String]   | Team Names (each null terminated)               |
+| Dependant | Dependant | [String]   | Player Usernames                                |
+| Dependant | Dependant | [String]   | Team Names                                      |
 
 
 ### Player Joined
 
-| Offset | Size     | Type   | Description |
-|--------|----------|--------|-------------|
-| 1      | 4        | Int    | User ID     |
-| 5      | 4        | Int    | Red         |
-| 9      | 4        | Int    | Green       |
-| 13     | 4        | Int    | Blue        |
-| 17     | Variable | String | Name        |
+| Offset | Size     | Type   | Description                     |
+|--------|----------|--------|---------------------------------|
+| 0      | 1        | Byte   | Message type (Gamer Create: 51) |
+| 1      | 4        | Int    | User ID                         |
+| 5      | 4        | Int    | Red                             |
+| 9      | 4        | Int    | Green                           |
+| 13     | 4        | Int    | Blue                            |
+| 17     | Variable | String | Name                            |
 
 ### Player Left
 
-| Offset | Size | Type | Description            |
-|--------|------|------|------------------------|
-| 1      | 4    | Int  | ID of player that left |
+| Offset | Size | Type | Description                     |
+|--------|------|------|---------------------------------|
+| 0      | 1    | Byte | Message type (Gamer Remove: 51) |
+| 1      | 4    | Int  | ID of player that left          |
 
 ### Team Finished
 
-| Offset | Size | Type | Description          |
-|--------|------|------|----------------------|
-| 1      | 4    | Int  | ID of team that won  |
+| Offset | Size | Type | Description                    |
+|--------|------|------|--------------------------------|
+| 0      | 1    | Byte | Message type (Team Finish: 53) |
+| 1      | 4    | Int  | ID of team that won            |
 
 ### Player Lost
 
-| Offset | Size | Type | Description            |
-|--------|------|------|------------------------|
-| 1      | 4    | Int  | ID of player that Lost |
+| Offset | Size | Type | Description                   |
+|--------|------|------|-------------------------------|
+| 0      | 1    | Byte | Message type (Gamer Lost: 54) |
+| 1      | 4    | Int  | ID of player that Lost        |
 
 ### Team Lost
 
-| Offset | Size | Type | Description            |
-|--------|------|------|------------------------|
-| 1      | 4    | Int  | ID of player that Lost |
+| Offset | Size | Type | Description                  |
+|--------|------|------|------------------------------|
+| 0      | 1    | Byte | Message type (Team Lost: 55) |
+| 1      | 4    | Int  | ID of player that Lost       |
