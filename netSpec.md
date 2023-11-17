@@ -40,11 +40,11 @@ Server -> Client events
 | 9   | [Square Flag](#Flagging-Squares)        |
 | 10  | [Cursor Update](#Cursor-Location)       |
 | 11  | [Team Name Update](#Changing-Team-Name) |
-| 50  | [Gamer Join](#Update-New-gamer)         |
-| 51  | [Gamer Create](#gamer-Joined)           |
-| 52  | [Gamer Remove](#gamer-Left)             |
+| 50  | [Gamer Join](#Update-New-Gamer)         |
+| 51  | [Gamer Create](#Gamer-Joined)           |
+| 52  | [Gamer Remove](#Gamer-Left)             |
 | 53  | [Team Finish](#Team-Finished)           |
-| 54  | [Gamer Lost](#gamer-Lost)               |
+| 54  | [Gamer Lost](#Gamer-Lost)               |
 | 55  | [Team Lost](#Team-Lost)                 |
 
 ### Creating a Team
@@ -258,49 +258,51 @@ I'll let the exact meaning of the cursor positions be handled by the client.
 
 ### Joining
 
-Name must be specified, if gamer ID specified is negative, the server assigns an id. Similarly, a color will be specified
+Name must be specified, if gamer ID specified is 0, the server assigns an id. Similarly, a color will be specified
 if the color given is #000000
 
 | Offset | Size     | Type   | Description                   |
 |--------|----------|--------|-------------------------------|
 | 0      | 1        | Byte   | Message type (Gamer Join: 50) |
 | 1      | 4        | Int    | gamer ID                      |
-| 5      | 1        | Byte   | Red                           |
-| 6      | 1        | Byte   | Green                         |
-| 7      | 1        | Byte   | Blue                          |
-| 8      | Variable | String | Name                          |
+| 5      | 4        | Int    | Team ID (0 if not on a team)  |
+| 9      | 1        | Byte   | Red                           |
+| 10     | 1        | Byte   | Green                         |
+| 11     | 1        | Byte   | Blue                          |
+| 12     | Variable | String | Name                          |
 
 ## Exclusive Messages (Server -> Client)
 
-### Update New gamer
+### Update New Gamer
 
-board specification is the same as in [Starting Game](#Board-Format), but revealed squares will be increased by 10. For
-example, a square adjacent to no mines will be 10. Flag states are laid out the same as the board, and represent if that
-square has been flagged, and if so by who. A value of zero means that the square is not flagged, otherwise it is the ID
-of the gamer that placed the flag. Negative values represent pencil flags.
+board specification is the same as in [Starting Game](#Board-Format). Flag states are laid out the same as the board, 
+and represent if that square has been flagged, and if so by who. A value of zero means that the square is not flagged, 
+otherwise it is the ID of the gamer that placed the flag. Negative values represent pencil flags.
 
-| Offset    | Size      | Type       | Description                                     |
-|-----------|-----------|------------|-------------------------------------------------|
-| 0         | 1         | Byte       | Message type (Gamer Join: 50)                   |
-| 1         | 4         | Int        | Cursor update rate (hz)                         |
-| 5         | 4         | Int        | Is no guessing                                  |
-| 9         | 4         | Int        | If a team loses when a member clicks a mine     |
-| 13        | 4         | Int        | Game timer                                      |
-| 17        | 8         | (Int, Int) | Board size (x, y)                               |
-| 25        | 4         | Int        | Number of gamers (p)                            |
-| 29        | 4         | Int        | Number of teams (t)                             |
-| 33        | 4         | Int        | ID of new gamer                                 |
-| 37        | 4 * p     | [Int]      | Active gamer IDs                                |
-| Dependant | 12 * p    | [Int]      | gamer Colors                                    |
-| Dependant | 4 * t     | [Int]      | Active team IDs                                 |
-| Dependant | x * y     | [byte]     | Board (described above)                         |
-| Dependant | x * y     | [byte]     | Revealed board mask (1 = revealed, 0 otherwise) |
-| Dependant | 4 * x * y | [Int]      | Flag states (described above)                   |
-| Dependant | Dependant | [String]   | gamer gamernames                                |
-| Dependant | Dependant | [String]   | Team Names                                      |
+| Offset    | Size      | Type       | Description                                                              |
+|-----------|-----------|------------|--------------------------------------------------------------------------|
+| 0         | 1         | Byte       | Message type (Gamer Join: 50)                                            |
+| 1         | 4         | Int        | Cursor update rate (hz)                                                  |
+| 5         | 1         | Bool       | Is no guessing                                                           |
+| 6         | 1         | Bool       | If a team loses when a member clicks a mine                              |
+| 7         | 8         | (Int, Int) | Board size (x, y)                                                        |
+| 15        | 4         | Int        | Number of gamers (p)                                                     |
+| 19        | 4         | Int        | Number of teams (t)                                                      |
+| 23        | 4         | Int        | ID of new gamer                                                          |
+| 27        | 4 * t     | [Int]      | Active team IDs                                                          |
+| Dependant | 4 * p     | [Int]      | Active gamer IDs                                                         |
+| Dependant | 12 * p    | [Int]      | Gamer Colors                                                             |
+| Dependant | 4 * t     | [Int]      | Gamer team IDs (0 means no team/spectator team)                          |
+| Dependant | Dependant | [String]   | Team Names                                                               |
+| Dependant | Dependant | [String]   | gamer gamernames                                                         |
+| Dependant | 1         | Bool       | True if a game is going (if false, the rest of this message is not sent) |
+| Dependant | 4         | Int        | Game Timer                                                               |
+| Dependant | x * y     | [byte]     | Board (described above)                                                  |
+| Dependant | x * y     | [byte]     | Revealed board mask (1 = revealed, 0 otherwise)                          |
+| Dependant | 4 * x * y | [Int]      | Flag states (described above)                                            |
 
 
-### gamer Joined
+### Gamer Joined
 
 | Offset | Size     | Type   | Description                     |
 |--------|----------|--------|---------------------------------|
@@ -311,7 +313,7 @@ of the gamer that placed the flag. Negative values represent pencil flags.
 | 7      | 1        | Byte   | Blue                            |
 | 8      | Variable | String | Name                            |
 
-### gamer Left
+### Gamer Left
 
 | Offset | Size | Type | Description                     |
 |--------|------|------|---------------------------------|
@@ -325,7 +327,7 @@ of the gamer that placed the flag. Negative values represent pencil flags.
 | 0      | 1    | Byte | Message type (Team Finish: 53) |
 | 1      | 4    | Int  | ID of team that won            |
 
-### gamer Lost
+### Gamer Lost
 
 | Offset | Size | Type | Description                   |
 |--------|------|------|-------------------------------|
