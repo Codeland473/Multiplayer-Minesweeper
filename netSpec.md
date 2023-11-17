@@ -138,8 +138,9 @@ Settings are Listed below
 |-----|------|------------|---------------------------------------------|
 | 0   | 4    | Int        | Update rate of onscreen cursors (hz)        |
 | 1   | 1    | Bool       | Is no guessing                              |
-| 3   | 1    | Bool       | If a team loses when a member clicks a mine |
-| 2   | 8    | (Int, Int) | Board size                                  |
+| 2   | 1    | Bool       | If a team loses when a member clicks a mine |
+| 3   | 8    | (Int, Int) | Board size                                  |
+| 4   | 4    | Int        | Mine Count                                  |
 
 #### Client -> Server
 | Offset | Size      | Type      | Description                      |
@@ -286,10 +287,11 @@ otherwise it is the ID of the gamer that placed the flag. Negative values repres
 | 5         | 1         | Bool       | Is no guessing                                                           |
 | 6         | 1         | Bool       | If a team loses when a member clicks a mine                              |
 | 7         | 8         | (Int, Int) | Board size (x, y)                                                        |
-| 15        | 4         | Int        | Number of gamers (p)                                                     |
-| 19        | 4         | Int        | Number of teams (t)                                                      |
-| 23        | 4         | Int        | ID of new gamer                                                          |
-| 27        | 4 * t     | [Int]      | Active team IDs                                                          |
+| 15        | 4         | Int        | Mine Count                                                               |
+| 19        | 4         | Int        | Number of gamers (p)                                                     |
+| 23        | 4         | Int        | Number of teams (t)                                                      |
+| 27        | 4         | Int        | ID of new gamer                                                          |
+| 31        | 4 * t     | [Int]      | Active team IDs                                                          |
 | Dependant | 4 * p     | [Int]      | Active gamer IDs                                                         |
 | Dependant | 12 * p    | [Int]      | Gamer Colors                                                             |
 | Dependant | 4 * t     | [Int]      | Gamer team IDs (0 means no team/spectator team)                          |
