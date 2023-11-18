@@ -1,7 +1,48 @@
-class Board(var mineCounts : ByteArray, var width : Int, var height : Int) {
+import kotlin.random.Random
+
+class Board(var width : Int, var height : Int, var mineCounts : ByteArray = ByteArray(width * height)) {
 	var startTime : Long = System.currentTimeMillis()
 
 	fun currentTime() : Float = (System.currentTimeMillis() - startTime).toFloat() / 1000f
+	fun resetTime() {
+		startTime = System.currentTimeMillis()
+	}
+
+	fun clearBoard() {
+		for (i in mineCounts.indices) mineCounts[i] = 0
+	}
+
+	fun generateBoard(mineCount : Int, noGuessing : Boolean) : Pair<Int, Int> {
+		regenMines(mineCount)
+		setMinecounts()
+
+		val minMineCounts = mineCounts.min()
+		var possibleStarts = mineCounts.indices.filter { mineCounts[it] == minMineCounts }
+		return if (possibleStarts.isEmpty()) {
+			Pair(-1, -1)
+		} else {
+			val ret = possibleStarts.random()
+			return Pair(ret % width, ret / width)
+		}
+	}
+
+	fun regenMines(mineCount : Int) {
+		var loc = Random.nextInt(width * height)
+		repeat(mineCount) {
+			while (mineCounts[loc] == 9.toByte()) {
+				loc = Random.nextInt(width * height)
+			}
+			mineCounts[loc] = 9
+		}
+	}
+
+	fun setMinecounts() {
+		repeat(width) {x ->
+			repeat(height) {y ->
+				mineCounts[x + y * width] = adjacencyPairs.count { (dx, dy) -> isMine(x + dx, y + dy) }.toByte()
+			}
+		}
+	}
 
 	operator fun get(x : Int, y : Int) : Byte {
 		if (!inBounds(x, y)) return 0

@@ -15,19 +15,17 @@ repositories {
 }
 
 dependencies {
-	//implementation("org.java-websocket", "Java-WebSocket")
-	//implementation("org.java-websocket:Java-WebSocket:1.5.4")
 	implementation("io.ktor:ktor-server-core-jvm")
 	implementation("io.ktor:ktor-server-websockets-jvm")
 	implementation("io.ktor:ktor-server-netty-jvm")
-	implementation("ch.qos.logback:logback-classic")
+	implementation("ch.qos.logback:logback-classic:1.4.11")
 
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "17"
 }
 
 application {
-	mainClass.set("MainKt")
+	mainClass.set("ApplicationKt")
 }

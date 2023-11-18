@@ -1,6 +1,9 @@
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flow
 import messages.*
+import java.lang.Integer.min
 import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.LinkedHashSet
@@ -12,6 +15,15 @@ class SessionHandler {
 	val teams = Collections.synchronizedSet<Team>(LinkedHashSet())
 	val settings = Settings()
 	var board : Board? = null
+
+	init {
+		flow {
+			while (true) {
+				delay((1000f / settings.cursorUpdateRate.toFloat()).toLong())
+				emit(onCursorUpdateTick())
+			}
+		}
+	}
 
 	suspend fun onGamerJoin(sender : DefaultWebSocketServerSession, message : ByteBuffer) : Gamer {
 		val requestedID = message.getInt()
@@ -72,12 +84,16 @@ class SessionHandler {
 				settings.boardWidth = message.getInt()
 				settings.boardHeight = message.getInt()
 			}
-			SETTING_MINE_COUNT -> settings.mineCount = message.getInt()
+			SETTING_MINE_COUNT -> {
+				settings.mineCount = min(message.getInt(), settings.boardWidth * settings.boardHeight - 1)
+			}
 		}
 		broadcast(SettingUpdateMessage(settingID, sender.id, settings))
 	}
 	suspend fun onGameStartMessage(sender : Gamer, message : ByteBuffer) {
-		TODO()
+		board = Board(settings.boardWidth, settings.boardHeight)
+		val (startX, startY) = board!!.generateBoard(settings.mineCount, settings.isNoGuessing)
+		broadcast(GameStartMessage(sender.id, startX, startY, board!!))
 	}
 
 	suspend fun onSquareRevealMessage(sender : Gamer, message : ByteBuffer) {
@@ -130,6 +146,14 @@ class SessionHandler {
 		quitter ?: return
 		gamers -= quitter
 		broadcast(GamerRemoveMessage(quitter.id))
+	}
+
+	suspend fun onCursorUpdateTick() {
+		for (team in teams) {
+			val updates = gamers.filter { it.cursorUpdated && it.team == team.id }
+			if (updates.isEmpty()) continue
+			broadcast(CursorUpdateMessage(updates)) {it.team == team.id}
+		}
 	}
 
 	//utils
