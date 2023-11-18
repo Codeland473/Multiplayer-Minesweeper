@@ -14,12 +14,14 @@ class SessionHandler {
 	val gamers = Collections.synchronizedSet<Gamer>(LinkedHashSet())
 	val teams = Collections.synchronizedSet<Team>(LinkedHashSet())
 	val settings = Settings()
+	var currentGameSettings : Settings? = null
 	var board : Board? = null
 
+	val currentSettings : Settings get() = currentGameSettings ?: settings
 	init {
 		flow {
 			while (true) {
-				delay((1000f / settings.cursorUpdateRate.toFloat()).toLong())
+				delay((1000f / currentSettings.cursorUpdateRate.toFloat()).toLong())
 				emit(onCursorUpdateTick())
 			}
 		}
@@ -29,6 +31,7 @@ class SessionHandler {
 		val requestedID = message.getInt()
 		var team = message.getInt()
 		val requestedColor = message.getColor()
+		val hasLost = message.getBool()
 		val name = message.getString()
 
 		val givenID = if (requestedID <= 0 || gamers.any {it.id == requestedID}) ++nextID else requestedID
@@ -36,10 +39,11 @@ class SessionHandler {
 			Color.random() else requestedColor
 		if (!teams.any {it.id == team}) team = 0
 		val gamer = Gamer(sender, givenID, color, name)
+		gamer.hasLost = hasLost
 
 		broadcast(GamerCreateMessage(gamer))
 
-		UpdateNewGamerMessage(settings, gamers.toTypedArray(), teams.toTypedArray(), gamer, board).send(gamer)
+		UpdateNewGamerMessage(settings, gamers.toTypedArray(), teams.toTypedArray(), gamer, currentGameSettings, board).send(gamer)
 		gamers += gamer
 
 		return gamer
@@ -92,7 +96,8 @@ class SessionHandler {
 	}
 	suspend fun onGameStartMessage(sender : Gamer, message : ByteBuffer) {
 		board = Board(settings.boardWidth, settings.boardHeight)
-		val (startX, startY) = board!!.generateBoard(settings.mineCount, settings.isNoGuessing)
+		currentGameSettings = settings.copy()
+		val (startX, startY) = board!!.generateBoard(currentSettings.mineCount, currentSettings.isNoGuessing)
 		broadcast(GameStartMessage(sender.id, startX, startY, board!!))
 	}
 
@@ -167,7 +172,7 @@ class SessionHandler {
 
 	suspend fun onMineClicked(gamer : Gamer, team : Team) {
 		broadcast(GamerLostMessage(gamer.id))
-		if (settings.isAllForOne || gamers.all { it.team != gamer.team || it.hasLost }) {
+		if (currentSettings.isAllForOne || gamers.all { it.team != gamer.team || it.hasLost }) {
 			broadcast(TeamLostMessage(gamer))
 			team.hasLost = true
 			gamers.filter { it.team == team.id }.forEach { it.hasLost = true }

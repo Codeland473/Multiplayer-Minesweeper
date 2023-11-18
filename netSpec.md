@@ -280,33 +280,40 @@ Board specification is the same as in [Starting Game](#Board-Format). Flag state
 and represent if that square has been flagged, and if so by who. A value of zero means that the square is not flagged, 
 otherwise it is the ID of the gamer that placed the flag. Negative values represent pencil flags.
 
-The final two values (revealed board mask and flag states) will only show the state for the team the new player is on
-unless the player is on the spectator team, in which case the player will be given all the board states for each team in
+The final two values (revealed board mask and flag states) will only show the state for the team the new gamer is on
+unless the gamer is on the spectator team, in which case the gamer will be given all the board states for each team in
 the same order as the team IDs.
 
-| Offset    | Size      | Type       | Description                                                              |
-|-----------|-----------|------------|--------------------------------------------------------------------------|
-| 0         | 1         | Byte       | Message type (Gamer Join: 50)                                            |
-| 1         | 4         | Int        | Cursor update rate (hz)                                                  |
-| 5         | 1         | Bool       | Is no guessing                                                           |
-| 6         | 1         | Bool       | If a team loses when a member clicks a mine                              |
-| 7         | 8         | (Int, Int) | Board size (x, y)                                                        |
-| 15        | 4         | Int        | Mine Count                                                               |
-| 19        | 4         | Int        | Number of gamers (g)                                                     |
-| 23        | 4         | Int        | Number of teams (t)                                                      |
-| 27        | 4         | Int        | ID of new gamer                                                          |
-| 31        | 4 * t     | [Int]      | Active team IDs                                                          |
-| Dependant | 4 * g     | [Int]      | Active gamer IDs                                                         |
-| Dependant | 3 * g     | [Byte]     | Gamer Colors                                                             |
-| Dependant | 4 * g     | [Int]      | Gamer team IDs (0 means no team/spectator team)                          |
-| Dependant | Dependant | [String]   | Team Names                                                               |
-| Dependant | Dependant | [String]   | gamer gamernames                                                         |
-| Dependant | 1         | Bool       | True if a game is going (if false, the rest of this message is not sent) |
-| Dependant | 4         | Float      | Game Timer (seconds)                                                     |
-| Dependant | x * y     | [Byte]     | Board (described above)                                                  |
-| Dependant | x * y     | [[Bool]]   | Revealed board mask (1 = revealed, 0 otherwise)                          |
-| Dependant | 4 * x * y | [[Int]]    | Flag states (described above)                                            |
-
+| Offset    | Size      | Type             | Description                                                              |
+|-----------|-----------|------------------|--------------------------------------------------------------------------|
+| 0         | 1         | Byte             | Message type (Gamer Join: 50)                                            |
+| 1         | 4         | Int              | Cursor update rate (hz)                                                  |
+| 5         | 1         | Bool             | Is no guessing                                                           |
+| 6         | 1         | Bool             | If a team loses when a member clicks a mine                              |
+| 7         | 8         | (Int, Int)       | Board size (x, y)                                                        |
+| 15        | 4         | Int              | Mine Count                                                               |
+| 19        | 4         | Int              | Number of gamers (g)                                                     |
+| 23        | 4         | Int              | Number of teams (t)                                                      |
+| 27        | 4         | Int              | ID of new gamer                                                          |
+| 31        | 4 * g     | [Int]            | Active gamer IDs                                                         |
+| Dependant | 3 * g     | [Byte]           | Gamer Colors                                                             |
+| Dependant | g         | [Bool]           | Gamers have lost (true if lost)                                          |
+| Dependant | Dependant | [String]         | gamer gamernames                                                         |
+| Dependant | 4 * g     | [Int]            | Gamer team IDs (0 means no team/spectator team)                          |
+| Dependant | 8 * g     | [(Float, Float)] | Gamer cursor locations                                                   |
+| Dependant | 4 * t     | [Int]            | Active team IDs                                                          |
+| Dependant | t         | [Bool]           | Teams have lost (true if lost)                                           |
+| Dependant | Dependant | [String]         | Team Names                                                               |
+| Dependant | 1         | Bool             | True if a game is going (if false, the rest of this message is not sent) |
+| Dependant | 4         | Int              | Cursor update rate (hz) (current game)                                   |
+| Dependant | 1         | Bool             | Is no guessing (current game)                                            |
+| Dependant | 1         | Bool             | If a team loses when a member clicks a mine (current game)               |
+| Dependant | 8         | (Int, Int)       | Board size (x, y) (current game)                                         |
+| Dependant | 4         | Int              | Mine Count (current game)                                                |
+| Dependant | 4         | Float            | Game Timer (seconds)                                                     |
+| Dependant | x * y     | [Byte]           | Board (described above)                                                  |
+| Dependant | x * y     | [[Bool]]         | Revealed board mask (1 = revealed, 0 otherwise)                          |
+| Dependant | 4 * x * y | [[Int]]          | Flag states (described above)                                            |
 
 ### Gamer Joined
 
@@ -318,7 +325,8 @@ the same order as the team IDs.
 | 9      | 1        | Byte   | Red                             |
 | 10     | 1        | Byte   | Green                           |
 | 11     | 1        | Byte   | Blue                            |
-| 12     | Variable | String | Name                            |
+| 12     | 1        | Bool   | Has Lost                        |     
+| 13     | Variable | String | Name                            |
 
 ### Gamer Left
 

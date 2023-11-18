@@ -174,16 +174,17 @@ class UpdateNewGamerMessage(
 	val gamers : Array<Gamer>,
 	val teams : Array<Team>,
 	val newGamer : Gamer,
+	val currentSettings : Settings?,
 	val board : Board?
 	) : Message {
 	override fun toFrame() : ByteArray {
 
-		var size = 32 + 8 * teams.size + 11 * gamers.size
+		var size = 32 + 5 * teams.size + 20 * gamers.size
 		size += teams.sumOf { 2 + it.name.length }
 		size += gamers.sumOf { 2 + it.name.length }
 
 		if (board != null) {
-			size += 4 + board.width * board.height
+			size += 22 + board.width * board.height
 			size += if (newGamer.team == 0) {
 				5 * board.width * board.height
 			} else {
@@ -204,15 +205,28 @@ class UpdateNewGamerMessage(
 		buffer.putInt(teams.size)
 		buffer.putInt(newGamer.id)
 
-		for (team in teams) buffer.putInt(team.id)
 		for (gamer in gamers) buffer.putInt(gamer.id)
 		for (gamer in gamers) buffer.putColor(gamer.color)
-		for (gamer in gamers) buffer.putInt(gamer.team)
-		for (team in teams) buffer.putString(team.name)
+		for (gamer in gamers) buffer.putBool(gamer.hasLost)
 		for (gamer in gamers) buffer.putString(gamer.name)
+		for (gamer in gamers) buffer.putInt(gamer.team)
+		for (gamer in gamers) {
+			buffer.putFloat(gamer.cursorLocation.x)
+			buffer.putFloat(gamer.cursorLocation.y)
+		}
 
-		if (board != null) {
+		for (team in teams) buffer.putInt(team.id)
+		for (team in teams) buffer.putBool(team.hasLost)
+		for (team in teams) buffer.putString(team.name)
+
+		if (board != null && currentSettings != null) {
 			buffer.putInt(1)
+			buffer.putInt(currentSettings.cursorUpdateRate)
+			buffer.putBool(currentSettings.isNoGuessing)
+			buffer.putBool(currentSettings.isAllForOne)
+			buffer.putInt(currentSettings.boardWidth)
+			buffer.putInt(currentSettings.boardHeight)
+			buffer.putInt(currentSettings.mineCount)
 			buffer.putFloat(board.currentTime())
 			buffer.put(board.mineCounts)
 			val gamersTeam = teams.find { it.id == newGamer.id }
@@ -234,11 +248,12 @@ class UpdateNewGamerMessage(
 
 class GamerCreateMessage(val gamer : Gamer) : Message {
 	override fun toFrame() : ByteArray {
-		val buffer = ByteBuffer.allocate(14 + gamer.name.length)
+		val buffer = ByteBuffer.allocate(15 + gamer.name.length)
 		buffer.put(51.toByte())
 		buffer.putInt(gamer.id)
 		buffer.putInt(gamer.team)
 		buffer.putColor(gamer.color)
+		buffer.putBool(gamer.hasLost)
 		buffer.putString(gamer.name)
 		return buffer.array()
 	}

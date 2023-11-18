@@ -1,10 +1,21 @@
 class Settings {
-	var cursorUpdateRate : Int = 10
+	var cursorUpdateRate : Int = 20
 	var isNoGuessing : Boolean = true
 	var isAllForOne : Boolean = false
 	var boardWidth : Int = 30
 	var boardHeight : Int = 20
 	var mineCount : Int = 130
+
+	fun copy() : Settings {
+		val r = Settings()
+		r.cursorUpdateRate = cursorUpdateRate
+		r.isNoGuessing = isNoGuessing
+		r.isAllForOne = isAllForOne
+		r.boardWidth = boardWidth
+		r.boardHeight = boardHeight
+		r.mineCount = mineCount
+		return r
+	}
 }
 
 const val SETTING_UPDATE_RATE = 0
