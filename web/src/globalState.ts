@@ -41,26 +41,35 @@ export type PlayerGameStats = Immutable<{
 	alive: boolean;
 }>;
 
-export type GameState = Immutable<{
+export type Game = Immutable<{
 	board: Board;
+	settings: GameSettings;
 	gameTimer: number;
-	isNoGuessing: boolean;
-	cursorUpdateRate: number;
 	cursors: Cursor[];
 	playersGameState: { [id: number]: PlayerGameStats };
 }>;
 
+export type GameSettings = Immutable<{
+	isNoGuessing: boolean;
+	isSuddenDeath: boolean;
+	boardWidth: number;
+	boardHeight: number;
+	mineCount: number;
+}>;
+
 export type GlobalState = Immutable<{
 	playerCache: CachedPlayer[];
+	gameSettings: GameSettings | undefined;
 	players: Player[];
 	teams: Team[];
 	selfPlayerId: number | undefined;
-	game: GameState | undefined;
+	game: Game | undefined;
 	log: Log.Item[];
 }>;
 
 const initialGlobalState: GlobalState = {
 	playerCache: [],
+	gameSettings: undefined,
 	players: [],
 	teams: [],
 	selfPlayerId: undefined,
