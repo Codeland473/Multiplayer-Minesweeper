@@ -43,6 +43,7 @@ class SessionHandler {
 		val id = message.getInt()
 		teams.removeIf {it.id == id}
 		broadcast(TeamRemoveMessage(id, sender.id))
+		gamers.filter { it.team == id }.forEach { it.team = 0 }
 	}
 	suspend fun onGamerNameUpdateMessage(sender : Gamer, message : ByteBuffer) {
 		val newName = message.getString()
@@ -78,13 +79,41 @@ class SessionHandler {
 	suspend fun onGameStartMessage(sender : Gamer, message : ByteBuffer) {
 		TODO()
 	}
+
 	suspend fun onSquareRevealMessage(sender : Gamer, message : ByteBuffer) {
-		TODO()
+		val x = message.getInt()
+		val y = message.getInt()
+
+		val team = teams.find { it.id == sender.team } ?: return
+		board ?: return
+		if (!board!!.inBounds(x, y)) return
+		if (board!!.isFlagged(x, y, team)) return
+
+		if (board!![x, y] == 9.toByte() ||
+			(board!!.isSatisfied(x, y, team)) &&
+			board!!.isRevealed(x, y, team) &&
+			board!!.neighborUnflaggedMines(x, y, team) > 0) {
+			onMineClicked(sender, team)
+		} else {
+			board!!.revealSquare(x, y, team)
+			broadcast(SquareRevealMessage(sender.id, x, y)) {it.team == sender.team || it.team == 0}
+		}
 	}
 	suspend fun onSquareFlagMessage(sender : Gamer, message : ByteBuffer) {
-		TODO()
+		val x = message.getInt()
+		val y = message.getInt()
+		val add = message.getBool()
+		val isPencil = message.getBool()
+
+		val team = teams.find { it.id == sender.team } ?: return
+		board ?: return
+		if (!board!!.inBounds(x, y)) return
+
+		board!!.flagSquare(x, y, sender, team, add, isPencil)
+
+		broadcast(SquareFlagMessage(sender.id, x, y, add, isPencil)) {it.team == sender.team || it.team == 0}
 	}
-	suspend fun onCursorUpdateMessage(sender : Gamer, message : ByteBuffer) {
+	fun onCursorUpdateMessage(sender : Gamer, message : ByteBuffer) {
 		sender.cursorLocation.x = message.getFloat()
 		sender.cursorLocation.y = message.getFloat()
 		sender.cursorUpdated = true
@@ -109,6 +138,18 @@ class SessionHandler {
 		val messageData = message.toFrame()
 		for (gamer in gamers.filter(filter)) {
 			gamer.connection.send(messageData)
+		}
+	}
+
+	suspend fun onMineClicked(gamer : Gamer, team : Team) {
+		broadcast(GamerLostMessage(gamer.id))
+		if (settings.isAllForOne || gamers.all { it.team != gamer.team || it.hasLost }) {
+			broadcast(TeamLostMessage(gamer))
+			team.hasLost = true
+			gamers.filter { it.team == team.id }.forEach { it.hasLost = true }
+		} else {
+			broadcast(GamerLostMessage(gamer.id)) {it.team == gamer.team}
+			gamer.hasLost = true
 		}
 	}
 }

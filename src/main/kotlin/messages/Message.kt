@@ -274,11 +274,12 @@ class GamerLostMessage(val gamerID : Int) : Message {
 }
 
 
-class TeamLostMessage(val gamerID : Int) : Message {
+class TeamLostMessage(val loser : Gamer) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(5)
 		buffer.put(55.toByte())
-		buffer.putInt(gamerID)
+		buffer.putInt(loser.id)
+		buffer.putInt(loser.team)
 		return buffer.array()
 	}
 }

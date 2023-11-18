@@ -336,6 +336,8 @@ the same order as the team IDs.
 
 ### Gamer Lost
 
+This message will not be sent when the "Team Lost" message is sent.
+
 | Offset | Size | Type | Description                   |
 |--------|------|------|-------------------------------|
 | 0      | 1    | Byte | Message type (Gamer Lost: 54) |
@@ -343,7 +345,8 @@ the same order as the team IDs.
 
 ### Team Lost
 
-| Offset | Size | Type | Description                  |
-|--------|------|------|------------------------------|
-| 0      | 1    | Byte | Message type (Team Lost: 55) |
-| 1      | 4    | Int  | ID of gamer that Lost        |
+| Offset | Size | Type | Description                          |
+|--------|------|------|--------------------------------------|
+| 0      | 1    | Byte | Message type (Team Lost: 55)         |
+| 1      | 4    | Int  | ID of gamer that Made the last click |
+| 5      | 4    | Int  | ID of team that Lost                 |

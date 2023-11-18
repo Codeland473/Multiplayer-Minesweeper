@@ -9,6 +9,7 @@ class Gamer(
 	var name : String = "Player $id", var team : Int = 0) {
 	var cursorLocation  = CursorLocation(0f, 0f)
 	var cursorUpdated = false
+	var hasLost = false
 }
 
 data class Color(val r : Byte, val g : Byte, val b : Byte) {
