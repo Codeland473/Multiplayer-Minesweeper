@@ -1,13 +1,22 @@
-import { produce, original, type Draft, nothing, Immutable } from 'immer';
+import {
+	produce,
+	original,
+	type Draft,
+	nothing,
+	Immutable,
+	castDraft,
+} from 'immer';
 import {
 	Color,
+	Cursor,
 	GameSettings,
 	GlobalState,
 	Player,
+	PlayerGameStats,
+	TeamGameStats,
 	useGameState as useGlobalState,
 } from './globalState.js';
 import { Log } from './log.js';
-import { Socket } from 'dgram';
 
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();
@@ -102,6 +111,35 @@ const createWriter = (data: Uint8Array): Writer => {
 			data.set(encoded, offset + 2);
 			offset += 2 + encoded.length;
 		},
+	};
+};
+
+const readArray = <T>(size: number, callback: () => T) => {
+	return Array.from(new Array(size), callback);
+};
+
+const readSettings = (reader: Reader): GameSettings => {
+	const __unused = reader.getInt();
+
+	return {
+		isNoGuessing: reader.getBool(),
+		isSuddenDeath: reader.getBool(),
+		boardWidth: reader.getInt(),
+		boardHeight: reader.getInt(),
+		mineCount: reader.getInt(),
+	};
+};
+
+const readPlayer = (reader: Reader): Player & { alive: boolean } => {
+	const id = reader.getInt();
+	const inputTeamId = reader.getInt();
+
+	return {
+		id,
+		teamId: inputTeamId === 0 ? undefined : inputTeamId,
+		color: [reader.getByte(), reader.getByte(), reader.getByte()],
+		alive: !reader.getBool(),
+		name: reader.getString(),
 	};
 };
 
@@ -232,26 +270,32 @@ export const openSocket = (): WebSocket => {
 				} satisfies Log.TeamNameUpdate);
 			});
 		} else if (messageId === ReceiveCode.PLAYER_CREATE) {
-			const playerId = reader.getInt();
-			const red = reader.getByte();
-			const green = reader.getByte();
-			const blue = reader.getByte();
-			const name = reader.getString();
+			const { alive, color, id, name, teamId } = readPlayer(reader);
 
 			update(state => {
-				const [existingIndex] = findPlayerIndex(state, playerId);
+				const [existingIndex] = findPlayerIndex(state, id);
+				const checkedTeamId =
+					teamId === undefined
+						? undefined
+						: findTeamIndex(state, teamId)[1].id;
 
 				if (existingIndex === -1) {
 					state.players.push({
-						id: playerId,
-						color: [red, green, blue],
+						id,
+						color: castDraft(color),
 						name,
-						teamId: undefined,
+						teamId: checkedTeamId,
 					});
 				} else {
 					const player = state.players[existingIndex];
 					player.name = name;
-					player.color = [red, green, blue];
+					player.color = castDraft(color);
+					player.teamId = checkedTeamId;
+				}
+
+				if (state.game !== undefined) {
+					state.game.playersGameState[id] ??= { alive: true };
+					state.game.playersGameState[id].alive = alive;
 				}
 			});
 		} else if (messageId === ReceiveCode.PLAYER_REMOVE) {
@@ -300,66 +344,61 @@ export const openSocket = (): WebSocket => {
 			});
 		} else if (messageId === ReceiveCode.SELF_JOIN) {
 			/* settings */
-			const __unused = reader.getInt();
-			const isNoGuessing = reader.getBool();
-			const isSuddenDeath = reader.getBool();
-			const boardWidth = reader.getInt();
-			const boardHeight = reader.getInt();
-			const mineCount = reader.getInt();
+			const globalSettings = readSettings(reader);
 
 			const numPlayers = reader.getInt();
 			const numTeams = reader.getInt();
 
 			const selfPlayerId = reader.getInt();
 
-			const teamIds = Array.from(new Array(numTeams), () =>
-				reader.getInt(),
-			);
-			const playerIds = Array.from(new Array(numPlayers), () =>
-				reader.getInt(),
-			);
-			const playerColors = Array.from(
-				new Array(numPlayers),
+			/* players */
+			const playerIds = readArray(numPlayers, () => reader.getInt());
+			const playerColors = readArray(
+				numPlayers,
 				() =>
-					<const>[
+					[
 						reader.getByte(),
 						reader.getByte(),
 						reader.getByte(),
-					],
+					] as const,
 			);
-			const playerTeamIds = Array.from(new Array(numPlayers), () =>
-				reader.getInt(),
+			const playerIsDeads = readArray(numPlayers, () => reader.getBool());
+			const playerNames = readArray(numPlayers, () => reader.getString());
+			const playerTeamIds = readArray(numPlayers, () => reader.getInt());
+			const cursorLocations = readArray(
+				numPlayers,
+				() => [reader.getInt(), reader.getInt()] as const,
 			);
-			const teamNames = Array.from(new Array(numTeams), () =>
-				reader.getString(),
-			);
-			const playerNames = Array.from(new Array(numPlayers), () =>
-				reader.getString(),
-			);
+
+			/* teams */
+			const teamIds = readArray(numTeams, () => reader.getInt());
+			const teamIsDeads = readArray(numTeams, () => reader.getBool());
+			const teamNames = readArray(numTeams, () => reader.getString());
+
 			const gameGoing = reader.getBool();
 
 			const boardState = gameGoing
-				? {
-						gameTimer: reader.getFloat(),
-						board: reader.getByteArray(boardWidth * boardHeight),
-						revealedMask: reader.getByteArray(
-							boardWidth * boardHeight,
-						),
-						flagStates: reader.getIntArray(
-							boardWidth * boardHeight,
-						),
-				  }
+				? (() => {
+						const { boardWidth, boardHeight, ...rest } =
+							readSettings(reader);
+						return {
+							settings: { boardWidth, boardHeight, ...rest },
+							gameTimer: reader.getFloat(),
+							board: reader.getByteArray(
+								boardWidth * boardHeight,
+							),
+							revealedMask: reader.getByteArray(
+								boardWidth * boardHeight,
+							),
+							flagStates: reader.getIntArray(
+								boardWidth * boardHeight,
+							),
+						};
+				  })()
 				: undefined;
 
 			update(state => {
-				const settings = {
-					boardWidth,
-					boardHeight,
-					isSuddenDeath,
-					isNoGuessing,
-					mineCount,
-				};
-				state.gameSettings = settings;
+				state.gameSettings = globalSettings;
 
 				state.selfPlayerId = selfPlayerId;
 
@@ -382,13 +421,36 @@ export const openSocket = (): WebSocket => {
 				}));
 
 				if (boardState !== undefined) {
+					const cursors: Cursor[] = cursorLocations.map(
+						([x, y], index) => {
+							const playerId = playerIds[index];
+							return { playerId, x, y };
+						},
+					);
+
+					const playersGameState: { [id: number]: PlayerGameStats } =
+						{};
+					for (let i = 0; i < numPlayers; ++i) {
+						playersGameState[playerIds[i]] = {
+							alive: !playerIsDeads[i],
+						};
+					}
+
+					const teamsGameState: { [id: number]: TeamGameStats } = {};
+					for (let i = 0; i < numTeams; ++i) {
+						teamsGameState[teamIds[i]] = { alive: !teamIsDeads[i] };
+					}
+
 					state.game = {
 						board: {
 							board: Array.from(boardState.board),
-							width: boardWidth,
-							height: boardHeight,
+							width: boardState.settings.boardWidth,
+							height: boardState.settings.boardHeight,
 							flags: Array.from(
-								new Array(boardWidth * boardHeight),
+								new Array(
+									boardState.settings.boardWidth *
+										boardState.settings.boardHeight,
+								),
 								(_, index) =>
 									boardState.flagStates.getInt32(index * 4),
 							),
@@ -396,10 +458,11 @@ export const openSocket = (): WebSocket => {
 								num => num !== 0,
 							),
 						},
-						settings,
+						teamsGameState: teamsGameState,
+						settings: boardState.settings,
 						gameTimer: boardState.gameTimer,
-						cursors: [],
-						playersGameState: {},
+						cursors,
+						playersGameState,
 					};
 				}
 			});

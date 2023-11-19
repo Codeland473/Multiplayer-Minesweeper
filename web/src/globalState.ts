@@ -41,12 +41,17 @@ export type PlayerGameStats = Immutable<{
 	alive: boolean;
 }>;
 
+export type TeamGameStats = Immutable<{
+	alive: boolean;
+}>;
+
 export type Game = Immutable<{
 	board: Board;
 	settings: GameSettings;
 	gameTimer: number;
 	cursors: Cursor[];
 	playersGameState: { [id: number]: PlayerGameStats };
+	teamsGameState: { [id: number]: TeamGameStats };
 }>;
 
 export type GameSettings = Immutable<{
