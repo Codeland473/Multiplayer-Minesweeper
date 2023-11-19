@@ -1,6 +1,8 @@
 import { Configuration } from 'webpack';
 import path from 'path';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
+import { VanillaExtractPlugin } from '@vanilla-extract/webpack-plugin';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 
 const configuration: Configuration = {
 	entry: {
@@ -10,6 +12,16 @@ const configuration: Configuration = {
 	devtool: 'source-map',
 	module: {
 		rules: [
+			{
+				test: /\.vanilla\.css$/i,
+				use: [
+					MiniCssExtractPlugin.loader,
+					{
+						loader: 'css-loader',
+						options: { url: false },
+					},
+				],
+			},
 			{
 				test: /\.tsx?$/i,
 				use: 'ts-loader',
@@ -31,6 +43,8 @@ const configuration: Configuration = {
 			filename: path.resolve('../run/page/index.html'),
 			inject: 'head',
 		}),
+		new VanillaExtractPlugin(),
+		new MiniCssExtractPlugin(),
 	],
 	output: {
 		filename: '[name].js',

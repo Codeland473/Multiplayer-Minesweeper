@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { combine } from 'zustand/middleware';
-import { Immutable } from 'immer';
+import { Draft, Immutable, nothing, produce } from 'immer';
 import { Log } from './log.js';
 
 export type Color = Immutable<[number, number, number]>;
@@ -62,6 +62,12 @@ export type GameSettings = Immutable<{
 	mineCount: number;
 }>;
 
+export type ErrorState = Immutable<{
+	timeout: number;
+	lastTime: number;
+	loading: boolean;
+}>;
+
 export type GlobalState = Immutable<{
 	playerCache: CachedPlayer[];
 	gameSettings: GameSettings | undefined;
@@ -70,6 +76,7 @@ export type GlobalState = Immutable<{
 	selfPlayerId: number | undefined;
 	game: Game | undefined;
 	log: Log.Item[];
+	connectionState: ErrorState | undefined;
 }>;
 
 const initialGlobalState: GlobalState = {
@@ -80,31 +87,15 @@ const initialGlobalState: GlobalState = {
 	selfPlayerId: undefined,
 	game: undefined,
 	log: [],
+	connectionState: undefined,
 };
 
-export const useGameState = create(
-	combine({ ...initialGlobalState }, set => ({
-		//setSelfPlayerId: (selfPlayerId: number | undefined) =>
-		//	set(
-		//		produce((state: GlobalState) => {
-		//			state.selfPlayerId = selfPlayerId;
-		//		}),
-		//	),
-		//setPlayers: (players: Player[]) =>
-		//	set(
-		//		produce((state: GlobalState) => {
-		//			state.players = players;
-		//		}),
-		//	),
-		//updatePlayer: (player: Player) =>
-		//	set(
-		//		produce((state: GlobalState) => {
-		//			const list = original(state.players);
-		//			if (list === undefined) return;
-		//			const index = list.findIndex(({ id }) => id === player.id);
-		//
-		//			state.players[index] = player;
-		//		}),
-		//	),
-	})),
+export const useGlobalState = create(
+	combine({ ...initialGlobalState }, set => ({})),
 );
+
+export const update = (
+	updater: (state: Draft<GlobalState>) => void | GlobalState | typeof nothing,
+) => {
+	useGlobalState.setState(produce(updater));
+};

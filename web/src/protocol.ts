@@ -1,11 +1,4 @@
-import {
-	produce,
-	original,
-	type Draft,
-	nothing,
-	Immutable,
-	castDraft,
-} from 'immer';
+import { original, type Draft, Immutable, castDraft } from 'immer';
 import {
 	Color,
 	Cursor,
@@ -14,7 +7,7 @@ import {
 	Player,
 	PlayerGameStats,
 	TeamGameStats,
-	useGameState as useGlobalState,
+	update,
 } from './globalState.js';
 import { Log } from './log.js';
 
@@ -158,12 +151,6 @@ const findPlayerIndex = (state: Draft<GlobalState>, playerId: number) => {
 	] as const;
 };
 
-const update = (
-	updater: (state: Draft<GlobalState>) => void | GlobalState | typeof nothing,
-) => {
-	useGlobalState.setState(produce(updater));
-};
-
 enum SettingCode {
 	IS_NO_GUESSING = 1,
 	IS_SUDDEN_DEATH = 2,
@@ -198,68 +185,26 @@ enum SendCode {
 	SELF_JOIN = 50,
 }
 
-export const openSocket = (): WebSocket => {
-	const socket = new WebSocket('/');
+export const onMessage = (event: MessageEvent<any>) => {
+	const data = event.data;
+	if (!(data instanceof ArrayBuffer)) return;
 
-	socket.binaryType = 'arraybuffer';
+	const reader = createReader(data);
 
-	socket.onmessage = event => {
-		const data = event.data;
-		if (!(data instanceof ArrayBuffer)) return;
+	const messageId = reader.getByte();
 
-		const reader = createReader(data);
+	if (messageId === ReceiveCode.TEAM_CREATE) {
+		const teamId = reader.getInt();
+		const byPlayerId = reader.getInt();
+		const teamName = reader.getString();
 
-		const messageId = reader.getByte();
+		update(state => {
+			const [index, team] = findTeamIndex(state, teamId);
 
-		if (messageId === ReceiveCode.TEAM_CREATE) {
-			const teamId = reader.getInt();
-			const byPlayerId = reader.getInt();
-			const teamName = reader.getString();
-
-			update(state => {
-				const [index, team] = findTeamIndex(state, teamId);
-
-				if (index === -1) {
-					state.teams.push({ id: teamId, name: teamName });
-				} else {
-					state.teams[index].name = teamName;
-
-					state.log.push({
-						type: Log.Type.TEAM_NAME_UPDATE,
-						teamId,
-						byPlayerId,
-						oldName: team.name,
-						newName: teamName,
-					} satisfies Log.TeamNameUpdate);
-				}
-			});
-		} else if (messageId === ReceiveCode.TEAM_REMOVE) {
-			const teamId = reader.getInt();
-			const byPlayerId = reader.getInt();
-
-			update(state => {
-				const [index, removedTeam] = findTeamIndex(state, teamId);
-				if (index === -1) return;
-
-				state.teams.splice(index, 1);
-
-				state.log.push({
-					type: Log.Type.TEAM_REMOVE,
-					teamId: removedTeam.id,
-					teamName: removedTeam.name,
-					byPlayerId,
-				} satisfies Log.TeamRemove);
-			});
-		} else if (messageId === ReceiveCode.TEAM_NAME_UPDATE) {
-			const teamId = reader.getInt();
-			const byPlayerId = reader.getInt();
-			const teamName = reader.getString();
-
-			update(state => {
-				const [teamIndex, team] = findTeamIndex(state, teamId);
-				if (teamIndex === -1) return;
-
-				state.teams[teamIndex].name = teamName;
+			if (index === -1) {
+				state.teams.push({ id: teamId, name: teamName });
+			} else {
+				state.teams[index].name = teamName;
 
 				state.log.push({
 					type: Log.Type.TEAM_NAME_UPDATE,
@@ -268,229 +213,253 @@ export const openSocket = (): WebSocket => {
 					oldName: team.name,
 					newName: teamName,
 				} satisfies Log.TeamNameUpdate);
-			});
-		} else if (messageId === ReceiveCode.PLAYER_CREATE) {
-			const { alive, color, id, name, teamId } = readPlayer(reader);
+			}
+		});
+	} else if (messageId === ReceiveCode.TEAM_REMOVE) {
+		const teamId = reader.getInt();
+		const byPlayerId = reader.getInt();
 
-			update(state => {
-				const [existingIndex] = findPlayerIndex(state, id);
-				const checkedTeamId =
-					teamId === undefined
-						? undefined
-						: findTeamIndex(state, teamId)[1].id;
+		update(state => {
+			const [index, removedTeam] = findTeamIndex(state, teamId);
+			if (index === -1) return;
 
-				if (existingIndex === -1) {
-					state.players.push({
-						id,
-						color: castDraft(color),
-						name,
-						teamId: checkedTeamId,
-					});
-				} else {
-					const player = state.players[existingIndex];
-					player.name = name;
-					player.color = castDraft(color);
-					player.teamId = checkedTeamId;
-				}
+			state.teams.splice(index, 1);
 
-				if (state.game !== undefined) {
-					state.game.playersGameState[id] ??= { alive: true };
-					state.game.playersGameState[id].alive = alive;
-				}
-			});
-		} else if (messageId === ReceiveCode.PLAYER_REMOVE) {
-			const playerId = reader.getInt();
+			state.log.push({
+				type: Log.Type.TEAM_REMOVE,
+				teamId: removedTeam.id,
+				teamName: removedTeam.name,
+				byPlayerId,
+			} satisfies Log.TeamRemove);
+		});
+	} else if (messageId === ReceiveCode.TEAM_NAME_UPDATE) {
+		const teamId = reader.getInt();
+		const byPlayerId = reader.getInt();
+		const teamName = reader.getString();
 
-			update(state => {
-				const [removeIndex] = findPlayerIndex(state, playerId);
-				if (removeIndex === -1) return;
+		update(state => {
+			const [teamIndex, team] = findTeamIndex(state, teamId);
+			if (teamIndex === -1) return;
 
-				state.players.splice(removeIndex, 1);
-			});
-		} else if (messageId === ReceiveCode.PLAYER_NAME_UPDATE) {
-			const playerId = reader.getInt();
-			const name = reader.getString();
+			state.teams[teamIndex].name = teamName;
 
-			update(state => {
-				const [index] = findPlayerIndex(state, playerId);
-				if (index === -1) return;
+			state.log.push({
+				type: Log.Type.TEAM_NAME_UPDATE,
+				teamId,
+				byPlayerId,
+				oldName: team.name,
+				newName: teamName,
+			} satisfies Log.TeamNameUpdate);
+		});
+	} else if (messageId === ReceiveCode.PLAYER_CREATE) {
+		const { alive, color, id, name, teamId } = readPlayer(reader);
 
-				state.players[index].name = name;
-			});
-		} else if (messageId === ReceiveCode.PLAYER_COLOR_UPDATE) {
-			const playerId = reader.getInt();
-			const red = reader.getByte();
-			const green = reader.getByte();
-			const blue = reader.getByte();
+		update(state => {
+			const [existingIndex] = findPlayerIndex(state, id);
+			const checkedTeamId =
+				teamId === undefined
+					? undefined
+					: findTeamIndex(state, teamId)[1].id;
 
-			update(state => {
-				const [index] = findPlayerIndex(state, playerId);
-				if (index === -1) return;
-
-				state.players[index].color = [red, green, blue];
-			});
-		} else if (messageId === ReceiveCode.PLAYER_TEAM_UPDATE) {
-			const playerId = reader.getInt();
-			const teamId = reader.getInt();
-
-			update(state => {
-				const [, team] = findTeamIndex(state, teamId);
-				if (team === undefined) return;
-
-				const [playerIndex] = findPlayerIndex(state, playerId);
-				if (playerIndex === -1) return;
-
-				state.players[playerIndex].teamId = team.id;
-			});
-		} else if (messageId === ReceiveCode.SELF_JOIN) {
-			/* settings */
-			const globalSettings = readSettings(reader);
-
-			const numPlayers = reader.getInt();
-			const numTeams = reader.getInt();
-
-			const selfPlayerId = reader.getInt();
-
-			/* players */
-			const playerIds = readArray(numPlayers, () => reader.getInt());
-			const playerColors = readArray(
-				numPlayers,
-				() =>
-					[
-						reader.getByte(),
-						reader.getByte(),
-						reader.getByte(),
-					] as const,
-			);
-			const playerIsDeads = readArray(numPlayers, () => reader.getBool());
-			const playerNames = readArray(numPlayers, () => reader.getString());
-			const playerTeamIds = readArray(numPlayers, () => reader.getInt());
-			const cursorLocations = readArray(
-				numPlayers,
-				() => [reader.getInt(), reader.getInt()] as const,
-			);
-
-			/* teams */
-			const teamIds = readArray(numTeams, () => reader.getInt());
-			const teamIsDeads = readArray(numTeams, () => reader.getBool());
-			const teamNames = readArray(numTeams, () => reader.getString());
-
-			const gameGoing = reader.getBool();
-
-			const boardState = gameGoing
-				? (() => {
-						const { boardWidth, boardHeight, ...rest } =
-							readSettings(reader);
-						return {
-							settings: { boardWidth, boardHeight, ...rest },
-							gameTimer: reader.getFloat(),
-							board: reader.getByteArray(
-								boardWidth * boardHeight,
-							),
-							revealedMask: reader.getByteArray(
-								boardWidth * boardHeight,
-							),
-							flagStates: reader.getIntArray(
-								boardWidth * boardHeight,
-							),
-						};
-				  })()
-				: undefined;
-
-			update(state => {
-				state.gameSettings = globalSettings;
-
-				state.selfPlayerId = selfPlayerId;
-
-				state.players = Array.from(
-					new Array(numPlayers),
-					(_, index) => ({
-						id: playerIds[index],
-						color: playerColors[index] as Draft<Color>,
-						name: playerNames[index],
-						teamId:
-							playerTeamIds[index] === 0
-								? undefined
-								: playerTeamIds[index],
-					}),
-				);
-
-				state.teams = Array.from(new Array(numTeams), (_, index) => ({
-					id: teamIds[index],
-					name: teamNames[index],
-				}));
-
-				if (boardState !== undefined) {
-					const cursors: Cursor[] = cursorLocations.map(
-						([x, y], index) => {
-							const playerId = playerIds[index];
-							return { playerId, x, y };
-						},
-					);
-
-					const playersGameState: { [id: number]: PlayerGameStats } =
-						{};
-					for (let i = 0; i < numPlayers; ++i) {
-						playersGameState[playerIds[i]] = {
-							alive: !playerIsDeads[i],
-						};
-					}
-
-					const teamsGameState: { [id: number]: TeamGameStats } = {};
-					for (let i = 0; i < numTeams; ++i) {
-						teamsGameState[teamIds[i]] = { alive: !teamIsDeads[i] };
-					}
-
-					state.game = {
-						board: {
-							board: Array.from(boardState.board),
-							width: boardState.settings.boardWidth,
-							height: boardState.settings.boardHeight,
-							flags: Array.from(
-								new Array(
-									boardState.settings.boardWidth *
-										boardState.settings.boardHeight,
-								),
-								(_, index) =>
-									boardState.flagStates.getInt32(index * 4),
-							),
-							revealed: Array.from(boardState.revealedMask).map(
-								num => num !== 0,
-							),
-						},
-						teamsGameState: teamsGameState,
-						settings: boardState.settings,
-						gameTimer: boardState.gameTimer,
-						cursors,
-						playersGameState,
-					};
-				}
-			});
-		} else if (messageId === ReceiveCode.SETTINGS_UPDATE) {
-			const settingId = reader.getInt();
-			const _fromPlayerId = reader.getInt();
-
-			const setSetting: Draft<Partial<GameSettings>> = {};
-
-			if (settingId === SettingCode.IS_NO_GUESSING) {
-				setSetting.isNoGuessing = reader.getBool();
-			} else if (settingId === SettingCode.IS_SUDDEN_DEATH) {
-				setSetting.isSuddenDeath = reader.getBool();
-			} else if (settingId === SettingCode.BOARD_SIZE) {
-				setSetting.boardWidth = reader.getInt();
-				setSetting.boardHeight = reader.getInt();
-			} else if (settingId === SettingCode.MINE_COUNT) {
-				setSetting.mineCount = reader.getInt();
+			if (existingIndex === -1) {
+				state.players.push({
+					id,
+					color: castDraft(color),
+					name,
+					teamId: checkedTeamId,
+				});
+			} else {
+				const player = state.players[existingIndex];
+				player.name = name;
+				player.color = castDraft(color);
+				player.teamId = checkedTeamId;
 			}
 
-			update(state => {
-				if (state.gameSettings === undefined) return;
-				Object.assign(state.gameSettings, setSetting);
-			});
-		}
-	};
+			if (state.game !== undefined) {
+				state.game.playersGameState[id] ??= { alive: true };
+				state.game.playersGameState[id].alive = alive;
+			}
+		});
+	} else if (messageId === ReceiveCode.PLAYER_REMOVE) {
+		const playerId = reader.getInt();
 
-	return socket;
+		update(state => {
+			const [removeIndex] = findPlayerIndex(state, playerId);
+			if (removeIndex === -1) return;
+
+			state.players.splice(removeIndex, 1);
+		});
+	} else if (messageId === ReceiveCode.PLAYER_NAME_UPDATE) {
+		const playerId = reader.getInt();
+		const name = reader.getString();
+
+		update(state => {
+			const [index] = findPlayerIndex(state, playerId);
+			if (index === -1) return;
+
+			state.players[index].name = name;
+		});
+	} else if (messageId === ReceiveCode.PLAYER_COLOR_UPDATE) {
+		const playerId = reader.getInt();
+		const red = reader.getByte();
+		const green = reader.getByte();
+		const blue = reader.getByte();
+
+		update(state => {
+			const [index] = findPlayerIndex(state, playerId);
+			if (index === -1) return;
+
+			state.players[index].color = [red, green, blue];
+		});
+	} else if (messageId === ReceiveCode.PLAYER_TEAM_UPDATE) {
+		const playerId = reader.getInt();
+		const teamId = reader.getInt();
+
+		update(state => {
+			const [, team] = findTeamIndex(state, teamId);
+			if (team === undefined) return;
+
+			const [playerIndex] = findPlayerIndex(state, playerId);
+			if (playerIndex === -1) return;
+
+			state.players[playerIndex].teamId = team.id;
+		});
+	} else if (messageId === ReceiveCode.SELF_JOIN) {
+		/* settings */
+		const globalSettings = readSettings(reader);
+
+		const numPlayers = reader.getInt();
+		const numTeams = reader.getInt();
+
+		const selfPlayerId = reader.getInt();
+
+		/* players */
+		const playerIds = readArray(numPlayers, () => reader.getInt());
+		const playerColors = readArray(
+			numPlayers,
+			() =>
+				[reader.getByte(), reader.getByte(), reader.getByte()] as const,
+		);
+		const playerIsDeads = readArray(numPlayers, () => reader.getBool());
+		const playerNames = readArray(numPlayers, () => reader.getString());
+		const playerTeamIds = readArray(numPlayers, () => reader.getInt());
+		const cursorLocations = readArray(
+			numPlayers,
+			() => [reader.getInt(), reader.getInt()] as const,
+		);
+
+		/* teams */
+		const teamIds = readArray(numTeams, () => reader.getInt());
+		const teamIsDeads = readArray(numTeams, () => reader.getBool());
+		const teamNames = readArray(numTeams, () => reader.getString());
+
+		const gameGoing = reader.getBool();
+
+		const boardState = gameGoing
+			? (() => {
+					const { boardWidth, boardHeight, ...rest } =
+						readSettings(reader);
+					return {
+						settings: { boardWidth, boardHeight, ...rest },
+						gameTimer: reader.getFloat(),
+						board: reader.getByteArray(boardWidth * boardHeight),
+						revealedMask: reader.getByteArray(
+							boardWidth * boardHeight,
+						),
+						flagStates: reader.getIntArray(
+							boardWidth * boardHeight,
+						),
+					};
+			  })()
+			: undefined;
+
+		update(state => {
+			state.gameSettings = globalSettings;
+
+			state.selfPlayerId = selfPlayerId;
+
+			state.players = Array.from(new Array(numPlayers), (_, index) => ({
+				id: playerIds[index],
+				color: playerColors[index] as Draft<Color>,
+				name: playerNames[index],
+				teamId:
+					playerTeamIds[index] === 0
+						? undefined
+						: playerTeamIds[index],
+			}));
+
+			state.teams = Array.from(new Array(numTeams), (_, index) => ({
+				id: teamIds[index],
+				name: teamNames[index],
+			}));
+
+			if (boardState !== undefined) {
+				const cursors: Cursor[] = cursorLocations.map(
+					([x, y], index) => {
+						const playerId = playerIds[index];
+						return { playerId, x, y };
+					},
+				);
+
+				const playersGameState: { [id: number]: PlayerGameStats } = {};
+				for (let i = 0; i < numPlayers; ++i) {
+					playersGameState[playerIds[i]] = {
+						alive: !playerIsDeads[i],
+					};
+				}
+
+				const teamsGameState: { [id: number]: TeamGameStats } = {};
+				for (let i = 0; i < numTeams; ++i) {
+					teamsGameState[teamIds[i]] = { alive: !teamIsDeads[i] };
+				}
+
+				state.game = {
+					board: {
+						board: Array.from(boardState.board),
+						width: boardState.settings.boardWidth,
+						height: boardState.settings.boardHeight,
+						flags: Array.from(
+							new Array(
+								boardState.settings.boardWidth *
+									boardState.settings.boardHeight,
+							),
+							(_, index) =>
+								boardState.flagStates.getInt32(index * 4),
+						),
+						revealed: Array.from(boardState.revealedMask).map(
+							num => num !== 0,
+						),
+					},
+					teamsGameState: teamsGameState,
+					settings: boardState.settings,
+					gameTimer: boardState.gameTimer,
+					cursors,
+					playersGameState,
+				};
+			}
+		});
+	} else if (messageId === ReceiveCode.SETTINGS_UPDATE) {
+		const settingId = reader.getInt();
+		const _fromPlayerId = reader.getInt();
+
+		const setSetting: Draft<Partial<GameSettings>> = {};
+
+		if (settingId === SettingCode.IS_NO_GUESSING) {
+			setSetting.isNoGuessing = reader.getBool();
+		} else if (settingId === SettingCode.IS_SUDDEN_DEATH) {
+			setSetting.isSuddenDeath = reader.getBool();
+		} else if (settingId === SettingCode.BOARD_SIZE) {
+			setSetting.boardWidth = reader.getInt();
+			setSetting.boardHeight = reader.getInt();
+		} else if (settingId === SettingCode.MINE_COUNT) {
+			setSetting.mineCount = reader.getInt();
+		}
+
+		update(state => {
+			if (state.gameSettings === undefined) return;
+			Object.assign(state.gameSettings, setSetting);
+		});
+	}
 };
 
 export const sendTeamCreate = (socket: WebSocket, teamName: string) => {
