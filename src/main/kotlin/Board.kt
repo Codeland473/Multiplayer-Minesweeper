@@ -48,6 +48,7 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 		if (!inBounds(x, y)) return 0
 		return mineCounts[x + y * width]
 	}
+	operator fun get(i : Int) = mineCounts[i]
 
 	fun isMine(x : Int, y : Int) = get(x, y) == 9.toByte()
 
@@ -117,8 +118,16 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 
 	fun inBounds(x : Int, y : Int) = x >= 0 && y >= 0 && x < width && y < width
 
+	fun adjacents(x : Int, y : Int) = adjacencyPairs
+		.map { (dx, dy) ->  Pair(x + dx, y + dy)}
+		.filter { (nx, ny) -> inBounds(nx, ny) }
+	fun adjacents(i : Int) = adjacents(i % width, i / width)
+
+	val coordinates : List<Pair<Int, Int>> get() = mineCounts.indices.map { Pair(it % width, it / width) }
+
+
 	companion object {
-		private val adjacencyPairs = arrayOf(
+		val adjacencyPairs = arrayOf(
 			Pair(-1, -1), Pair(0, -1), Pair(1, -1),
 			Pair(-1, 0), Pair(1, 0),
 			Pair(-1, 1), Pair(0, 1), Pair(1, 1)

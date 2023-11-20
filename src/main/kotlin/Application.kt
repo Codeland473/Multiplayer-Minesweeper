@@ -1,7 +1,9 @@
 import io.ktor.server.application.*
+import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
+import java.io.File
 import java.time.Duration
 
 fun main(args : Array<String>) {
@@ -9,7 +11,9 @@ fun main(args : Array<String>) {
 }
 
 fun Application.module() {
-	routing {  }
+	routing {
+		staticFiles("/", File("run/page"))
+	}
 	install(WebSockets) {
 		pingPeriod = Duration.ofSeconds(15)
 		timeout = Duration.ofSeconds(15)
