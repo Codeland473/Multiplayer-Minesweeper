@@ -1,5 +1,14 @@
 import React from 'react';
+import { useGlobalState } from './globalState.js';
+import { IntroScreen } from './screens/introScreen.js';
+import { ConnectScreen } from './screens/connectScreen.js';
 
 export const App = () => {
-	return <div>Hello world</div>;
+	const connectionState = useGlobalState(state => state.connectionState);
+
+	if (connectionState.status === 'connected') {
+		return <IntroScreen />;
+	} else {
+		return <ConnectScreen connectionState={connectionState} />;
+	}
 };

@@ -70,7 +70,6 @@ export type ConnectionState = Immutable<{
 }>;
 
 export type ErrorState = Immutable<{
-	message: string;
 	timeout: number;
 	lastTime: number;
 }>;
