@@ -62,10 +62,17 @@ export type GameSettings = Immutable<{
 	mineCount: number;
 }>;
 
+export type ConnectionStatus = 'loading' | 'connected' | 'error';
+
+export type ConnectionState = Immutable<{
+	status: ConnectionStatus;
+	error: ErrorState | undefined;
+}>;
+
 export type ErrorState = Immutable<{
+	message: string;
 	timeout: number;
 	lastTime: number;
-	loading: boolean;
 }>;
 
 export type GlobalState = Immutable<{
@@ -76,7 +83,7 @@ export type GlobalState = Immutable<{
 	selfPlayerId: number | undefined;
 	game: Game | undefined;
 	log: Log.Item[];
-	connectionState: ErrorState | undefined;
+	connectionState: ConnectionState;
 }>;
 
 const initialGlobalState: GlobalState = {
@@ -87,7 +94,10 @@ const initialGlobalState: GlobalState = {
 	selfPlayerId: undefined,
 	game: undefined,
 	log: [],
-	connectionState: undefined,
+	connectionState: {
+		status: 'loading',
+		error: undefined,
+	},
 };
 
 export const useGlobalState = create(

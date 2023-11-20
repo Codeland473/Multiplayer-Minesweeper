@@ -1,5 +1,4 @@
-import { produce, Draft } from 'immer';
-import { GlobalState, update, useGlobalState } from './globalState.js';
+import { update, useGlobalState } from './globalState.js';
 import { onMessage } from './protocol.js';
 
 export namespace Socket {
@@ -9,65 +8,55 @@ export namespace Socket {
 	export const get = () => globalSocket;
 
 	const INITIAL_ERROR_TIME = 10;
-	const initialErrorState = {
-		lastTime: INITIAL_ERROR_TIME,
-		timeout: INITIAL_ERROR_TIME,
-		loading: false,
-	};
 
-	const onError = () => {
-		update(state => {
-			if (state.connectionState === undefined) {
-				state.connectionState = initialErrorState;
+	const onError = (event: ) => {
+		update(state => {					
+			state.connectionState.status = 'error';
+
+			if (state.connectionState.error === undefined) {
+				state.connectionState.error = {
+					lastTime: INITIAL_ERROR_TIME,
+					timeout: INITIAL_ERROR_TIME,
+					message: '32',
+				}
 			} else {
-				const newTime = state.connectionState.lastTime * 2;
-
-				state.connectionState.lastTime = newTime;
-				state.connectionState.timeout = newTime;
-				state.connectionState.loading = false;
+				const newTime = state.connectionState.error.lastTime * 2
+				state.connectionState.error.lastTime = newTime;
+				state.connectionState.error.timeout = newTime;
 			}
 		});
 
 		timerId = window.setInterval(() => {
 			const errorState = useGlobalState.getState().connectionState;
-			if (errorState === undefined || errorState.timeout === 0) return;
+			if (errorState.status !== 'error') return;
 
 			if (errorState.timeout === 1) {
 				newSocket();
 			} else {
 				update(state => {
-					if (state.connectionState === undefined) {
-						state.connectionState = initialErrorState;
-					} else {
-						--state.connectionState.timeout;
-					}
+					--state.connectionState.timeout;
 				});
 			}
 		}, 1000);
 	};
 
 	const onOpen = () => {
-		produce(state => {
-			state.errorState = undefined;
-		});
+		update(state => {
+			state.connectionState.error = undefined;
+			state.connectionState.status = 'connected';
+		})		
 		window.clearInterval(timerId);
 	};
 
 	const newSocket = () => {
 		update(state => {
-			if (state.connectionState === undefined) {
-				state.connectionState = {
-					lastTime: INITIAL_ERROR_TIME,
-					timeout: 0,
-					loading: true,
-				};
-			} else {
-				state.connectionState.timeout = 0;
-				state.connectionState.loading = true;
-			}
+			state.connectionState.status = 'loading';
+			if (state.connectionState.error !== undefined) {
+				state.connectionState.error.timeout = 0;
+			}			
 		});
 
-		globalSocket = new WebSocket('/');
+		globalSocket = new WebSocket('ws://' + location.host);
 		globalSocket.binaryType = 'arraybuffer';
 		globalSocket.onmessage = onMessage;
 		globalSocket.onerror = onError;
