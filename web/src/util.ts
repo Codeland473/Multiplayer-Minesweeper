@@ -19,3 +19,19 @@ export const hexToRgb = (hex: string): [number, number, number] => {
 	const int = Number.parseInt(hex.slice(1), 16);
 	return [int >> 16, (int >> 8) & 0xff, int & 0xff];
 };
+
+Object.assign(window, { hexToRgb, rgbToHex, twoDigitHex });
+
+export const groupBy = <Type>(
+	array: readonly Type[],
+	splitter: (element: Type) => string | number,
+): { [key: string | number]: Type[] } => {
+	const obj: { [key: string | number]: Type[] } = {};
+
+	for (const element of array) {
+		const key = splitter(element);
+		(obj[key] ??= []).push(element);
+	}
+
+	return obj;
+};

@@ -24,6 +24,8 @@ export namespace LoaderStyle {
 		strokeDasharray: 6.28318530718,
 		strokeDashoffset: 0,
 		fill: 'transparent',
+		strokeLinecap: 'round',
+		strokeWidth: 1,
 	});
 
 	export const outerLine = style([

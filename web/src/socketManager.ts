@@ -10,6 +10,8 @@ export namespace Socket {
 	const INITIAL_ERROR_TIME = 10;
 
 	const onError = () => {
+		console.error('could not connect to websocket!');
+
 		update(state => {
 			state.connectionState.status = 'error';
 
@@ -49,10 +51,13 @@ export namespace Socket {
 			state.connectionState.error = undefined;
 			state.connectionState.status = 'connected';
 		});
-		window.clearInterval(timerId);
+		console.log('connected to websocket!');
 	};
 
 	export const newSocket = () => {
+		window.clearInterval(timerId);
+		console.log('connecting to websocket...');
+
 		update(state => {
 			state.connectionState.status = 'loading';
 			if (state.connectionState.error !== undefined) {

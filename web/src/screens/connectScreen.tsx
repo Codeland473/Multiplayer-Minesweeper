@@ -20,20 +20,18 @@ export const ConnectScreen = ({ connectionState }: ConnectScreenProps) => {
 	return (
 		<div className={PageStyle.pageContainer}>
 			{isLoading ? (
-				<div className={ConnectScreenStyle.content}>
-					<span className={ConnectScreenStyle.title}>
-						Connecting...
-					</span>
+				<div className={PageStyle.content}>
+					<span className={PageStyle.title}>Connecting...</span>
 					<Loader className={ConnectScreenStyle.loader} />
 				</div>
 			) : (
-				<div className={ConnectScreenStyle.content}>
-					<span className={ConnectScreenStyle.title}>Error</span>
-					<span className={ConnectScreenStyle.line}>
+				<div className={PageStyle.content}>
+					<span className={PageStyle.title}>Error</span>
+					<span className={PageStyle.line}>
 						Could not connect to server. Please check your network
 						connection.
 					</span>
-					<span className={ConnectScreenStyle.line}>
+					<span className={PageStyle.line}>
 						{error === undefined ? (
 							'...'
 						) : (

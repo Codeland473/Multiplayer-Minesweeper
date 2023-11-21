@@ -31,6 +31,10 @@ const configuration: Configuration = {
 				test: /.svg$/i,
 				loader: 'svg-inline-loader',
 			},
+			{
+				test: /.woff2$/i,
+				type: 'asset/resource',
+			},
 		],
 	},
 	resolve: {
@@ -49,6 +53,7 @@ const configuration: Configuration = {
 	output: {
 		filename: '[name].js',
 		path: path.resolve('../run/page'),
+		publicPath: '/',
 	},
 };
 export default configuration;
