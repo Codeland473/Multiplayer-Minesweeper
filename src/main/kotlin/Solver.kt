@@ -1,8 +1,25 @@
+import java.lang.Integer.min
 import kotlin.random.Random
 
 fun main() {
-	measurePerformance(10, 30, 16, 240)
+	//measurePerformance(10, 30, 16, 240)
+	val board = Board(7, 3)
+	board.mineCounts[7] = 9
+	board.mineCounts[12] = 9
+	board.mineCounts[13] = 9
+	board.mineCounts[16] = 9
+	board.mineCounts[19] = 9
+	board.setMinecounts()
+	println(board.printableStr())
+	val solvableLoc = Solver(board).solve()
+	println(solvableLoc)
+
 }
+/*
+x2--2x-
+x2112x-
+??x??x-
+ */
 
 fun measurePerformance(repetitions: Int = 10000, width : Int = 30, height : Int = 20, mineCount : Int = 130) {
 	val timings = Array(repetitions) {
@@ -184,6 +201,7 @@ class Solver(val board : Board) {
 	fun bruteSolve(front : List<FrontSquare> = squares.filter { it.knowlegeState == KnowlegeState.FRONT }) : Boolean {
 		var numUnknown = 0
 		var numFlags = 0
+		var minPencilFlags : Int? = null
 		squares.forEach {
 			if (it.solverState == SolverState.FLAG) ++numFlags
 			if (it.knowlegeState == KnowlegeState.UNKNOWN) ++numUnknown
@@ -200,8 +218,16 @@ class Solver(val board : Board) {
 				if (board.isMine(fSquare.x, fSquare.y)) flagSquare(fSquare.x, fSquare.y) else revealSquare(fSquare.x, fSquare.y)
 				return true
 			} else {
+				val numPencilFlags = front.count { it.solverState.isFlag() }
 				front.forEach { it.savePencil() }
+
+				minPencilFlags = min(minPencilFlags?: numPencilFlags, numPencilFlags)
 			}
+		}
+		minPencilFlags ?: throw RuntimeException("brute force failed to find any feasable solutions")
+		if (minPencilFlags + numFlags == totalMines) {
+			squares.forEach { if (it.knowlegeState == KnowlegeState.UNKNOWN) it.reveal() }
+			return true
 		}
 		return false
 	}
