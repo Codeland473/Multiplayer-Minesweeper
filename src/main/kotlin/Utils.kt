@@ -1,12 +1,8 @@
 import java.nio.ByteBuffer
 
 fun ByteBuffer.getString() : String {
-	val s = StringBuilder()
 	val length = getShort()
-	repeat(length.toInt()) {
-		s.append(getChar())
-	}
-	return s.toString()
+	return String(ByteArray(length.toInt()) {get()})
 }
 
 fun ByteBuffer.putString(s : String) {

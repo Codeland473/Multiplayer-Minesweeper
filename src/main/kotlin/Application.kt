@@ -4,6 +4,7 @@ import io.ktor.server.netty.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import java.io.File
+import java.nio.ByteOrder
 import java.time.Duration
 
 fun main(args : Array<String>) {
@@ -28,6 +29,7 @@ fun Application.module() {
 			try {
 				for (frame in incoming) {
 					val type = frame.buffer.get()
+					frame.buffer.order(ByteOrder.BIG_ENDIAN)
 					if (gamer == null && type != 50.toByte()) continue
 
 					when (type) {

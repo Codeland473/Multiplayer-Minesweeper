@@ -4,6 +4,8 @@ import kotlin.random.Random
 fun main() {
 	//measurePerformance(10, 30, 16, 240)
 	val board = Board(7, 3)
+	board.mineCounts[0] = 9
+	board.mineCounts[5] = 9
 	board.mineCounts[7] = 9
 	board.mineCounts[12] = 9
 	board.mineCounts[13] = 9
@@ -17,7 +19,7 @@ fun main() {
 }
 /*
 x2--2x-
-x2112x-
+x3113x-
 ??x??x-
  */
 
