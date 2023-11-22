@@ -1,11 +1,9 @@
-import { update, useGlobalState } from './globalState.js';
-import { onMessage } from './protocol.js';
+import { update, useGlobalState } from '../globalState.js';
+import { Protocol } from './protocol.js';
 
 export namespace Socket {
-	let globalSocket: WebSocket;
+	const globalSocket: [WebSocket] = [undefined as any];
 	let timerId: number;
-
-	export const get = () => globalSocket;
 
 	const INITIAL_ERROR_TIME = 10;
 
@@ -65,14 +63,30 @@ export namespace Socket {
 			}
 		});
 
-		globalSocket = new WebSocket('ws://' + location.host);
-		globalSocket.binaryType = 'arraybuffer';
-		globalSocket.onmessage = onMessage;
-		globalSocket.onerror = onError;
-		globalSocket.onopen = onOpen;
+		const socket = new WebSocket('ws://' + location.host);
+		socket.binaryType = 'arraybuffer';
+		socket.onmessage = Protocol.onMessage;
+		socket.onerror = onError;
+		socket.onopen = onOpen;
+
+		globalSocket[0] = socket;
 	};
 
 	export const startup = () => {
 		newSocket();
+	};
+
+	export type PreSender<Params extends any[]> = (
+		...params: Params
+	) => Uint8Array;
+
+	export type Sender<Params extends any[]> = (...params: Params) => void;
+
+	export const registerSender = <Params extends any[]>(
+		preSender: PreSender<Params>,
+	): Sender<Params> => {
+		return (...params: Params) => {
+			globalSocket[0].send(preSender(...params));
+		};
 	};
 }

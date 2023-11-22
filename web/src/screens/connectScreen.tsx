@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConnectionState } from '../globalState.js';
-import { Socket } from '../socketManager.js';
+import { Socket } from '../socket/socket.js';
 import { Loader } from '../components/loader.js';
 import { PageStyle } from './page.css.js';
 import { ConnectScreenStyle } from './connectScreen.css.js';

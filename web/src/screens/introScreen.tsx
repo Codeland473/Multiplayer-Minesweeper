@@ -3,12 +3,13 @@ import { useImmer } from 'use-immer';
 import { hexToRgb, randIntRange, rgbToHex } from '../util.js';
 import { PageStyle } from './page.css.js';
 import { IntroScreenStyle } from './introScreen.css.js';
+import { Protocol } from '../socket/protocol.js';
 
 type PlayerSetup = {
 	red: number;
 	green: number;
 	blue: number;
-	name: string;
+	inputName: string;
 };
 
 const defaultPlayerSetup = (): PlayerSetup => {
@@ -16,18 +17,20 @@ const defaultPlayerSetup = (): PlayerSetup => {
 		red: randIntRange(0, 255),
 		green: randIntRange(0, 255),
 		blue: randIntRange(0, 255),
-		name: '',
+		inputName: '',
 	};
 };
 
 export const IntroScreen = () => {
-	const [{ blue, green, name, red }, setPlayerSetup] = useImmer(() =>
+	const [{ blue, green, inputName, red }, setPlayerSetup] = useImmer(() =>
 		defaultPlayerSetup(),
 	);
 
-	const realName = name.trim();
+	const realName = inputName.trim();
 
-	const join = React.useCallback(() => {}, []);
+	const join = React.useCallback(() => {
+		Protocol.join(undefined, undefined, [red, green, blue], realName);
+	}, [blue, green, realName, red]);
 
 	const hexColor = rgbToHex(red, green, blue);
 	const onChangeColor = React.useCallback(
@@ -61,7 +64,7 @@ export const IntroScreen = () => {
 		(event: React.ChangeEvent<HTMLInputElement>) => {
 			const value = event.currentTarget.value;
 			setPlayerSetup(state => {
-				state.name = value;
+				state.inputName = value;
 			});
 		},
 		[setPlayerSetup],
@@ -82,7 +85,7 @@ export const IntroScreen = () => {
 				</div>
 
 				<input
-					value={name}
+					value={inputName}
 					placeholder="Your name"
 					autoFocus
 					onChange={onInputName}

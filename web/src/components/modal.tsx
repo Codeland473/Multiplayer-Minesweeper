@@ -1,14 +1,15 @@
 import React from 'react';
+import { ModalStyle } from './modal.css.js';
 
 export type ModalProps = {
-	open: boolean;
+	open?: boolean;
 	children?: React.ReactNode;
 };
 
 export const Modal = ({ open, children }: ModalProps) => {
 	return (
-		<div>
-			<div>{children}</div>
+		<div className={ModalStyle.dimmer[open ?? true ? 'shown' : 'hidden']}>
+			<div className={ModalStyle.container}>{children}</div>
 		</div>
 	);
 };
