@@ -29,7 +29,7 @@ export const IntroScreen = () => {
 	const realName = inputName.trim();
 
 	const join = React.useCallback(() => {
-		Protocol.join(undefined, undefined, [red, green, blue], realName);
+		Protocol.join(undefined, undefined, [red, green, blue], true, realName);
 	}, [blue, green, realName, red]);
 
 	const hexColor = rgbToHex(red, green, blue);
@@ -91,7 +91,7 @@ export const IntroScreen = () => {
 					onChange={onInputName}
 				/>
 				<button disabled={realName.length === 0} onClick={join}>
-					Join!
+					Join
 				</button>
 			</div>
 		</div>

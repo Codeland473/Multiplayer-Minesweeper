@@ -514,12 +514,13 @@ export namespace Protocol {
 			rejoinId: number | undefined,
 			rejoinTeamId: number | undefined,
 			color: Color,
+			alive: boolean,
 			name: string,
 		) => {
 			const nameBuffer = Data.textEncoder.encode(name);
 
 			const sendBuffer = new Uint8Array(
-				1 + 4 + 4 + 3 + 2 + nameBuffer.length,
+				1 + 4 + 4 + 3 + 1 + 2 + nameBuffer.length,
 			);
 			const writer = Data.createWriter(sendBuffer);
 
@@ -529,6 +530,7 @@ export namespace Protocol {
 			writer.writeByte(color[0]);
 			writer.writeByte(color[1]);
 			writer.writeByte(color[2]);
+			writer.writeBool(!alive);
 			writer.writeString(nameBuffer);
 
 			return sendBuffer;

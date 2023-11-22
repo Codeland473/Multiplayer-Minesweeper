@@ -49,6 +49,7 @@ export namespace Socket {
 			state.connectionState.error = undefined;
 			state.connectionState.status = 'connected';
 		});
+
 		console.log('connected to websocket!');
 	};
 
