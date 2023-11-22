@@ -17,6 +17,7 @@ import putString
 import putColor
 import putIntArray
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 interface Message {
 	fun toFrame() : ByteArray
@@ -28,6 +29,7 @@ interface Message {
 class TeamCreateMessage(val teamID : Int, val creatorID : Int, val name : String) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(11 + name.length)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(1.toByte())
 		buffer.putInt(teamID)
 		buffer.putInt(creatorID)
@@ -39,6 +41,7 @@ class TeamCreateMessage(val teamID : Int, val creatorID : Int, val name : String
 class TeamRemoveMessage(val teamID : Int, val removerID : Int) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(9)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(2.toByte())
 		buffer.putInt(teamID)
 		buffer.putInt(removerID)
@@ -49,6 +52,7 @@ class TeamRemoveMessage(val teamID : Int, val removerID : Int) : Message {
 class GamerNameUpdateMessage(val gamerID : Int, val newName : String) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(7 + newName.length)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(3.toByte())
 		buffer.putInt(gamerID)
 		buffer.putString(newName)
@@ -60,6 +64,7 @@ class GamerNameUpdateMessage(val gamerID : Int, val newName : String) : Message 
 class GamerColorUpdateMessage(val gamerID : Int, val color : Color) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(8)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(4.toByte())
 		buffer.putInt(gamerID)
 		buffer.putColor(color)
@@ -71,6 +76,7 @@ class GamerColorUpdateMessage(val gamerID : Int, val color : Color) : Message {
 class GamerTeamUpdateMessage(val gamerID : Int, val teamID : Int) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(9)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(5.toByte())
 		buffer.putInt(gamerID)
 		buffer.putInt(teamID)
@@ -89,6 +95,7 @@ class SettingUpdateMessage(val settingID : Int, val gamerID : Int, val settings 
 			else -> throw RuntimeException("invalid setting")
 		} + 9
 		val buffer = ByteBuffer.allocate(size)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(6.toByte())
 		buffer.putInt(settingID)
 		buffer.putInt(gamerID)
@@ -109,6 +116,7 @@ class SettingUpdateMessage(val settingID : Int, val gamerID : Int, val settings 
 class GameStartMessage(val gamerID : Int, val startX : Int, val startY : Int, val board : Board) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(9)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(7.toByte())
 		buffer.putInt(gamerID)
 		buffer.putInt(startX)
@@ -122,6 +130,7 @@ class GameStartMessage(val gamerID : Int, val startX : Int, val startY : Int, va
 class SquareRevealMessage(val gamerID : Int, val squareX : Int, val squareY : Int) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(13)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(8.toByte())
 		buffer.putInt(gamerID)
 		buffer.putInt(squareX)
@@ -134,6 +143,7 @@ class SquareRevealMessage(val gamerID : Int, val squareX : Int, val squareY : In
 class SquareFlagMessage(val gamerID : Int, val squareX : Int, val squareY : Int, val isPlacing : Boolean, val isPencil : Boolean) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(15)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(9.toByte())
 		buffer.putInt(gamerID)
 		buffer.putInt(squareX)
@@ -147,6 +157,7 @@ class SquareFlagMessage(val gamerID : Int, val squareX : Int, val squareY : Int,
 class CursorUpdateMessage(val gamers : Collection<Gamer>) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(5 + 12 * gamers.size)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(10.toByte())
 		buffer.putInt(gamers.size)
 		for (gamer in gamers) {
@@ -161,6 +172,7 @@ class CursorUpdateMessage(val gamers : Collection<Gamer>) : Message {
 class TeamNameUpdateMessage(val teamID : Int, val senderID : Int, val teamName : String) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(11 + teamName.length)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(11.toByte())
 		buffer.putInt(teamID)
 		buffer.putInt(senderID)
@@ -193,6 +205,7 @@ class UpdateNewGamerMessage(
 		}
 
 		val buffer = ByteBuffer.allocate(size)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(50.toByte())
 
 		buffer.putInt(settings.cursorUpdateRate)
@@ -220,7 +233,7 @@ class UpdateNewGamerMessage(
 		for (team in teams) buffer.putString(team.name)
 
 		if (board != null && currentSettings != null) {
-			buffer.putInt(1)
+			buffer.putBool(true)
 			buffer.putInt(currentSettings.cursorUpdateRate)
 			buffer.putBool(currentSettings.isNoGuessing)
 			buffer.putBool(currentSettings.isAllForOne)
@@ -238,7 +251,7 @@ class UpdateNewGamerMessage(
 				buffer.putIntArray(gamersTeam.flagStates ?: IntArray(board.width * board.height) {0})
 			}
 		} else {
-			buffer.putInt(0)
+			buffer.putBool(false)
 		}
 
 		return buffer.array()
@@ -249,6 +262,7 @@ class UpdateNewGamerMessage(
 class GamerCreateMessage(val gamer : Gamer) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(15 + gamer.name.length)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(51.toByte())
 		buffer.putInt(gamer.id)
 		buffer.putInt(gamer.team)
@@ -263,6 +277,7 @@ class GamerCreateMessage(val gamer : Gamer) : Message {
 class GamerRemoveMessage(val gamerID : Int) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(5)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(52.toByte())
 		buffer.putInt(gamerID)
 		return buffer.array()
@@ -272,6 +287,7 @@ class GamerRemoveMessage(val gamerID : Int) : Message {
 class TeamFinishMessage(val teamID : Int) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(5)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(53.toByte())
 		buffer.putInt(teamID)
 		return buffer.array()
@@ -282,6 +298,7 @@ class TeamFinishMessage(val teamID : Int) : Message {
 class GamerLostMessage(val gamerID : Int) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(5)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(54.toByte())
 		buffer.putInt(gamerID)
 		return buffer.array()
@@ -292,6 +309,7 @@ class GamerLostMessage(val gamerID : Int) : Message {
 class TeamLostMessage(val loser : Gamer) : Message {
 	override fun toFrame() : ByteArray {
 		val buffer = ByteBuffer.allocate(5)
+		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(55.toByte())
 		buffer.putInt(loser.id)
 		buffer.putInt(loser.team)

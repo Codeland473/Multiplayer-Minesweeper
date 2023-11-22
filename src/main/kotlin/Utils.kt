@@ -6,10 +6,9 @@ fun ByteBuffer.getString() : String {
 }
 
 fun ByteBuffer.putString(s : String) {
-	putShort(s.length.toShort())
-	for (char in s) {
-		putChar(char)
-	}
+	val bytes = s.toByteArray()
+	putShort(bytes.size.toShort())
+	for (byte in bytes) { put(byte) }
 }
 
 fun ByteBuffer.getBool() = get() != 0.toByte()
