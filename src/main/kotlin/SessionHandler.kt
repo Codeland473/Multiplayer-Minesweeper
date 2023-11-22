@@ -43,8 +43,8 @@ class SessionHandler {
 
 		broadcast(GamerCreateMessage(gamer))
 
-		UpdateNewGamerMessage(settings, gamers.toTypedArray(), teams.toTypedArray(), gamer, currentGameSettings, board).send(gamer)
 		gamers += gamer
+		UpdateNewGamerMessage(settings, gamers.toTypedArray(), teams.toTypedArray(), gamer, currentGameSettings, board).send(gamer)
 
 		return gamer
 	}
