@@ -40,7 +40,7 @@ export namespace Data {
 			getString: () => {
 				const stringLength = view.getUint16(offset);
 				const value = textDecoder.decode(
-					new DataView(data, offset, stringLength),
+					new DataView(data, offset + 2, stringLength),
 				);
 				offset += 2 + stringLength;
 				return value;

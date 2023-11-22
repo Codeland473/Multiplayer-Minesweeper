@@ -10,13 +10,10 @@ export type IconProps = {
 	weight?: 'outline' | 'fill';
 } & React.HTMLProps<HTMLSpanElement>;
 
-export const Icon = ({ name, weight, ...rest }: IconProps) => {
+export const Icon = ({ name, weight, className, ...rest }: IconProps) => {
 	return (
 		<span
-			className={classNames(
-				IconStyle.icon[weight ?? 'fill'],
-				rest.className,
-			)}
+			className={classNames(IconStyle.icon[weight ?? 'fill'], className)}
 			{...rest}
 		>
 			{name}
