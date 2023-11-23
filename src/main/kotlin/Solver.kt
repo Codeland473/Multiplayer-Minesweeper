@@ -109,6 +109,7 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 		while (true) {
 			solve()?.let { return it }
 			board.generateBoard(totalMines, false, r)
+			reset()
 		}
 	}
 
@@ -399,8 +400,7 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 						boards.add(Pair(board, startPos))
 					} else {
 						board.generateBoard(mineCount, false, threadR)
-						solver.regionIds.fill(-1)
-						solver.squares.indices.forEach { solver.squares[it].reset(board[it], false) }
+						solver.reset()
 					}
 				}
 			}
