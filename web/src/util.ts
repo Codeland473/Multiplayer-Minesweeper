@@ -35,3 +35,5 @@ export const groupBy = <Type>(
 
 	return obj;
 };
+
+export type AllOrNothing<T> = T | { [key in keyof T]?: undefined };

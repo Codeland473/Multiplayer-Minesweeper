@@ -3,77 +3,93 @@ import { PageStyle } from './page.css.js';
 import { Color, Player, Team, useGlobalState } from '../globalState.js';
 import { LobbyStyle } from './lobbyScreen.css.js';
 import { Icon } from '../components/icon.js';
-import { groupBy, rgbToHex } from '../util.js';
+import { AllOrNothing, groupBy, rgbToHex } from '../util.js';
 import { Updater, useImmer } from 'use-immer';
 import { Modal } from '../components/modal.js';
 import { Protocol } from '../socket/protocol.js';
 
-export const BarPlayer = ({
-	color,
-	name,
-	isSelf,
-}: {
+type BarPlayerProps = AllOrNothing<{
 	color: Color;
 	name: string;
 	isSelf: boolean;
-}) => {
+	onClick?: () => void;
+}>;
+
+const BarPlayer = ({ color, name, isSelf, onClick }: BarPlayerProps) => {
 	const style = React.useMemo<React.CSSProperties>(
-		() => ({ color: rgbToHex(color[0], color[1], color[2]) }),
+		() =>
+			color === undefined
+				? {}
+				: { color: rgbToHex(color[0], color[1], color[2]) },
 		[color],
 	);
 
 	return (
 		<div className={LobbyStyle.playerHolder}>
 			<div className={LobbyStyle.playerIconHolder}>
-				<Icon
-					className={LobbyStyle.playerIcon}
-					style={style}
-					name="person"
-					weight={isSelf ? 'fill' : 'outline'}
-				/>
-				<div className={LobbyStyle.playerShowcase} />
+				{color === undefined ? null : (
+					<Icon
+						className={LobbyStyle.playerIcon}
+						style={style}
+						name="person"
+						weight={isSelf ? 'fill' : 'outline'}
+					/>
+				)}
+				<div className={LobbyStyle.playerShowcase} onClick={onClick} />
 			</div>
 			<span className={LobbyStyle.playerName}>{name}</span>
 		</div>
 	);
 };
 
-export const TeamBox = ({
+type TeamBoxProps = AllOrNothing<{
+	team: Team;
+	isSelfTeam: boolean;
+	onOpenEdit: (team: Team) => void;
+	onJoin: (team: Team) => void;
+	onDelete: (team: Team) => void;
+	onExit: () => void;
+}> & { children: React.ReactNode };
+
+const TeamBox = ({
 	team,
 	isSelfTeam,
 	children,
 	onOpenEdit,
 	onJoin,
+	onDelete,
 	onExit,
-}: {
-	team: Team;
-	isSelfTeam: boolean;
-	children: React.ReactNode;
-	onOpenEdit: (team: Team) => void;
-	onJoin: (team: Team) => void;
-	onExit: () => void;
-}) => {
+}: TeamBoxProps) => {
 	const boundOpenEdit = React.useCallback(() => {
-		onOpenEdit(team);
+		onOpenEdit?.(team);
 	}, [onOpenEdit, team]);
 
 	const boundOnJoin = React.useCallback(() => {
-		onJoin(team);
+		onJoin?.(team);
 	}, [onJoin, team]);
 
+	const boundOnDelete = React.useCallback(() => {
+		onDelete?.(team);
+	}, [onDelete, team]);
+
 	return (
-		<div className={LobbyStyle.teamBox} onClick={boundOnJoin}>
+		<div className={LobbyStyle.teamBox}>
 			<div
 				className={
 					LobbyStyle.teamBoxOutline[
-						isSelfTeam ? 'selfTeam' : 'normal'
+						team === undefined
+							? 'empty'
+							: isSelfTeam
+							? 'selfTeam'
+							: 'normal'
 					]
 				}
+				onClick={isSelfTeam ? undefined : boundOnJoin}
 			>
 				{children}
 			</div>
 			<div className={LobbyStyle.teamNameArea}>
-				<span className={LobbyStyle.teamName}>{team.name}</span>
+				<span className={LobbyStyle.teamName}>{team?.name}</span>
 				{isSelfTeam ? (
 					<>
 						<Icon
@@ -85,6 +101,11 @@ export const TeamBox = ({
 							className={LobbyStyle.teamButton}
 							name="logout"
 							onClick={onExit}
+						/>
+						<Icon
+							className={LobbyStyle.teamButton}
+							name="delete"
+							onClick={boundOnDelete}
 						/>
 					</>
 				) : null}
@@ -250,6 +271,10 @@ export const LobbyScreen = () => {
 		Protocol.moveTeams(team.id);
 	}, []);
 
+	const onDeleteTeam = React.useCallback((team: Team) => {
+		Protocol.teamRemove(team.id);
+	}, []);
+
 	return (
 		<div className={PageStyle.pageContainer}>
 			{teamEditState === undefined ? null : (
@@ -267,17 +292,24 @@ export const LobbyScreen = () => {
 						const team = teams.find(({ id }) => id === teamId);
 						const players = playersByTeam[teamId];
 
-						const barPlayers = players.map(player => (
-							<BarPlayer
-								key={player.id}
-								color={player.color}
-								name={player.name}
-								isSelf={player.id === selfPlayerId}
-							/>
-						));
+						const barPlayers =
+							players.length === 0 ? (
+								<BarPlayer />
+							) : (
+								players.map(player => (
+									<BarPlayer
+										key={player.id}
+										color={player.color}
+										name={player.name}
+										isSelf={player.id === selfPlayerId}
+									/>
+								))
+							);
 
 						if (team === undefined) {
-							return barPlayers;
+							return players.length === 0 ? null : (
+								<TeamBox>{barPlayers}</TeamBox>
+							);
 						} else {
 							return (
 								<TeamBox
@@ -287,6 +319,7 @@ export const LobbyScreen = () => {
 									onExit={onLeaveTeam}
 									onOpenEdit={onOpenTeamEdit}
 									onJoin={onJoinTeam}
+									onDelete={onDeleteTeam}
 								>
 									{barPlayers}
 								</TeamBox>

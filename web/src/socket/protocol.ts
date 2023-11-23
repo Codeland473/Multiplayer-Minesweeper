@@ -123,6 +123,10 @@ export namespace Protocol {
 			const [index, removedTeam] = findTeamIndex(state, teamId);
 			if (index === -1) return;
 
+			const teamPlayers = state.players.filter(
+				player => player.teamId === teamId,
+			);
+
 			state.teams.splice(index, 1);
 
 			state.log.push({
@@ -131,6 +135,8 @@ export namespace Protocol {
 				teamName: removedTeam.name,
 				byPlayerId,
 			} satisfies Log.TeamRemove);
+
+			teamPlayers.forEach(teamPlayer => (teamPlayer.teamId = undefined));
 		});
 	});
 
@@ -228,13 +234,17 @@ export namespace Protocol {
 		const teamId = reader.getInt();
 
 		update(state => {
-			const [, team] = findTeamIndex(state, teamId);
-			if (team === undefined) return;
-
 			const [playerIndex] = findPlayerIndex(state, playerId);
 			if (playerIndex === -1) return;
 
-			state.players[playerIndex].teamId = team.id;
+			if (teamId === 0) {
+				state.players[playerIndex].teamId = undefined;
+			} else {
+				const [, team] = findTeamIndex(state, teamId);
+				if (team === undefined) return;
+
+				state.players[playerIndex].teamId = team.id;
+			}
 		});
 	});
 
