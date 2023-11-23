@@ -10,7 +10,9 @@ import SETTING_MINE_COUNT
 import SETTING_UPDATE_RATE
 import Settings
 import Team
+import io.ktor.utils.io.core.*
 import io.ktor.websocket.*
+import io.netty.buffer.ByteBuf
 import putBool
 import putBoolArray
 import putString
@@ -23,6 +25,46 @@ interface Message {
 	fun toFrame() : ByteArray
 	suspend fun send(gamer : Gamer) {
 		gamer.connection.send(toFrame())
+	}
+
+
+}
+
+class MessageBuffer(private val initialMax : Int = 500) {
+	private val internalBuffers = arrayListOf(ByteBuffer.allocate(initialMax))
+	val buffer : ByteBuffer get() = internalBuffers.last()
+	init { buffer.order(ByteOrder.BIG_ENDIAN) }
+
+	private fun addBuffer() {
+		internalBuffers.add(ByteBuffer.allocate(initialMax))
+	}
+
+	fun<T> putFun(size : Int, f : ByteBuffer.() -> T) {
+		if (buffer.remaining() < size) addBuffer()
+		buffer.f()
+	}
+	fun put(v : Byte) {
+		if (buffer.remaining() < 1) addBuffer()
+		buffer.put(v)
+	}
+	fun put(v : ByteArray) {
+		if (v.size > buffer.remaining()) {
+			val remaining = buffer.remaining()
+			buffer.put(v.sliceArray(0 until remaining))
+			addBuffer()
+			put(v.sliceArray(remaining until v.size))
+		} else {
+			buffer.put(v)
+		}
+	}
+	fun put(v : Int) = putFun(4) {putInt(v)}
+	fun put(v : Float) = putFun(4) {putFloat(v)}
+	fun put(v : Short) = putFun(4) {putShort(v)}
+	fun put(v : Boolean) = put(if (v) 1 else 0)
+	fun put(v : String) {
+		val arr = v.toByteArray()
+		put(arr.size.toShort())
+		put(v.toByteArray())
 	}
 }
 
@@ -127,12 +169,13 @@ class GameStartMessage(val gamerID : Int, val startX : Int, val startY : Int, va
 }
 
 
-class SquareRevealMessage(val gamerID : Int, val squareX : Int, val squareY : Int) : Message {
+class SquareRevealMessage(val gamer : Gamer, val squareX : Int, val squareY : Int) : Message {
 	override fun toFrame() : ByteArray {
-		val buffer = ByteBuffer.allocate(13)
+		val buffer = ByteBuffer.allocate(17)
 		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(8.toByte())
-		buffer.putInt(gamerID)
+		buffer.putInt(gamer.id)
+		buffer.putInt(gamer.team)
 		buffer.putInt(squareX)
 		buffer.putInt(squareY)
 		return buffer.array()
@@ -140,12 +183,13 @@ class SquareRevealMessage(val gamerID : Int, val squareX : Int, val squareY : In
 }
 
 
-class SquareFlagMessage(val gamerID : Int, val squareX : Int, val squareY : Int, val isPlacing : Boolean, val isPencil : Boolean) : Message {
+class SquareFlagMessage(val gamer : Gamer, val squareX : Int, val squareY : Int, val isPlacing : Boolean, val isPencil : Boolean) : Message {
 	override fun toFrame() : ByteArray {
-		val buffer = ByteBuffer.allocate(15)
+		val buffer = ByteBuffer.allocate(19)
 		buffer.order(ByteOrder.BIG_ENDIAN)
 		buffer.put(9.toByte())
-		buffer.putInt(gamerID)
+		buffer.putInt(gamer.id)
+		buffer.putInt(gamer.team)
 		buffer.putInt(squareX)
 		buffer.putInt(squareY)
 		buffer.putBool(isPlacing)
