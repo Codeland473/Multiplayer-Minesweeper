@@ -1,14 +1,25 @@
 import java.lang.Integer.min
-import kotlin.random.Random
+import java.util.*
+import java.util.Random as JRandom
+import kotlin.collections.LinkedHashSet
+import kotlin.concurrent.thread
+import kotlin.random.asKotlinRandom
+import kotlin.random.Random as KRandom
 
 fun main() {
 	//measurePerformance(10, 30, 16, 240)
+	val width = 100
+	val height = 100
+	val mineCount = 2400
+	measurePerformance(0, 20, width, height, mineCount)
+	//println("normal")
+	//val singlethreaded = measurePerformance(1, 5, 30, 16, mineCount)
+	/*
 	val board = Board(7, 3)
 	board.mineCounts[0] = 9
 	board.mineCounts[5] = 9
 	board.mineCounts[7] = 9
 	board.mineCounts[12] = 9
-	board.mineCounts[13] = 9
 	board.mineCounts[16] = 9
 	board.mineCounts[19] = 9
 	board.setMinecounts()
@@ -16,23 +27,54 @@ fun main() {
 	val solvableLoc = Solver(board).solve()
 	println(solvableLoc)
 
+	 */
+
 }
+
+/*
+
+average: 2.7642999649047852
+min: 1.328
+q1: 1.754
+median: 2.824
+q3: 3.958
+max: 4.924
+
+*/
+
 /*
 x2--2x-
 x3113x-
 ??x??x-
  */
 
-fun measurePerformance(repetitions: Int = 10000, width : Int = 30, height : Int = 20, mineCount : Int = 130) {
+fun measurePerformance(
+	threads : Int = 1,
+	repetitions: Int = 10000,
+	width : Int = 30,
+	height : Int = 20,
+	mineCount : Int = 130,
+	seed : Long = 0L) : Double
+{
+	//val r = KRandom(seed)
 	val timings = Array(repetitions) {
-		val time = time {
-			val board = Board(width, height)
-			board.generateBoard(mineCount, false)
-			val solver = Solver(board)
-			val start = solver.getSolvableBoard()
-			println(board.printableStr())
+		val r = KRandom(seed + it)
+		if (threads > 1) {
+			time {
+				val (board, startPos) = Solver.generateBoardMultithreaded(width, height, mineCount, r, threads)
+				//println(board.printableStr())
+			}
+		} else if (threads == 1) {
+			time {
+				val board = Board(width, height)
+				board.generateBoard(mineCount, true, r)
+				//println(board.printableStr())
+			}
+		} else {
+			time {
+				val (board, startPos) = Solver.generateBoard(width, height, mineCount, r)
+			}
 		}
-		time
 	}
 
 	val average = timings.average()
@@ -42,13 +84,14 @@ fun measurePerformance(repetitions: Int = 10000, width : Int = 30, height : Int 
 	val median = sorted[repetitions / 2]
 	val q3 = sorted[3 * repetitions / 4]
 	val max = timings.max()
-	println("$repetitions ${width}x${height}/$mineCount boards generated, performance summary:")
+	println("$repetitions ${width}x${height}/$mineCount boards generated on $threads thread(s), performance summary:")
 	println("average: $average")
 	println("min: $min")
 	println("q1: $q1")
 	println("median: $median")
 	println("q3: $q3")
 	println("max: $max")
+	return average
 }
 
 fun<T> time(f : () -> T) : Float {
@@ -57,7 +100,7 @@ fun<T> time(f : () -> T) : Float {
 	return (System.currentTimeMillis() - before).toFloat() / 1000f
 }
 
-class Solver(val board : Board) {
+class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 	val regionIds = IntArray(board.width * board.height) {-1}
 	val squares = Array(board.width * board.height) {FrontSquare(it % board.width, it / board.width, board[it])}
 	val totalMines = board.mineCounts.count { it == 9.toByte() }
@@ -65,16 +108,20 @@ class Solver(val board : Board) {
 	fun getSolvableBoard() : Pair<Int, Int> {
 		while (true) {
 			solve()?.let { return it }
-			board.generateBoard(totalMines, false)
-			regionIds.fill(-1)
-			squares.indices.forEach { squares[it].reset(board[it], false) }
+			board.generateBoard(totalMines, false, r)
 		}
+	}
+
+	fun reset() {
+		regionIds.fill(-1)
+		squares.indices.forEach { squares[it].reset(board[it], false) }
 	}
 
 	fun solve() : Pair<Int, Int>? {
 		val numRegions = fillColors()
 		val regionsVisited = Array(numRegions) {false}
-		val regionStart = Random.nextInt(regionsVisited.size)
+		if (regionsVisited.isEmpty()) return null
+		val regionStart = r.nextInt(regionsVisited.size)
 		for (regionOffset in 0 until numRegions) {
 			val region = (regionStart + regionOffset) % numRegions
 
@@ -95,7 +142,7 @@ class Solver(val board : Board) {
 				if (squares.count {it.solverState == SolverState.FLAG} == totalMines ||
 					squares.all { it.solverState == SolverState.REVEALED || board[it.x, it.y] == 9.toByte() }) {
 
-					return xy(regionIds.indices.filter { regionIds[it] == region && board[it] == 0.toByte() }.random())
+					return xy(regionIds.indices.filter { regionIds[it] == region && board[it] == 0.toByte() }.random(r))
 				}
 			} while (bruteSolve())
 
@@ -179,6 +226,7 @@ class Solver(val board : Board) {
 
 	fun flagSquare(x : Int, y : Int, pencil : Boolean = false)  = flagSquare(idx(x, y), pencil)
 	fun flagSquare(idx : Int, pencil : Boolean = false) {
+		//if (!board.isMine(idx) && !pencil) throw RuntimeException("attempted to flag non-mine square")
 		val square = squares[idx]
 		square.solverState = if (pencil) SolverState.PENCIL_FLAG else SolverState.FLAG
 		if (!pencil) {
@@ -187,6 +235,7 @@ class Solver(val board : Board) {
 	}
 
 	fun revealSquare(x : Int, y : Int, pencil : Boolean = false) {
+		//if (board.isMine(x, y) && !pencil) throw RuntimeException("attempted to reveal mine square")
 		val square = squares[idx(x, y)]
 		square.solverState = if (pencil) SolverState.PENCIL_SAFE else SolverState.REVEALED
 		if (!pencil) {
@@ -203,7 +252,7 @@ class Solver(val board : Board) {
 	fun bruteSolve(front : List<FrontSquare> = squares.filter { it.knowlegeState == KnowlegeState.FRONT }) : Boolean {
 		var numUnknown = 0
 		var numFlags = 0
-		var minPencilFlags : Int? = null
+		var minPencilFlags : Int = front.count { it.mineShownPossible }
 		squares.forEach {
 			if (it.solverState == SolverState.FLAG) ++numFlags
 			if (it.knowlegeState == KnowlegeState.UNKNOWN) ++numUnknown
@@ -223,11 +272,11 @@ class Solver(val board : Board) {
 				val numPencilFlags = front.count { it.solverState.isFlag() }
 				front.forEach { it.savePencil() }
 
-				minPencilFlags = min(minPencilFlags?: numPencilFlags, numPencilFlags)
+				minPencilFlags = min(minPencilFlags, numPencilFlags)
 			}
 		}
-		minPencilFlags ?: throw RuntimeException("brute force failed to find any feasable solutions")
-		if (minPencilFlags + numFlags == totalMines) {
+		front.forEach { it.reset(board[it.x, it.y]) }
+		if (minPencilFlags + numFlags == totalMines && numUnknown > 0) {
 			squares.forEach { if (it.knowlegeState == KnowlegeState.UNKNOWN) it.reveal() }
 			return true
 		}
@@ -323,6 +372,45 @@ class Solver(val board : Board) {
 
 	private fun idx(x : Int, y : Int) = x + y * board.width
 	private fun xy(idx : Int) = Pair(idx % board.width, idx / board.width)
+
+	companion object {
+
+		fun generateBoard(width : Int, height : Int, mineCount : Int, r : KRandom = JRandom().asKotlinRandom()) : Pair<Board, Pair<Int, Int>> {
+			val density = mineCount.toFloat() / (width * height).toFloat()
+			return when {
+				density >= 0.35 -> generateBoardMultithreaded(width, height, mineCount, r, 4)
+				density >= 0.27 -> generateBoardMultithreaded(width, height, mineCount, r, 3)
+				density >= 0.1 -> generateBoardMultithreaded(width, height, mineCount, r, 2)
+				else -> generateBoardMultithreaded(width, height, mineCount, r, 1)
+			}
+		}
+
+		fun generateBoardMultithreaded(width : Int, height : Int, mineCount : Int, r : KRandom = JRandom().asKotlinRandom(), numThreads : Int = 4) : Pair<Board, Pair<Int, Int>> {
+			val boards = Collections.synchronizedSet<Pair<Board, Pair<Int, Int>>>(LinkedHashSet())
+			val f = { ->
+				val threadR = KRandom(r.nextLong())
+				val board = Board(width, height)
+				board.generateBoard(mineCount, false, threadR)
+				val solver = Solver(board, threadR)
+
+				while (boards.isEmpty()) {
+					val startPos = solver.solve()
+					if (startPos != null) {
+						boards.add(Pair(board, startPos))
+					} else {
+						board.generateBoard(mineCount, false, threadR)
+						solver.regionIds.fill(-1)
+						solver.squares.indices.forEach { solver.squares[it].reset(board[it], false) }
+					}
+				}
+			}
+			repeat(numThreads - 1) {
+				thread(block = f)
+			}
+			f()
+			return boards.first()
+		}
+	}
 }
 
 class FrontSquare(val x : Int, val y : Int, mineCount : Byte) {
@@ -338,9 +426,9 @@ class FrontSquare(val x : Int, val y : Int, mineCount : Byte) {
 	var safeShownPossible = mineCount < 9
 
 	fun reset(mineCount : Byte, pencilOnly : Boolean = true) {
+		mineShownPossible = mineCount == 9.toByte()
+		safeShownPossible = mineCount < 9
 		if (solverState.isPencil() || !pencilOnly) {
-			mineShownPossible = mineCount == 9.toByte()
-			safeShownPossible = mineCount < 9
 			solverState = SolverState.UNKNOWN
 			if (!pencilOnly) knowlegeState = KnowlegeState.UNKNOWN
 		}
@@ -350,7 +438,7 @@ class FrontSquare(val x : Int, val y : Int, mineCount : Byte) {
 		when (solverState) {
 			SolverState.PENCIL_FLAG -> mineShownPossible = true
 			SolverState.PENCIL_SAFE -> safeShownPossible = true
-			else -> throw RuntimeException("WER MY PENISIL AT?")
+			else -> throw RuntimeException("completed incomplete permutation")
 		}
 		solverState = SolverState.UNKNOWN
 	}

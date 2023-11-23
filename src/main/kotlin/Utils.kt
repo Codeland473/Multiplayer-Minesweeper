@@ -8,7 +8,7 @@ fun ByteBuffer.getString() : String {
 fun ByteBuffer.putString(s : String) {
 	val bytes = s.toByteArray()
 	putShort(bytes.size.toShort())
-	for (byte in bytes) { put(byte) }
+	put(bytes)
 }
 
 fun ByteBuffer.getBool() = get() != 0.toByte()
