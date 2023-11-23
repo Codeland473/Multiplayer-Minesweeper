@@ -73,7 +73,7 @@ class SessionHandler {
 	}
 	suspend fun onGamerTeamUpdateMessage(sender : Gamer, message : ByteBuffer) {
 		val targetTeam = message.getInt()
-		if (teams.any { it.id == targetTeam }) {
+		if (teams.any { it.id == targetTeam } || targetTeam == 0) {
 			sender.team = targetTeam
 			broadcast(GamerTeamUpdateMessage(sender.id, targetTeam))
 		}
