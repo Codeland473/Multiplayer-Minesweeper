@@ -1,4 +1,6 @@
-import kotlin.random.Random
+import java.util.Random as JRandom
+import kotlin.random.asKotlinRandom
+import kotlin.random.Random as KRandom
 
 class Board(var width : Int, var height : Int, var mineCounts : ByteArray = ByteArray(width * height)) {
 	var startTime : Long = System.currentTimeMillis()
@@ -12,12 +14,12 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 		for (i in mineCounts.indices) mineCounts[i] = 0
 	}
 
-	fun generateBoard(mineCount : Int, noGuessing : Boolean) : Pair<Int, Int> {
+	fun generateBoard(mineCount : Int, noGuessing : Boolean, r : KRandom = JRandom().asKotlinRandom()) : Pair<Int, Int> {
 		clearBoard()
-		regenMines(mineCount)
+		regenMines(mineCount, r)
 		setMinecounts()
 		if (noGuessing) {
-			val solver = Solver(this)
+			val solver = Solver(this, r)
 			return solver.getSolvableBoard()
 		} else {
 			val minMineCounts = mineCounts.min()
@@ -25,17 +27,17 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 			return if (possibleStarts.isEmpty()) {
 				Pair(-1, -1)
 			} else {
-				val ret = possibleStarts.random()
+				val ret = possibleStarts.random(r)
 				return Pair(ret % width, ret / width)
 			}
 		}
 	}
 
-	fun regenMines(mineCount : Int) {
-		var loc = Random.nextInt(width * height)
+	fun regenMines(mineCount : Int, r : KRandom = JRandom().asKotlinRandom()) {
+		var loc = r.nextInt(width * height)
 		repeat(mineCount) {
 			while (mineCounts[loc] == 9.toByte()) {
-				loc = Random.nextInt(width * height)
+				loc = r.nextInt(width * height)
 			}
 			mineCounts[loc] = 9
 		}
