@@ -1,11 +1,15 @@
 import { update, useGlobalState } from '../globalState.js';
-import { Protocol } from './protocol.js';
+import { Data } from './data.js';
 
 export namespace Socket {
 	const globalSocket: [WebSocket] = [undefined as any];
 	let timerId: number;
 
 	const INITIAL_ERROR_TIME = 10;
+
+	export type Receiver = (reader: Data.Reader) => void;
+
+	const receivers: { [receiveCode: number]: Receiver } = {};
 
 	const onError = () => {
 		console.error('could not connect to websocket!');
@@ -53,6 +57,25 @@ export namespace Socket {
 		console.log('connected to websocket!');
 	};
 
+	export const onMessage = (event: MessageEvent<any>) => {
+		const data = event.data;
+		if (!(data instanceof ArrayBuffer)) return;
+
+		const reader = Data.createReader(data);
+
+		const messageId = reader.getByte();
+
+		const receiver = receivers[messageId];
+		if (receiver === undefined) {
+			return console.error(`Unknown receive code ${messageId}`);
+		}
+
+		console.log(`received code ${messageId}`);
+		console.log('before:', useGlobalState.getState());
+		receiver(reader);
+		console.log('after:', useGlobalState.getState());
+	};
+
 	export const newSocket = () => {
 		window.clearInterval(timerId);
 		console.log('connecting to websocket...');
@@ -66,7 +89,7 @@ export namespace Socket {
 
 		const socket = new WebSocket('ws://' + location.host);
 		socket.binaryType = 'arraybuffer';
-		socket.onmessage = Protocol.onMessage;
+		socket.onmessage = onMessage;
 		socket.onerror = onError;
 		socket.onopen = onOpen;
 
@@ -87,7 +110,16 @@ export namespace Socket {
 		preSender: PreSender<Params>,
 	): Sender<Params> => {
 		return (...params: Params) => {
-			globalSocket[0].send(preSender(...params));
+			const buffer = preSender(...params);
+			console.log(`Sending code ${buffer[0]}`);
+			globalSocket[0].send(buffer);
 		};
+	};
+
+	export const registerReceiver = (
+		receiveCode: number,
+		receiver: Receiver,
+	) => {
+		receivers[receiveCode] = receiver;
 	};
 }

@@ -9,6 +9,9 @@ export namespace ModalStyle {
 		alignItems: 'center',
 		justifyContent: 'center',
 		backgroundColor: 'rgba(0,0,0,0.25)',
+		position: 'absolute',
+		left: 0,
+		top: 0,
 	});
 
 	export const dimmer = styleVariants({

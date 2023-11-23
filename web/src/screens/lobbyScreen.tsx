@@ -1,7 +1,7 @@
 import React from 'react';
 import { PageStyle } from './page.css.js';
 import { Color, Player, Team, useGlobalState } from '../globalState.js';
-import { LobbyScreenStyle } from './lobbyScreen.css.js';
+import { LobbyStyle } from './lobbyScreen.css.js';
 import { Icon } from '../components/icon.js';
 import { groupBy, rgbToHex } from '../util.js';
 import { Updater, useImmer } from 'use-immer';
@@ -23,17 +23,17 @@ export const BarPlayer = ({
 	);
 
 	return (
-		<div className={LobbyScreenStyle.playerHolder}>
-			<div className={LobbyScreenStyle.playerIconHolder}>
+		<div className={LobbyStyle.playerHolder}>
+			<div className={LobbyStyle.playerIconHolder}>
 				<Icon
-					className={LobbyScreenStyle.playerIcon}
+					className={LobbyStyle.playerIcon}
 					style={style}
 					name="person"
 					weight={isSelf ? 'fill' : 'outline'}
 				/>
-				<div className={LobbyScreenStyle.playerShowcase} />
+				<div className={LobbyStyle.playerShowcase} />
 			</div>
-			<span className={LobbyScreenStyle.playerName}>{name}</span>
+			<span className={LobbyStyle.playerName}>{name}</span>
 		</div>
 	);
 };
@@ -43,27 +43,49 @@ export const TeamBox = ({
 	isSelfTeam,
 	children,
 	onOpenEdit,
+	onJoin,
 	onExit,
 }: {
 	team: Team;
 	isSelfTeam: boolean;
 	children: React.ReactNode;
 	onOpenEdit: (team: Team) => void;
+	onJoin: (team: Team) => void;
 	onExit: () => void;
 }) => {
 	const boundOpenEdit = React.useCallback(() => {
 		onOpenEdit(team);
 	}, [onOpenEdit, team]);
 
+	const boundOnJoin = React.useCallback(() => {
+		onJoin(team);
+	}, [onJoin, team]);
+
 	return (
-		<div>
-			<div>{children}</div>
-			<div>
-				<span>{team.name}</span>
+		<div className={LobbyStyle.teamBox} onClick={boundOnJoin}>
+			<div
+				className={
+					LobbyStyle.teamBoxOutline[
+						isSelfTeam ? 'selfTeam' : 'normal'
+					]
+				}
+			>
+				{children}
+			</div>
+			<div className={LobbyStyle.teamNameArea}>
+				<span className={LobbyStyle.teamName}>{team.name}</span>
 				{isSelfTeam ? (
 					<>
-						<Icon name="edit" onClick={boundOpenEdit} />
-						<Icon name="logout" onClick={onExit} />
+						<Icon
+							className={LobbyStyle.teamButton}
+							name="edit"
+							onClick={boundOpenEdit}
+						/>
+						<Icon
+							className={LobbyStyle.teamButton}
+							name="logout"
+							onClick={onExit}
+						/>
 					</>
 				) : null}
 			</div>
@@ -224,6 +246,10 @@ export const LobbyScreen = () => {
 		Protocol.moveTeams(undefined);
 	}, []);
 
+	const onJoinTeam = React.useCallback((team: Team) => {
+		Protocol.moveTeams(team.id);
+	}, []);
+
 	return (
 		<div className={PageStyle.pageContainer}>
 			{teamEditState === undefined ? null : (
@@ -236,7 +262,7 @@ export const LobbyScreen = () => {
 			)}
 
 			<div className={PageStyle.content}>
-				<div className={LobbyScreenStyle.lobbyBar}>
+				<div className={LobbyStyle.lobbyBar}>
 					{sortedTeamKeys.map(teamId => {
 						const team = teams.find(({ id }) => id === teamId);
 						const players = playersByTeam[teamId];
@@ -260,6 +286,7 @@ export const LobbyScreen = () => {
 									isSelfTeam={selfPlayer.teamId === team.id}
 									onExit={onLeaveTeam}
 									onOpenEdit={onOpenTeamEdit}
+									onJoin={onJoinTeam}
 								>
 									{barPlayers}
 								</TeamBox>
