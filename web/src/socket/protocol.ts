@@ -2,6 +2,7 @@ import { original, type Draft, Immutable, castDraft } from 'immer';
 import {
 	Color,
 	Cursor,
+	Game,
 	GameSettings,
 	GlobalState,
 	Player,
@@ -283,21 +284,82 @@ export namespace Protocol {
 
 		const gameGoing = reader.getBool();
 
-		const boardState = gameGoing
+		const game: Game | undefined = gameGoing
 			? (() => {
-					const { boardWidth, boardHeight, ...rest } =
-						readSettings(reader);
+					const settings = readSettings(reader);
+					const { boardWidth, boardHeight } = settings;
+
+					const gameTimer = reader.getFloat();
+
+					const board = reader.getByteArray(boardWidth * boardHeight);
+
+					const selfIndex = playerTeamIds.findIndex(
+						teamId => teamId === selfPlayerId,
+					);
+					const isSpectator = playerTeamIds[selfIndex] === 0;
+
+					const numTeamStates = isSpectator ? numTeams : 1;
+					const revealedMasks = Data.readArray(numTeamStates, () =>
+						reader.getBooleanArray(boardWidth * boardHeight),
+					);
+					const flagStates = Data.readArray(numTeamStates, () =>
+						reader.getIntArray(boardWidth * boardHeight),
+					);
+
+					const cursors: Cursor[] = cursorLocations.map(
+						([x, y], index) => {
+							const playerId = playerIds[index];
+							return { playerId, x, y };
+						},
+					);
+
+					const playersGameState: { [id: number]: PlayerGameStats } =
+						{};
+					for (let i = 0; i < numPlayers; ++i) {
+						playersGameState[playerIds[i]] = {
+							alive: !playerIsDeads[i],
+						};
+					}
+
+					const teamsGameState: { [id: number]: TeamGameStats } = {};
+					for (let i = 0; i < numTeams; ++i) {
+						const teamId = teamIds[i];
+
+						if (isSpectator) {
+							teamsGameState[teamId] = {
+								alive: !teamIsDeads[i],
+								flags: flagStates[teamId],
+								revealed: revealedMasks[teamId],
+							};
+						} else {
+							if (teamId === playerTeamIds[selfIndex]) {
+								teamsGameState[teamId] = {
+									alive: !teamIsDeads[i],
+									flags: flagStates[0],
+									revealed: revealedMasks[0],
+								};
+							} else {
+								teamsGameState[teamId] = {
+									alive: !teamIsDeads[i],
+									flags: undefined,
+									revealed: undefined,
+								};
+							}
+						}
+					}
+
 					return {
-						settings: { boardWidth, boardHeight, ...rest },
-						gameTimer: reader.getFloat(),
-						board: reader.getByteArray(boardWidth * boardHeight),
-						revealedMask: reader.getByteArray(
-							boardWidth * boardHeight,
-						),
-						flagStates: reader.getIntArray(
-							boardWidth * boardHeight,
-						),
-					};
+						board: {
+							board: Array.from(board),
+							width: boardWidth,
+							height: boardHeight,
+						},
+						teamsGameState,
+						settings,
+						gameTimer,
+						cursors,
+						playersGameState,
+					} satisfies Game;
 			  })()
 			: undefined;
 
@@ -321,50 +383,7 @@ export namespace Protocol {
 				name: teamNames[index],
 			}));
 
-			if (boardState !== undefined) {
-				const cursors: Cursor[] = cursorLocations.map(
-					([x, y], index) => {
-						const playerId = playerIds[index];
-						return { playerId, x, y };
-					},
-				);
-
-				const playersGameState: { [id: number]: PlayerGameStats } = {};
-				for (let i = 0; i < numPlayers; ++i) {
-					playersGameState[playerIds[i]] = {
-						alive: !playerIsDeads[i],
-					};
-				}
-
-				const teamsGameState: { [id: number]: TeamGameStats } = {};
-				for (let i = 0; i < numTeams; ++i) {
-					teamsGameState[teamIds[i]] = { alive: !teamIsDeads[i] };
-				}
-
-				state.game = {
-					board: {
-						board: Array.from(boardState.board),
-						width: boardState.settings.boardWidth,
-						height: boardState.settings.boardHeight,
-						flags: Array.from(
-							new Array(
-								boardState.settings.boardWidth *
-									boardState.settings.boardHeight,
-							),
-							(_, index) =>
-								boardState.flagStates.getInt32(index * 4),
-						),
-						revealed: Array.from(boardState.revealedMask).map(
-							num => num !== 0,
-						),
-					},
-					teamsGameState: teamsGameState,
-					settings: boardState.settings,
-					gameTimer: boardState.gameTimer,
-					cursors,
-					playersGameState,
-				};
-			}
+			state.game = castDraft(game);
 		});
 	});
 

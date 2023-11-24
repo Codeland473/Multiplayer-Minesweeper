@@ -27,8 +27,6 @@ export type Board = Immutable<{
 	width: number;
 	height: number;
 	board: number[];
-	flags: number[];
-	revealed: boolean[];
 }>;
 
 export type Cursor = Immutable<{
@@ -43,6 +41,8 @@ export type PlayerGameStats = Immutable<{
 
 export type TeamGameStats = Immutable<{
 	alive: boolean;
+	flags: number[] | undefined;
+	revealed: boolean[] | undefined;
 }>;
 
 export type Game = Immutable<{

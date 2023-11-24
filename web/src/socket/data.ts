@@ -9,7 +9,8 @@ export namespace Data {
 		getFloat(): number;
 		getString(): string;
 		getByteArray(length: number): Uint8Array;
-		getIntArray(length: number): DataView;
+		getBooleanArray(length: number): boolean[];
+		getIntArray(length: number): number[];
 	};
 
 	export const createReader = (data: ArrayBuffer): Reader => {
@@ -50,8 +51,18 @@ export namespace Data {
 				offset += length;
 				return value;
 			},
-			getIntArray: (length: number): DataView => {
-				const value = new DataView(data, offset, length * 4);
+			getBooleanArray: (length: number): boolean[] => {
+				const value = Array.from(
+					new Array(length),
+					(_, i) => view.getUint8(offset + i) !== 0,
+				);
+				offset += length;
+				return value;
+			},
+			getIntArray: (length: number): number[] => {
+				const value = Array.from(new Array(length), (_, i) =>
+					view.getInt32(offset + i * 4),
+				);
 				offset += length * 4;
 				return value;
 			},
@@ -72,11 +83,11 @@ export namespace Data {
 
 		return {
 			writeByte: (byte: number) => {
-				view.setInt8(offset, byte);
+				view.setUint8(offset, byte);
 				offset += 1;
 			},
 			writeBool: (bool: boolean) => {
-				view.setInt8(offset, bool ? 1 : 0);
+				view.setUint8(offset, bool ? 1 : 0);
 				offset += 1;
 			},
 			writeFloat: (float: number) => {
