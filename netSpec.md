@@ -197,8 +197,9 @@ a mine is otherwise revealed
 |--------|------|------|---------------------------------|
 | 0      | 1    | Byte | Message type (Square Reveal: 8) |
 | 1      | 4    | Int  | gamer ID                        |
-| 5      | 4    | Int  | x position of square            |
-| 9      | 4    | Int  | y position of square            |
+| 5      | 4    | Int  | team ID                         |
+| 9      | 4    | Int  | x position of square            |
+| 13     | 4    | Int  | y position of square            |
 
 ### Flagging Squares
 
@@ -216,10 +217,11 @@ a mine is otherwise revealed
 |--------|------|------|-------------------------------------------------------------------|
 | 0      | 1    | Byte | Message type (Square Flag: 9)                                     |
 | 1      | 4    | Int  | gamer ID                                                          |
-| 5      | 4    | Int  | x position of square                                              |
-| 9      | 4    | Int  | y position of square                                              |
-| 13     | 1    | Bool | True if a flag should be added, False if a flag should be removed |
-| 14     | 1    | Bool | Is Pencil flag                                                    |
+| 5      | 4    | Int  | team ID                                                           |
+| 9      | 4    | Int  | x position of square                                              |
+| 13     | 4    | Int  | y position of square                                              |
+| 17     | 1    | Bool | True if a flag should be added, False if a flag should be removed |
+| 18     | 1    | Bool | Is Pencil flag                                                    |
 
 ### Cursor Location
 I'll let the exact meaning of the cursor positions be handled by the client.

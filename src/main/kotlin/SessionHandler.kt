@@ -41,10 +41,17 @@ class SessionHandler {
 		val gamer = Gamer(sender, givenID, color, name)
 		gamer.hasLost = hasLost
 
-		broadcast(GamerCreateMessage(gamer))
+		broadcast(Messages.gamerJoined(gamer))
 
 		gamers += gamer
-		UpdateNewGamerMessage(settings, gamers.toTypedArray(), teams.toTypedArray(), gamer, currentGameSettings, board).send(gamer)
+		gamer.connection.send(Messages.updateNewGamer(
+			settings,
+			gamers.toTypedArray(),
+			teams.toTypedArray(),
+			gamer,
+			currentGameSettings,
+			board
+		))
 
 		return gamer
 	}
@@ -52,30 +59,30 @@ class SessionHandler {
 	suspend fun onTeamCreateMessage(sender : Gamer, message : ByteBuffer) {
 		val name = message.getString()
 		val newTeam = Team(name)
-		broadcast(TeamCreateMessage(newTeam.id, sender.id, newTeam.name))
+		broadcast(Messages.teamCreate(newTeam.id, sender.id, newTeam.name))
 		teams.add(newTeam)
 	}
 	suspend fun onTeamRemoveMessage(sender : Gamer, message : ByteBuffer) {
 		val id = message.getInt()
 		teams.removeIf {it.id == id}
-		broadcast(TeamRemoveMessage(id, sender.id))
+		broadcast(Messages.teamRemove(id, sender.id))
 		gamers.filter { it.team == id }.forEach { it.team = 0 }
 	}
 	suspend fun onGamerNameUpdateMessage(sender : Gamer, message : ByteBuffer) {
 		val newName = message.getString()
 		sender.name = newName
-		broadcast(GamerNameUpdateMessage(sender.id, newName))
+		broadcast(Messages.gamerNameUpdate(sender.id, newName))
 	}
 	suspend fun onGamerColorUpdateMessage(sender : Gamer, message : ByteBuffer) {
 		val color = message.getColor()
 		sender.color = color
-		broadcast(GamerColorUpdateMessage(sender.id, color))
+		broadcast(Messages.gamerColorUpdate(sender.id, color))
 	}
 	suspend fun onGamerTeamUpdateMessage(sender : Gamer, message : ByteBuffer) {
 		val targetTeam = message.getInt()
 		if (teams.any { it.id == targetTeam } || targetTeam == 0) {
 			sender.team = targetTeam
-			broadcast(GamerTeamUpdateMessage(sender.id, targetTeam))
+			broadcast(Messages.gamerTeamUpdate(sender.id, targetTeam))
 		}
 	}
 	suspend fun onSettingUpdateMessage(sender : Gamer, message : ByteBuffer) {
@@ -92,13 +99,19 @@ class SessionHandler {
 				settings.mineCount = min(message.getInt(), settings.boardWidth * settings.boardHeight - 1)
 			}
 		}
-		broadcast(SettingUpdateMessage(settingID, sender.id, settings))
+		broadcast(Messages.settingUpdate(settingID, sender.id, settings))
 	}
 	suspend fun onGameStartMessage(sender : Gamer, message : ByteBuffer) {
-		board = Board(settings.boardWidth, settings.boardHeight)
 		currentGameSettings = settings.copy()
-		val (startX, startY) = board!!.generateBoard(currentSettings.mineCount, currentSettings.isNoGuessing)
-		broadcast(GameStartMessage(sender.id, startX, startY, board!!))
+		if (settings.isNoGuessing) {
+			val (newBoard, startPos) = Solver.generateBoard(settings.boardWidth, settings.boardHeight, settings.mineCount)
+			board = newBoard
+			broadcast(Messages.gameStart(sender.id, startPos, board!!))
+		} else {
+			board = Board(settings.boardWidth, settings.boardHeight)
+			val startPos = board!!.generateBoard(currentSettings.mineCount, currentSettings.isNoGuessing)
+			broadcast(Messages.gameStart(sender.id, startPos, board!!))
+		}
 	}
 
 	suspend fun onSquareRevealMessage(sender : Gamer, message : ByteBuffer) {
@@ -117,7 +130,7 @@ class SessionHandler {
 			onMineClicked(sender, team)
 		} else {
 			board!!.revealSquare(x, y, team)
-			broadcast(SquareRevealMessage(sender.id, x, y)) {it.team == sender.team || it.team == 0}
+			broadcast(Messages.squareReveal(sender, x, y)) {it.team == sender.team || it.team == 0}
 		}
 	}
 	suspend fun onSquareFlagMessage(sender : Gamer, message : ByteBuffer) {
@@ -132,7 +145,7 @@ class SessionHandler {
 
 		board!!.flagSquare(x, y, sender, team, add, isPencil)
 
-		broadcast(SquareFlagMessage(sender.id, x, y, add, isPencil)) {it.team == sender.team || it.team == 0}
+		broadcast(Messages.squareFlag(sender, x, y, add, isPencil)) {it.team == sender.team || it.team == 0}
 	}
 	fun onCursorUpdateMessage(sender : Gamer, message : ByteBuffer) {
 		sender.cursorLocation.x = message.getFloat()
@@ -144,40 +157,44 @@ class SessionHandler {
 		val name = message.getString()
 		val team = teams.find { it.id == teamID } ?: return
 		team.name = name
-		broadcast(TeamNameUpdateMessage(team.id, sender.id, name))
+		broadcast(Messages.teamNameUpdate(team.id, sender.id, name))
 	}
 
 	suspend fun onGamerLeave(quitter : Gamer?) {
 		quitter ?: return
 		gamers -= quitter
-		broadcast(GamerRemoveMessage(quitter.id))
+		broadcast(Messages.gamerRemove(quitter))
 	}
 
 	suspend fun onCursorUpdateTick() {
 		for (team in teams) {
 			val updates = gamers.filter { it.cursorUpdated && it.team == team.id }
 			if (updates.isEmpty()) continue
-			broadcast(CursorUpdateMessage(updates)) {it.team == team.id}
+			broadcast(Messages.cursorUpdate(updates)) {it.team == team.id}
 		}
 	}
 
 	//utils
 
-	suspend fun broadcast(message : Message, filter : (Gamer) -> Boolean = {true}) {
+	/*suspend fun broadcast(message : Message, filter : (Gamer) -> Boolean = {true}) {
 		val messageData = message.toFrame()
+		broadcast(messageData, filter)
+	}*/
+
+	suspend fun broadcast(message : ByteArray, filter : (Gamer) -> Boolean = {true}) {
 		for (gamer in gamers.filter(filter)) {
-			gamer.connection.send(messageData)
+			gamer.connection.send(message)
 		}
 	}
 
 	suspend fun onMineClicked(gamer : Gamer, team : Team) {
-		broadcast(GamerLostMessage(gamer.id))
+		broadcast(Messages.gamerLost(gamer))
 		if (currentSettings.isAllForOne || gamers.all { it.team != gamer.team || it.hasLost }) {
-			broadcast(TeamLostMessage(gamer))
+			broadcast(Messages.teamLost(gamer))
 			team.hasLost = true
 			gamers.filter { it.team == team.id }.forEach { it.hasLost = true }
 		} else {
-			broadcast(GamerLostMessage(gamer.id)) {it.team == gamer.team}
+			broadcast(Messages.gamerLost(gamer)) {it.team == gamer.team}
 			gamer.hasLost = true
 		}
 	}
