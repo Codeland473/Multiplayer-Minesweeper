@@ -4,6 +4,25 @@
 Strings are a short followed by a byte array. The short specifies the length of the byte array (not including the 
 prefix).
 
+### BoardPos (8 bytes)
+also used for board size, where x is width and y is height.
+
+| Size | Type | Description |
+|------|------|-------------|
+| 4    | Int  | x           |
+| 4    | Int  | y           |
+
+### Settings (22 bytes)
+
+| Size      | Type     | Description                                 |
+|-----------|----------|---------------------------------------------|
+| 4         | Int      | Cursor update rate (hz)                     |
+| 1         | Bool     | Is no guessing                              |
+| 1         | Bool     | If a team loses when a member clicks a mine |
+| 8         | BoardPos | Board size (x, y)                           |
+| 4         | Int      | Mine Count                                  |
+| 4         | Int      | Countdown Length                            |
+
 # Messages
 
 the first char/byte in any message should be an id for what kind of message it is, as shown below.
@@ -50,112 +69,113 @@ Server -> Client events
 ### Creating a Team
 
 #### Client -> Server
-| Offset | Size     | Type   | Description                   |
-|--------|----------|--------|-------------------------------|
-| 0      | 1        | Byte   | Message type (Team Create: 1) |
-| 1      | Variable | String | Team name                     |
+| Size     | Type   | Description                   |
+|----------|--------|-------------------------------|
+| 1        | Byte   | Message type (Team Create: 1) |
+| Variable | String | Team name                     |
 
 #### Server -> Client
-| Offset | Size     | Type   | Description                   |
-|--------|----------|--------|-------------------------------|
-| 0      | 1        | Byte   | Message type (Team Create: 1) |
-| 1      | 4        | Int    | Team ID                       |
-| 5      | 4        | Int    | Sender ID                     |
-| 9      | Variable | String | Team name                     |
+| Size     | Type   | Description                   |
+|----------|--------|-------------------------------|
+| 1        | Byte   | Message type (Team Create: 1) |
+| 4        | Int    | Team ID                       |
+| 4        | Int    | Sender ID                     |
+| Variable | String | Team name                     |
 
 ### Removing a Team
 
 #### Client -> Server
-| Offset | Size     | Type   | Description                   |
-|--------|----------|--------|-------------------------------|
-| 0      | 1        | Byte   | Message type (Team Remove: 2) |
-| 1      | 4        | Int    | Team ID                       |
+| Size     | Type   | Description                   |
+|----------|--------|-------------------------------|
+| 1        | Byte   | Message type (Team Remove: 2) |
+| 4        | Int    | Team ID                       |
 
 #### Server -> Client
-| Offset | Size     | Type   | Description                   |
-|--------|----------|--------|-------------------------------|
-| 0      | 1        | Byte   | Message type (Team Remove: 2) |
-| 1      | 4        | Int    | Team ID                       |
-| 5      | 4        | Int    | Sender ID                     |
+| Size     | Type   | Description                   |
+|----------|--------|-------------------------------|
+| 1        | Byte   | Message type (Team Remove: 2) |
+| 4        | Int    | Team ID                       |
+| 4        | Int    | Sender ID                     |
 
 ### Changing Names
 
 #### Client -> Server
-| Offset | Size     | Type   | Description                         |
-|--------|----------|--------|-------------------------------------|
-| 0      | 1        | Byte   | Message type (Gamer Name Update: 3) |
-| 1      | Variable | String | New name                            |
+| Size     | Type   | Description                         |
+|----------|--------|-------------------------------------|
+| 1        | Byte   | Message type (Gamer Name Update: 3) |
+| Variable | String | New name                            |
 
 #### Server -> Client
-| Offset | Size     | Type   | Description                         |
-|--------|----------|--------|-------------------------------------|
-| 0      | 1        | Byte   | Message type (Gamer Name Update: 3) |
-| 1      | 4        | Int    | gamer ID                            |
-| 5      | Variable | String | New name                            |
+| Size     | Type   | Description                         |
+|----------|--------|-------------------------------------|
+| 1        | Byte   | Message type (Gamer Name Update: 3) |
+| 4        | Int    | gamer ID                            |
+| Variable | String | New name                            |
 
 
 ### Changing Colors
 
 #### Client -> Server
-| Offset | Size | Type | Description                          |
-|--------|------|------|--------------------------------------|
-| 0      | 1    | Byte | Message type (Gamer Color Update: 4) |
-| 1      | 1    | Byte | Red                                  |
-| 2      | 1    | Byte | Green                                |
-| 3      | 1    | Byte | Blue                                 |
+| Size | Type | Description                          |
+|------|------|--------------------------------------|
+| 1    | Byte | Message type (Gamer Color Update: 4) |
+| 1    | Byte | Red                                  |
+| 1    | Byte | Green                                |
+| 1    | Byte | Blue                                 |
 
 #### Server -> Client
-| Offset | Size | Type | Description                          |
-|--------|------|------|--------------------------------------|
-| 0      | 1    | Byte | Message type (Gamer Color Update: 4) |
-| 1      | 4    | Int  | gamer ID                             |
-| 5      | 1    | Byte | Red                                  |
-| 6      | 1    | Byte | Green                                |
-| 7      | 1    | Byte | Blue                                 |
+| Size | Type | Description                          |
+|------|------|--------------------------------------|
+| 1    | Byte | Message type (Gamer Color Update: 4) |
+| 4    | Int  | gamer ID                             |
+| 1    | Byte | Red                                  |
+| 1    | Byte | Green                                |
+| 1    | Byte | Blue                                 |
 
 ### Changing Teams
 
 Team 0 is spectating team. gamers are automatically put on the spectator team when joining
 
 #### Client -> Server
-| Offset | Size | Type | Description                         |
-|--------|------|------|-------------------------------------|
-| 0      | 1    | Byte | Message type (Gamer Team Update: 5) |
-| 1      | 4    | Int  | ID of team to join                  |
+| Size | Type | Description                         |
+|------|------|-------------------------------------|
+| 1    | Byte | Message type (Gamer Team Update: 5) |
+| 4    | Int  | ID of team to join                  |
 
 #### Server -> Client
-| Offset | Size | Type | Description                         |
-|--------|------|------|-------------------------------------|
-| 0      | 1    | Byte | Message type (Gamer Team Update: 5) |
-| 1      | 4    | Int  | gamer ID                            |
-| 5      | 4    | Int  | ID of joined team                   |
+| Size | Type | Description                         |
+|------|------|-------------------------------------|
+| 1    | Byte | Message type (Gamer Team Update: 5) |
+| 4    | Int  | gamer ID                            |
+| 4    | Int  | ID of joined team                   |
 
 ### Changing Settings
 
 Settings are Listed below
 
-| ID  | Size | Type       | Description                                 |
-|-----|------|------------|---------------------------------------------|
-| 0   | 4    | Int        | Update rate of onscreen cursors (hz)        |
-| 1   | 1    | Bool       | Is no guessing                              |
-| 2   | 1    | Bool       | If a team loses when a member clicks a mine |
-| 3   | 8    | (Int, Int) | Board size                                  |
-| 4   | 4    | Int        | Mine Count                                  |
+| ID  | Size | Type     | Description                                 |
+|-----|------|----------|---------------------------------------------|
+| 0   | 4    | Int      | Update rate of onscreen cursors (hz)        |
+| 1   | 1    | Bool     | Is no guessing                              |
+| 2   | 1    | Bool     | If a team loses when a member clicks a mine |
+| 3   | 8    | BoardPos | Board size                                  |
+| 4   | 4    | Int      | Mine Count                                  |
+| 5   | 4    | Int      | Countdown Length                            |
 
 #### Client -> Server
-| Offset | Size      | Type      | Description                      |
-|--------|-----------|-----------|----------------------------------|
-| 0      | 1         | Byte      | Message type (Setting Update: 6) |
-| 1      | 4         | Int       | Setting ID                       |
-| 5      | Dependant | Dependant | New value of the setting         |
+| Size      | Type      | Description                      |
+|-----------|-----------|----------------------------------|
+| 1         | Byte      | Message type (Setting Update: 6) |
+| 4         | Int       | Setting ID                       |
+| Dependant | Dependant | New value of the setting         |
 
 #### Server -> Client
-| Offset | Size      | Type      | Description                      |
-|--------|-----------|-----------|----------------------------------|
-| 0      | 1         | Byte      | Message type (Setting Update: 6) |
-| 1      | 4         | Int       | Setting ID                       |
-| 5      | 4         | Int       | Sender ID                        |
-| 9      | Dependant | Dependant | New value of the setting         |
+| Size      | Type      | Description                      |
+|-----------|-----------|----------------------------------|
+| 1         | Byte      | Message type (Setting Update: 6) |
+| 4         | Int       | Setting ID                       |
+| 4         | Int       | Sender ID                        |
+| Dependant | Dependant | New value of the setting         |
 
 ### Starting Game
 
@@ -172,12 +192,13 @@ so [0, 1, 1, 0, 2, 9, 0, 2, 9] would be:
 Nothing other than the message ID needs to be sent
 
 #### Server -> Client
-| Offset | Size      | Type       | Description                       |
-|--------|-----------|------------|-----------------------------------|
-| 0      | 1         | Byte       | Message type (Game Start: 7)      |
-| 1      | 4         | Int        | Sender ID                         |
-| 1      | 8         | (Int, Int) | Start position (-1, -1 if not NG) |
-| 5      | Dependant | [byte]     | Board (described above)           |
+| Size      | Type     | Description                  |
+|-----------|----------|------------------------------|
+| 1         | Byte     | Message type (Game Start: 7) |
+| 4         | Int      | Sender ID                    |
+| 8         | Long     | Start time                   |
+| 8         | BoardPos | Start position               |
+| Dependant | [byte]   | Board (described above)      |
 
 ### Revealing Squares
 
@@ -186,76 +207,72 @@ squares with insufficient or excess flags should be handled by the client. If a 
 a mine is otherwise revealed 
 
 #### Client -> Server
-| Offset | Size | Type | Description                     |
-|--------|------|------|---------------------------------|
-| 0      | 1    | Byte | Message type (Square Reveal: 8) |
-| 1      | 4    | Int  | x position of square            |
-| 5      | 4    | Int  | y position of square            |
+| Size | Type     | Description                     |
+|------|----------|---------------------------------|
+| 1    | Byte     | Message type (Square Reveal: 8) |
+| 8    | BoardPos | position of square              |
 
 #### Server -> Client
-| Offset | Size | Type | Description                     |
-|--------|------|------|---------------------------------|
-| 0      | 1    | Byte | Message type (Square Reveal: 8) |
-| 1      | 4    | Int  | gamer ID                        |
-| 5      | 4    | Int  | team ID                         |
-| 9      | 4    | Int  | x position of square            |
-| 13     | 4    | Int  | y position of square            |
+| Size | Type     | Description                     |
+|------|----------|---------------------------------|
+| 1    | Byte     | Message type (Square Reveal: 8) |
+| 4    | Int      | gamer ID                        |
+| 4    | Int      | team ID                         |
+| 8    | BoardPos | position of square              |
 
 ### Flagging Squares
 
 #### Client -> Server
-| Offset | Size | Type | Description                                                       |
-|--------|------|------|-------------------------------------------------------------------|
-| 0      | 1    | Byte | Message type (Square Flag: 9)                                     |
-| 1      | 4    | Int  | x position of square                                              |
-| 5      | 4    | Int  | y position of square                                              |
-| 9      | 1    | Bool | True if a flag should be added, False if a flag should be removed |
-| 10     | 1    | Bool | Is Pencil flag                                                    |
+| Size | Type     | Description                                                       |
+|------|----------|-------------------------------------------------------------------|
+| 1    | Byte     | Message type (Square Flag: 9)                                     |
+| 8    | BoardPos | position of square                                                |
+| 1    | Bool     | True if a flag should be added, False if a flag should be removed |
+| 1    | Bool     | Is Pencil flag                                                    |
 
 #### Server -> Client
-| Offset | Size | Type | Description                                                       |
-|--------|------|------|-------------------------------------------------------------------|
-| 0      | 1    | Byte | Message type (Square Flag: 9)                                     |
-| 1      | 4    | Int  | gamer ID                                                          |
-| 5      | 4    | Int  | team ID                                                           |
-| 9      | 4    | Int  | x position of square                                              |
-| 13     | 4    | Int  | y position of square                                              |
-| 17     | 1    | Bool | True if a flag should be added, False if a flag should be removed |
-| 18     | 1    | Bool | Is Pencil flag                                                    |
+| Size | Type     | Description                                                       |
+|------|----------|-------------------------------------------------------------------|
+| 1    | Byte     | Message type (Square Flag: 9)                                     |
+| 4    | Int      | gamer ID                                                          |
+| 4    | Int      | team ID                                                           |
+| 8    | BoardPos | position of square                                                |
+| 1    | Bool     | True if a flag should be added, False if a flag should be removed |
+| 1    | Bool     | Is Pencil flag                                                    |
 
 ### Cursor Location
 I'll let the exact meaning of the cursor positions be handled by the client.
 
 #### Client -> Server
-| Offset | Size | Type  | Description                      |
-|--------|------|-------|----------------------------------|
-| 0      | 1    | Byte  | Message type (Cursor Update: 10) |
-| 1      | 4    | Float | x position of cursor             |
-| 5      | 4    | Float | y position of cursor             |
+| Size | Type  | Description                      |
+|------|-------|----------------------------------|
+| 1    | Byte  | Message type (Cursor Update: 10) |
+| 4    | Float | x position of cursor             |
+| 4    | Float | y position of cursor             |
 
 #### Server -> Client
-| Offset | Size     | Type                  | Description                      |
-|--------|----------|-----------------------|----------------------------------|
-| 0      | 1        | Byte                  | Message type (Cursor Update: 10) |
-| 1      | 4        | Int                   | Number of cursors given          |
-| 5      | Variable | [(Int, Float, Float)] | gamer ID, cursor X, cursor Y     |
+| Size     | Type                  | Description                      |
+|----------|-----------------------|----------------------------------|
+| 1        | Byte                  | Message type (Cursor Update: 10) |
+| 4        | Int                   | Number of cursors given          |
+| Variable | [(Int, Float, Float)] | gamer ID, cursor X, cursor Y     |
 
 ### Changing Team Name
 
 #### Client -> Server
-| Offset | Size     | Type   | Description                         |
-|--------|----------|--------|-------------------------------------|
-| 0      | 1        | Byte   | Message type (Team Name Update: 11) |
-| 1      | 4        | Int    | Team ID                             |
-| 5      | Variable | String | Team name                           |
+| Size     | Type   | Description                         |
+|----------|--------|-------------------------------------|
+| 1        | Byte   | Message type (Team Name Update: 11) |
+| 4        | Int    | Team ID                             |
+| Variable | String | Team name                           |
 
 #### Server -> Client
-| Offset | Size     | Type   | Description                         |
-|--------|----------|--------|-------------------------------------|
-| 0      | 1        | Byte   | Message type (Team Name Update: 11) |
-| 1      | 4        | Int    | Team ID                             |
-| 5      | 4        | Int    | Sender ID                           |
-| 9      | Variable | String | Team name                           |
+| Size     | Type   | Description                         |
+|----------|--------|-------------------------------------|
+| 1        | Byte   | Message type (Team Name Update: 11) |
+| 4        | Int    | Team ID                             |
+| 4        | Int    | Sender ID                           |
+| Variable | String | Team name                           |
 
 ## Exclusive Messages (Client -> Server)
 
@@ -264,15 +281,15 @@ I'll let the exact meaning of the cursor positions be handled by the client.
 Name must be specified, if gamer ID specified is 0, the server assigns an id. Similarly, a color will be specified
 if the color given is #000000
 
-| Offset | Size     | Type   | Description                   |
-|--------|----------|--------|-------------------------------|
-| 0      | 1        | Byte   | Message type (Gamer Join: 50) |
-| 1      | 4        | Int    | gamer ID                      |
-| 5      | 4        | Int    | Team ID (0 if not on a team)  |
-| 9      | 1        | Byte   | Red                           |
-| 10     | 1        | Byte   | Green                         |
-| 11     | 1        | Byte   | Blue                          |
-| 12     | Variable | String | Name                          |
+| Size     | Type   | Description                   |
+|----------|--------|-------------------------------|
+| 1        | Byte   | Message type (Gamer Join: 50) |
+| 4        | Int    | gamer ID                      |
+| 4        | Int    | Team ID (0 if not on a team)  |
+| 1        | Byte   | Red                           |
+| 1        | Byte   | Green                         |
+| 1        | Byte   | Blue                          |
+| Variable | String | Name                          |
 
 ## Exclusive Messages (Server -> Client)
 
@@ -286,77 +303,70 @@ The final two values (revealed board mask and flag states) will only show the st
 unless the gamer is on the spectator team, in which case the gamer will be given all the board states for each team in
 the same order as the team IDs.
 
-| Offset    | Size      | Type             | Description                                                              |
-|-----------|-----------|------------------|--------------------------------------------------------------------------|
-| 0         | 1         | Byte             | Message type (Gamer Join: 50)                                            |
-| 1         | 4         | Int              | Cursor update rate (hz)                                                  |
-| 5         | 1         | Bool             | Is no guessing                                                           |
-| 6         | 1         | Bool             | If a team loses when a member clicks a mine                              |
-| 7         | 8         | (Int, Int)       | Board size (x, y)                                                        |
-| 15        | 4         | Int              | Mine Count                                                               |
-| 19        | 4         | Int              | Number of gamers (g)                                                     |
-| 23        | 4         | Int              | Number of teams (t)                                                      |
-| 27        | 4         | Int              | ID of new gamer                                                          |
-| 31        | 4 * g     | [Int]            | Active gamer IDs                                                         |
-| Dependant | 3 * g     | [Byte]           | Gamer Colors                                                             |
-| Dependant | g         | [Bool]           | Gamers have lost (true if lost)                                          |
-| Dependant | Dependant | [String]         | gamer gamernames                                                         |
-| Dependant | 4 * g     | [Int]            | Gamer team IDs (0 means no team/spectator team)                          |
-| Dependant | 8 * g     | [(Float, Float)] | Gamer cursor locations                                                   |
-| Dependant | 4 * t     | [Int]            | Active team IDs                                                          |
-| Dependant | t         | [Bool]           | Teams have lost (true if lost)                                           |
-| Dependant | Dependant | [String]         | Team Names                                                               |
-| Dependant | 1         | Bool             | True if a game is going (if false, the rest of this message is not sent) |
-| Dependant | 4         | Int              | Cursor update rate (hz) (current game)                                   |
-| Dependant | 1         | Bool             | Is no guessing (current game)                                            |
-| Dependant | 1         | Bool             | If a team loses when a member clicks a mine (current game)               |
-| Dependant | 8         | (Int, Int)       | Board size (x, y) (current game)                                         |
-| Dependant | 4         | Int              | Mine Count (current game)                                                |
-| Dependant | 4         | Float            | Game Timer (seconds)                                                     |
-| Dependant | x * y     | [Byte]           | Board (described above)                                                  |
-| Dependant | x * y     | [[Bool]]         | Revealed board mask (1 = revealed, 0 otherwise)                          |
-| Dependant | 4 * x * y | [[Int]]          | Flag states (described above)                                            |
+| Size      | Type             | Description                                                              |
+|-----------|------------------|--------------------------------------------------------------------------|
+| 1         | Byte             | Message type (Gamer Join: 50)                                            |
+| 22        | Settings         | Settings                                                                 |
+| 4         | Int              | Number of gamers (g)                                                     |
+| 4         | Int              | Number of teams (t)                                                      |
+| 4         | Int              | ID of new gamer                                                          |
+| 4 * g     | [Int]            | Active gamer IDs                                                         |
+| 3 * g     | [Byte]           | Gamer Colors                                                             |
+| g         | [Bool]           | Gamers have lost (true if lost)                                          |
+| Dependant | [String]         | gamer gamernames                                                         |
+| 4 * g     | [Int]            | Gamer team IDs (0 means no team/spectator team)                          |
+| 8 * g     | [(Float, Float)] | Gamer cursor locations                                                   |
+| 4 * t     | [Int]            | Active team IDs                                                          |
+| t         | [Bool]           | Teams have lost (true if lost)                                           |
+| Dependant | [String]         | Team Names                                                               |
+| 1         | Bool             | True if a game is going (if false, the rest of this message is not sent) |
+| 22        | Settings         | Current game settings                                                    |
+| 8         | Long             | Game start time                                                          |
+| 8         | BoardPos         | Start position                                                           |
+| x * y     | [Byte]           | Board (described above)                                                  |
+| x * y     | [[Bool]]         | Revealed board mask (1 = revealed, 0 otherwise)                          |
+| 4 * x * y | [[Int]]          | Flag states (described above)                                            |
 
 ### Gamer Joined
 
-| Offset | Size     | Type   | Description                     |
-|--------|----------|--------|---------------------------------|
-| 0      | 1        | Byte   | Message type (Gamer Create: 51) |
-| 1      | 4        | Int    | Gamer ID                        |
-| 5      | 4        | Int    | Team of gamer                   |
-| 9      | 1        | Byte   | Red                             |
-| 10     | 1        | Byte   | Green                           |
-| 11     | 1        | Byte   | Blue                            |
-| 12     | 1        | Bool   | Has Lost                        |     
-| 13     | Variable | String | Name                            |
+| Size     | Type   | Description                     |
+|----------|--------|---------------------------------|
+| 1        | Byte   | Message type (Gamer Create: 51) |
+| 4        | Int    | Gamer ID                        |
+| 4        | Int    | Team of gamer                   |
+| 1        | Byte   | Red                             |
+| 1        | Byte   | Green                           |
+| 1        | Byte   | Blue                            |
+| 1        | Bool   | Has Lost                        |     
+| Variable | String | Name                            |
 
 ### Gamer Left
 
-| Offset | Size | Type | Description                     |
-|--------|------|------|---------------------------------|
-| 0      | 1    | Byte | Message type (Gamer Remove: 52) |
-| 1      | 4    | Int  | ID of gamer that left           |
+| Size | Type | Description                     |
+|------|------|---------------------------------|
+| 1    | Byte | Message type (Gamer Remove: 52) |
+| 4    | Int  | ID of gamer that left           |
 
 ### Team Finished
 
-| Offset | Size | Type | Description                    |
-|--------|------|------|--------------------------------|
-| 0      | 1    | Byte | Message type (Team Finish: 53) |
-| 1      | 4    | Int  | ID of team that won            |
+| Size | Type | Description                    |
+|------|------|--------------------------------|
+| 1    | Byte | Message type (Team Finish: 53) |
+| 4    | Int  | ID of team that won            |
 
 ### Gamer Lost
 
 This message will not be sent when the "Team Lost" message is sent.
 
-| Offset | Size | Type | Description                   |
-|--------|------|------|-------------------------------|
-| 0      | 1    | Byte | Message type (Gamer Lost: 54) |
-| 1      | 4    | Int  | ID of gamer that Lost         |
+| Size | Type | Description                   |
+|------|------|-------------------------------|
+| 1    | Byte | Message type (Gamer Lost: 54) |
+| 4    | Int  | ID of gamer that Lost         |
 
 ### Team Lost
 
-| Offset | Size | Type | Description                          |
-|--------|------|------|--------------------------------------|
-| 0      | 1    | Byte | Message type (Team Lost: 55)         |
-| 1      | 4    | Int  | ID of gamer that Made the last click |
-| 5      | 4    | Int  | ID of team that Lost                 |
+| Size | Type | Description                          |
+|------|------|--------------------------------------|
+| 1    | Byte | Message type (Team Lost: 55)         |
+| 4    | Int  | ID of gamer that Made the last click |
+| 4    | Int  | ID of team that Lost                 |

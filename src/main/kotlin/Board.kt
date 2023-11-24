@@ -3,11 +3,12 @@ import kotlin.random.asKotlinRandom
 import kotlin.random.Random as KRandom
 
 class Board(var width : Int, var height : Int, var mineCounts : ByteArray = ByteArray(width * height)) {
-	var startTime : Long = System.currentTimeMillis()
+	var startTime : Long = System.currentTimeMillis() / 1000L
+	var startPos : Pair<Int, Int>? = null
 
 	fun currentTime() : Float = (System.currentTimeMillis() - startTime).toFloat() / 1000f
-	fun resetTime() {
-		startTime = System.currentTimeMillis()
+	fun resetTime(settings : Settings) {
+		startTime = System.currentTimeMillis() / 1000L + settings.countdownLength
 	}
 
 	fun clearBoard() {
@@ -20,7 +21,8 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 		setMinecounts()
 		if (noGuessing) {
 			val solver = Solver(this, r)
-			return solver.getSolvableBoard()
+			startPos = solver.getSolvableBoard()
+			return startPos!!
 		} else {
 			val minMineCounts = mineCounts.min()
 			val possibleStarts = mineCounts.indices.filter { mineCounts[it] == minMineCounts }
@@ -28,7 +30,8 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 				Pair(-1, -1)
 			} else {
 				val ret = possibleStarts.random(r)
-				return Pair(ret % width, ret / width)
+				startPos = Pair(ret % width, ret / width)
+				return startPos!!
 			}
 		}
 	}

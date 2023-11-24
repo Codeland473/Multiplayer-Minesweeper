@@ -5,6 +5,7 @@ class Settings {
 	var boardWidth : Int = 30
 	var boardHeight : Int = 20
 	var mineCount : Int = 130
+	var countdownLength : Int = 5
 
 	fun copy() : Settings {
 		val r = Settings()
@@ -14,6 +15,7 @@ class Settings {
 		r.boardWidth = boardWidth
 		r.boardHeight = boardHeight
 		r.mineCount = mineCount
+		r.countdownLength = countdownLength
 		return r
 	}
 }
@@ -23,3 +25,4 @@ const val SETTING_IS_NO_GUESSING = 1
 const val SETTING_IS_ALL_FOR_ONE = 2
 const val SETTING_BOARD_SIZE = 3
 const val SETTING_MINE_COUNT = 4
+const val SETTING_COUNTDOWN_LENGTH = 5

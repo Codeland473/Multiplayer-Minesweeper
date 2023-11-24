@@ -98,6 +98,7 @@ class SessionHandler {
 			SETTING_MINE_COUNT -> {
 				settings.mineCount = min(message.getInt(), settings.boardWidth * settings.boardHeight - 1)
 			}
+			SETTING_COUNTDOWN_LENGTH -> settings.countdownLength = message.getInt()
 		}
 		broadcast(Messages.settingUpdate(settingID, sender.id, settings))
 	}
@@ -106,10 +107,12 @@ class SessionHandler {
 		if (settings.isNoGuessing) {
 			val (newBoard, startPos) = Solver.generateBoard(settings.boardWidth, settings.boardHeight, settings.mineCount)
 			board = newBoard
+			board!!.resetTime(settings)
 			broadcast(Messages.gameStart(sender.id, startPos, board!!))
 		} else {
 			board = Board(settings.boardWidth, settings.boardHeight)
 			val startPos = board!!.generateBoard(currentSettings.mineCount, currentSettings.isNoGuessing)
+			board!!.resetTime(settings)
 			broadcast(Messages.gameStart(sender.id, startPos, board!!))
 		}
 	}

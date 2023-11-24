@@ -4,6 +4,7 @@ import Board
 import Color
 import Gamer
 import SETTING_BOARD_SIZE
+import SETTING_COUNTDOWN_LENGTH
 import SETTING_IS_ALL_FOR_ONE
 import SETTING_IS_NO_GUESSING
 import SETTING_MINE_COUNT
@@ -59,12 +60,14 @@ object Messages {
 				put(settings.boardHeight)
 			}
 			SETTING_MINE_COUNT -> put(settings.mineCount)
+			SETTING_COUNTDOWN_LENGTH -> put(settings.countdownLength)
 			else -> {}
 		}
 	}
 
 	fun gameStart(senderID : Int, startPos : Pair<Int, Int>, board : Board) = message(7) {
 		put(senderID)
+		put(board.startTime)
 		put(startPos.first)
 		put(startPos.second)
 		put(board.mineCounts)
@@ -120,7 +123,10 @@ object Messages {
 		if (board != null && currentSettings != null) {
 			put(true)
 			put(settings)
-			put(board.currentTime())
+			put(board.startTime)
+			val (startX, startY) = board.startPos ?: Pair(-1, -1)
+			put(startX)
+			put(startY)
 			put(board.mineCounts)
 			val gamersTeam = teams.find { it.id == newGamer.team }
 			if (gamersTeam != null) {
