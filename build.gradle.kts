@@ -1,9 +1,12 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+val jvmTarget = "1.8"
+
 plugins {
     kotlin("jvm") version "1.8.10"
 	application
 	id("io.ktor.plugin") version "2.3.6"
+	id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 group = "org.example"
@@ -22,8 +25,11 @@ dependencies {
 
 }
 
+tasks.withType<JavaCompile> {
+	targetCompatibility = jvmTarget
+}
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "17"
+    kotlinOptions.jvmTarget = jvmTarget
 }
 
 application {
