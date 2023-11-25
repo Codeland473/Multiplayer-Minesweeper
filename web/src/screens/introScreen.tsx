@@ -3,7 +3,7 @@ import { useImmer } from 'use-immer';
 import { hexToRgb, randIntRange, rgbToHex } from '../util.js';
 import { PageStyle } from './page.css.js';
 import { IntroScreenStyle } from './introScreen.css.js';
-import { Protocol } from '../socket/protocol.js';
+import { Sender } from '../socket/sender.js';
 
 type PlayerSetup = {
 	red: number;
@@ -29,7 +29,7 @@ export const IntroScreen = () => {
 	const realName = inputName.trim();
 
 	const join = React.useCallback(() => {
-		Protocol.join(undefined, undefined, [red, green, blue], true, realName);
+		Sender.join(undefined, undefined, [red, green, blue], true, realName);
 	}, [blue, green, realName, red]);
 
 	const hexColor = rgbToHex(red, green, blue);

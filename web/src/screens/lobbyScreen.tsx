@@ -6,7 +6,7 @@ import { Icon } from '../components/icon.js';
 import { AllOrNothing, groupBy, rgbToHex } from '../util.js';
 import { Updater, useImmer } from 'use-immer';
 import { Modal } from '../components/modal.js';
-import { Protocol } from '../socket/protocol.js';
+import { Sender } from '../socket/sender.js';
 
 type BarPlayerProps = AllOrNothing<{
 	color: Color;
@@ -234,9 +234,9 @@ export const LobbyScreen = () => {
 	const onSaveTeamModal = React.useCallback(
 		(teamId: number | undefined, newName: string) => {
 			if (teamId === undefined) {
-				Protocol.teamCreate(newName);
+				Sender.teamCreate(newName);
 			} else {
-				Protocol.teamNameUpdate(teamId, newName);
+				Sender.teamNameUpdate(teamId, newName);
 			}
 
 			setTeamEditState(undefined);
@@ -264,15 +264,15 @@ export const LobbyScreen = () => {
 	}, [setTeamEditState]);
 
 	const onLeaveTeam = React.useCallback(() => {
-		Protocol.moveTeams(undefined);
+		Sender.moveTeams(undefined);
 	}, []);
 
 	const onJoinTeam = React.useCallback((team: Team) => {
-		Protocol.moveTeams(team.id);
+		Sender.moveTeams(team.id);
 	}, []);
 
 	const onDeleteTeam = React.useCallback((team: Team) => {
-		Protocol.teamRemove(team.id);
+		Sender.teamRemove(team.id);
 	}, []);
 
 	return (

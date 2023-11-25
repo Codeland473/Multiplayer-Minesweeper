@@ -27,6 +27,8 @@ export type Board = Immutable<{
 	width: number;
 	height: number;
 	board: number[];
+	startX: number | undefined;
+	startY: number | undefined;
 }>;
 
 export type Cursor = Immutable<{
