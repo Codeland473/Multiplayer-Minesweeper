@@ -8,11 +8,21 @@ import kotlin.random.Random as KRandom
 
 fun main() {
 	//measurePerformance(10, 30, 16, 240)
-	val width = 100
-	val height = 100
-	val mineCount = 2400
-	measurePerformance(0, 20, width, height, mineCount)
-	measurePerformance(0, 10000)
+	val width = 32
+	val height = 32
+	var mineCount = 1
+
+	do {
+		val (avg, min, q1, med, q3, max) = measurePerformance(0, 100, width, height, mineCount)
+		val density = mineCount.toFloat() / (width * height).toFloat()
+		println("$mineCount, $density, $min, $q1, $med, $q3, $max, $avg")
+		++mineCount
+
+	} while (q3 > 0)
+	//measurePerformance(0, 20, width, height, mineCount)
+	//measurePerformance(0, 10000)
+
+
 	//println("normal")
 	//val singlethreaded = measurePerformance(1, 5, 30, 16, mineCount)
 	/*
@@ -56,13 +66,15 @@ x3113x-
 ??x??x-
  */
 
+data class PerformanceSummary(val average : Double, val min : Float, val q1 : Float, val median : Float, val q3 : Float, val max : Float)
+
 fun measurePerformance(
 	threads : Int = 1,
 	repetitions: Int = 10000,
 	width : Int = 30,
 	height : Int = 20,
 	mineCount : Int = 130,
-	seed : Long = 0L) : Double
+	seed : Long = 0L) : PerformanceSummary
 {
 	//val r = KRandom(seed)
 	val timings = Array(repetitions) {
@@ -92,14 +104,15 @@ fun measurePerformance(
 	val median = sorted[repetitions / 2]
 	val q3 = sorted[3 * repetitions / 4]
 	val max = timings.max()
-	println("$repetitions ${width}x${height}/$mineCount boards generated on $threads thread(s), performance summary:")
-	println("average: $average")
-	println("min: $min")
-	println("q1: $q1")
-	println("median: $median")
-	println("q3: $q3")
-	println("max: $max")
-	return average
+
+	//println("$repetitions ${width}x${height}/$mineCount boards generated on $threads thread(s), performance summary:")
+	//println("average: $average")
+	//println("min: $min")
+	//println("q1: $q1")
+	//println("median: $median")
+	//println("q3: $q3")
+	//println("max: $max")
+	return PerformanceSummary(average, min, q1, median, q3, max)
 }
 
 fun<T> time(f : () -> T) : Float {
@@ -430,7 +443,9 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 				while (boards.isEmpty()) {
 					val startPos = solver.solve()
 					if (startPos != null) {
-						boards.add(Pair(board, startPos))
+						synchronized(boards) {
+							boards.add(Pair(board, startPos))
+						}
 					} else {
 						board.generateBoard(mineCount, false, threadR)
 						solver.reset()
@@ -441,7 +456,7 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 				thread(block = f)
 			}
 			f()
-			return boards.first()
+			return synchronized(boards) {boards.first()}
 		}
 	}
 }

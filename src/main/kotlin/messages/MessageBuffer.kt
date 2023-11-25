@@ -58,6 +58,7 @@ class MessageBuffer(private val initialMax : Int = 500) {
 	}
 
 	fun put(v : Int) = putFun(4) { putInt(v) }
+	fun put(v : Long) = putFun(8) { putLong(v) }
 	fun put(v : Float) = putFun(4) { putFloat(v) }
 	fun put(v : Short) = putFun(4) { putShort(v) }
 	fun put(v : Boolean) = put(if (v) 1.toByte() else 0.toByte())
