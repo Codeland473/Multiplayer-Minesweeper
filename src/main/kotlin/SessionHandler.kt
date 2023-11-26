@@ -56,6 +56,17 @@ class SessionHandler {
 		return gamer
 	}
 
+	suspend fun onStateRequest(sender : Gamer, message : ByteBuffer) {
+		sender.connection.send(Messages.updateNewGamer(
+			settings,
+			gamers.toTypedArray(),
+			teams.toTypedArray(),
+			sender,
+			currentGameSettings,
+			board
+		))
+	}
+
 	suspend fun onTeamCreateMessage(sender : Gamer, message : ByteBuffer) {
 		val name = message.getString()
 		val newTeam = Team(name)
@@ -108,18 +119,19 @@ class SessionHandler {
 			val (newBoard, startPos) = Solver.generateBoard(settings.boardWidth, settings.boardHeight, settings.mineCount)
 			board = newBoard
 			board!!.resetTime(settings)
-			broadcast(Messages.gameStart(sender.id, startPos, board!!))
+			broadcast(Messages.gameStart(sender.id, startPos, currentSettings, board!!))
 		} else {
 			board = Board(settings.boardWidth, settings.boardHeight)
 			val startPos = board!!.generateBoard(currentSettings.mineCount, currentSettings.isNoGuessing)
 			board!!.resetTime(settings)
-			broadcast(Messages.gameStart(sender.id, startPos, board!!))
+			broadcast(Messages.gameStart(sender.id, startPos, currentSettings, board!!))
 		}
 	}
 
 	suspend fun onSquareRevealMessage(sender : Gamer, message : ByteBuffer) {
 		val x = message.getInt()
 		val y = message.getInt()
+		val isChord = message.getBool()
 
 		val team = teams.find { it.id == sender.team } ?: return
 		board ?: return
@@ -132,8 +144,10 @@ class SessionHandler {
 			board!!.neighborUnflaggedMines(x, y, team) > 0) {
 			onMineClicked(sender, team)
 		} else {
-			board!!.revealSquare(x, y, team)
-			broadcast(Messages.squareReveal(sender, x, y)) {it.team == sender.team || it.team == 0}
+			if (board!!.isRevealed(x, y, team) != isChord) return
+			val trueIsChord = board!!.revealSquare(x, y, team)
+			broadcast(Messages.squareReveal(sender, x, y, trueIsChord)) {it.team == sender.team || it.team == 0}
+			if (board!!.isCompleted(team)) broadcast(Messages.teamFinish(team, System.currentTimeMillis()))
 		}
 	}
 	suspend fun onSquareFlagMessage(sender : Gamer, message : ByteBuffer) {
@@ -178,12 +192,7 @@ class SessionHandler {
 	}
 
 	//utils
-
-	/*suspend fun broadcast(message : Message, filter : (Gamer) -> Boolean = {true}) {
-		val messageData = message.toFrame()
-		broadcast(messageData, filter)
-	}*/
-
+	
 	suspend fun broadcast(message : ByteArray, filter : (Gamer) -> Boolean = {true}) {
 		for (gamer in gamers.filter(filter)) {
 			gamer.connection.send(message)

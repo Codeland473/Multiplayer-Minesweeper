@@ -46,6 +46,7 @@ fun Application.module() {
 						11.toByte() -> handler.onTeamNameUpdateMessage(gamer ?: continue, frame.buffer)
 
 						50.toByte() -> gamer = handler.onGamerJoin(this, frame.buffer)
+						51.toByte() -> handler.onStateRequest(gamer ?: continue, frame.buffer)
 
 						else -> println("unknown message")
 					}

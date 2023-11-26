@@ -3,12 +3,12 @@ import kotlin.random.asKotlinRandom
 import kotlin.random.Random as KRandom
 
 class Board(var width : Int, var height : Int, var mineCounts : ByteArray = ByteArray(width * height)) {
-	var startTime : Long = System.currentTimeMillis() / 1000L
+	var startTime : Long = System.currentTimeMillis()
 	var startPos : Pair<Int, Int>? = null
 
 	fun currentTime() : Float = (System.currentTimeMillis() - startTime).toFloat() / 1000f
 	fun resetTime(settings : Settings) {
-		startTime = System.currentTimeMillis() / 1000L + settings.countdownLength
+		startTime = System.currentTimeMillis() + 1000L * settings.countdownLength
 	}
 
 	fun clearBoard() {
@@ -102,19 +102,28 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 		}
 	}
 
-	fun revealSquare(x : Int, y : Int, team : Team) {
+	fun revealSquare(x : Int, y : Int, team : Team) : Boolean {
 		if (team.boardMask == null) {
 			team.boardMask = BooleanArray(width * height)
 		}
-		if (isRevealed(x, y, team)) {
+		return if (isRevealed(x, y, team)) {
 			adjacencyPairs.forEach {(dx, dy) ->
 				if (inBounds(x + dx, y + dy)) {
 					team.boardMask!![x + dx + width * (y + dy)] = true
 				}
 			}
+			true
 		} else {
 			team.boardMask!![x + width * y] = true
+			if (get(x, y) == 0.toByte()) {
+				adjacents(x, y).forEach { (ax, ay) -> revealSquare(ax, ay, team) }
+			}
+			false
 		}
+	}
+
+	fun isCompleted(team : Team) : Boolean {
+		return (team.boardMask ?: return false).all { it }
 	}
 
 	fun flagSquare(x : Int, y : Int, gamer : Gamer, team : Team, place : Boolean, isPencil : Boolean) {

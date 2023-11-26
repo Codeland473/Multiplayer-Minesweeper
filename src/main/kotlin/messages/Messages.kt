@@ -65,19 +65,21 @@ object Messages {
 		}
 	}
 
-	fun gameStart(senderID : Int, startPos : Pair<Int, Int>, board : Board) = message(7) {
+	fun gameStart(senderID : Int, startPos : Pair<Int, Int>, settings : Settings, board : Board) = message(7) {
 		put(senderID)
 		put(board.startTime)
 		put(startPos.first)
 		put(startPos.second)
+		put(settings)
 		put(board.mineCounts)
 	}
 
-	fun squareReveal(gamer : Gamer, posX : Int, posY : Int) = message(8) {
+	fun squareReveal(gamer : Gamer, posX : Int, posY : Int, isChord : Boolean) = message(8) {
 		put(gamer.id)
 		put(gamer.team)
 		put(posX)
 		put(posY)
+		put(isChord)
 	}
 
 	fun squareFlag(gamer : Gamer, posX : Int, posY : Int, isPlacing : Boolean, isPencil : Boolean) = message(9) {
@@ -145,7 +147,10 @@ object Messages {
 
 	fun gamerRemove(quitter : Gamer?) = message(52) { put(quitter!!.id) }
 
-	fun teamFinish(winner : Team) = message(53) { put(winner.id) }
+	fun teamFinish(winner : Team, time : Long) = message(53) {
+		put(winner.id)
+		put(time)
+	}
 
 	fun gamerLost(loser : Gamer) = message(54) { put(loser.id) }
 

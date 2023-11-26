@@ -10,7 +10,7 @@ fun main() {
 	//measurePerformance(10, 30, 16, 240)
 	val width = 32
 	val height = 32
-	var mineCount = 1
+	var mineCount = 472
 
 	do {
 		val (avg, min, q1, med, q3, max) = measurePerformance(0, 100, width, height, mineCount)

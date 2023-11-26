@@ -43,6 +43,7 @@ Client -> Server
 | 10  | [Cursor Update](#Cursor-Location)       |
 | 11  | [Team Name Update](#Changing-Team-Name) |
 | 50  | [Gamer Join](#Joining)                  |
+| 51  | [State Request](#Requesting-Game-State) |
 
 Server -> Client events
 
@@ -192,33 +193,34 @@ so [0, 1, 1, 0, 2, 9, 0, 2, 9] would be:
 Nothing other than the message ID needs to be sent
 
 #### Server -> Client
-| Size      | Type     | Description                  |
-|-----------|----------|------------------------------|
-| 1         | Byte     | Message type (Game Start: 7) |
-| 4         | Int      | Sender ID                    |
-| 8         | Long     | Start time                   |
-| 8         | BoardPos | Start position               |
-| Dependant | [byte]   | Board (described above)      |
+| Size      | Type     | Description                   |
+|-----------|----------|-------------------------------|
+| 1         | Byte     | Message type (Game Start: 7)  |
+| 4         | Int      | Sender ID                     |
+| 8         | Long     | Start time (Unix time millis) |
+| 8         | BoardPos | Start position                |
+| 22        | Settings | Game Settings                 |
+| Dependant | [byte]   | Board (described above)       |
 
 ### Revealing Squares
 
-If the square specified is already revealed, then it should be interpreted as a chord. Protections for not chording
-squares with insufficient or excess flags should be handled by the client. If a chord is done using incorrect flags, or
-a mine is otherwise revealed 
+Is chord should be false when the user clicks on a 0 mine.
 
 #### Client -> Server
-| Size | Type     | Description                     |
-|------|----------|---------------------------------|
-| 1    | Byte     | Message type (Square Reveal: 8) |
-| 8    | BoardPos | position of square              |
+| Size  | Type     | Description                     |
+|-------|----------|---------------------------------|
+| 1     | Byte     | Message type (Square Reveal: 8) |
+| 8     | BoardPos | Position of square              |
+| 1     | Boolean  | Is chord                        |
 
 #### Server -> Client
 | Size | Type     | Description                     |
 |------|----------|---------------------------------|
 | 1    | Byte     | Message type (Square Reveal: 8) |
-| 4    | Int      | gamer ID                        |
-| 4    | Int      | team ID                         |
-| 8    | BoardPos | position of square              |
+| 4    | Int      | Gamer ID                        |
+| 4    | Int      | Team ID                         |
+| 8    | BoardPos | Position of square              |
+| 1    | Boolean  | Is chord                        |
 
 ### Flagging Squares
 
@@ -291,6 +293,15 @@ if the color given is #000000
 | 1        | Byte   | Blue                          |
 | Variable | String | Name                          |
 
+### Requesting Game State
+
+If the client reaches an unrecoverable error state and needs to re-sync with the server they can send this message. When
+the server receives this, it will send back a [Gamer Join](#Update-New-Gamer) message.
+
+| Size     | Type   | Description                      |
+|----------|--------|----------------------------------|
+| 1        | Byte   | Message type (State Request: 51) |
+
 ## Exclusive Messages (Server -> Client)
 
 ### Update New Gamer
@@ -349,10 +360,11 @@ the same order as the team IDs.
 
 ### Team Finished
 
-| Size | Type | Description                    |
-|------|------|--------------------------------|
-| 1    | Byte | Message type (Team Finish: 53) |
-| 4    | Int  | ID of team that won            |
+| Size | Type | Description                            |
+|------|------|----------------------------------------|
+| 1    | Byte | Message type (Team Finish: 53)         |
+| 4    | Int  | ID of team that finished               |
+| 8    | Long | Unix time the server processed the win |
 
 ### Gamer Lost
 
