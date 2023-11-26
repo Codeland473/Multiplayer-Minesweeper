@@ -1,15 +1,13 @@
 import React from 'react';
-import { ConnectionState } from '../globalState.js';
 import { Socket } from '../socket/socket.js';
 import { Loader } from '../components/loader.js';
 import { PageStyle } from './page.css.js';
 import { ConnectScreenStyle } from './connectScreen.css.js';
+import { useGlobalState } from '../globalState.js';
 
-export type ConnectScreenProps = {
-	connectionState: ConnectionState;
-};
+export const ConnectScreen = () => {
+	const connectionState = useGlobalState(state => state.connectionState);
 
-export const ConnectScreen = ({ connectionState }: ConnectScreenProps) => {
 	const isLoading = connectionState.status === 'loading';
 	const { error } = connectionState;
 

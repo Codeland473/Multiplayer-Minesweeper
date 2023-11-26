@@ -152,4 +152,16 @@ export namespace Sender {
 			return sendBuffer;
 		},
 	);
+
+	export const revealTile = Socket.registerSender((x: number, y: number) => {
+		const sendBuffer = new Uint8Array(1 + 4 + 4);
+
+		const writer = Data.createWriter(sendBuffer);
+
+		writer.writeByte(SendCode.SQUARE_REVEAL);
+		writer.writeInt(x);
+		writer.writeInt(y);
+
+		return sendBuffer;
+	});
 }
