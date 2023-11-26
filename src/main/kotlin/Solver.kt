@@ -354,8 +354,8 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 		repeat(board.height) { y ->
 			builder.append("|")
 			repeat(board.width) {x ->
-				val color = regionIds[idx(x, y)]
-				val char = if (color < 0) " " else if (color < 10) color else Char((color - 10) + 'a'.code)
+				val region = regionIds[idx(x, y)]
+				val char = if (region < 0) " " else if (region < 10) region else Char((region - 10) + 'a'.code)
 				builder.append(char)
 			}
 			builder.append("|\n")
@@ -397,7 +397,6 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 		repeat(board.height) { y ->
 			builder.append("|")
 			repeat(board.width) {x ->
-				val color = regionIds[idx(x, y)]
 				var char = when(board[x, y]) {
 					0.toByte() -> '-'
 					9.toByte() -> 'X'

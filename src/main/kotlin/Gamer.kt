@@ -1,6 +1,6 @@
 import io.ktor.server.websocket.*
 import java.nio.ByteBuffer
-import java.util.*
+import kotlin.random.Random
 
 class Gamer(
 	val connection : DefaultWebSocketServerSession,
@@ -16,11 +16,10 @@ class Gamer(
 data class Color(val r : Byte, val g : Byte, val b : Byte) {
 	companion object  {
 		fun random() : Color {
-			val r = Random()
 			return Color(
-				r.nextInt(Byte.MIN_VALUE.toInt(), Byte.MAX_VALUE.toInt()).toByte(),
-				r.nextInt(Byte.MIN_VALUE.toInt(), Byte.MAX_VALUE.toInt()).toByte(),
-				r.nextInt(Byte.MIN_VALUE.toInt(), Byte.MAX_VALUE.toInt()).toByte())
+				Random.nextInt(Byte.MIN_VALUE.toInt(), Byte.MAX_VALUE.toInt()).toByte(),
+				Random.nextInt(Byte.MIN_VALUE.toInt(), Byte.MAX_VALUE.toInt()).toByte(),
+				Random.nextInt(Byte.MIN_VALUE.toInt(), Byte.MAX_VALUE.toInt()).toByte())
 		}
 	}
 }
