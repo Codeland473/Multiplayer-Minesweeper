@@ -115,6 +115,7 @@ class SessionHandler {
 	}
 	suspend fun onGameStartMessage(sender : Gamer, message : ByteBuffer) {
 		currentGameSettings = settings.copy()
+		teams.forEach {it.progress = TeamProgress(settings.boardWidth, settings.boardHeight)}
 		if (settings.isNoGuessing) {
 			val (newBoard, startPos) = Solver.generateBoard(settings.boardWidth, settings.boardHeight, settings.mineCount)
 			board = newBoard
@@ -136,18 +137,24 @@ class SessionHandler {
 		val team = teams.find { it.id == sender.team } ?: return
 		board ?: return
 		if (!board!!.inBounds(x, y)) return
-		if (board!!.isFlagged(x, y, team)) return
+		if (team.progress == null) team.progress = TeamProgress(board!!)
+
+		if (board!!.isFlagged(x, y, team.progress!!)) return
 
 		if (board!![x, y] == 9.toByte() ||
-			(board!!.isSatisfied(x, y, team)) &&
-			board!!.isRevealed(x, y, team) &&
-			board!!.neighborUnflaggedMines(x, y, team) > 0) {
+			(board!!.isSatisfied(x, y, team.progress!!)) &&
+			board!!.isRevealed(x, y, team.progress!!) &&
+			board!!.neighborUnflaggedMines(x, y, team.progress!!) > 0) {
 			onMineClicked(sender, team)
 		} else {
-			if (board!!.isRevealed(x, y, team) != isChord) return
-			val trueIsChord = board!!.revealSquare(x, y, team)
+			if (board!!.isRevealed(x, y, team.progress!!) != isChord) return
+			val trueIsChord = board!!.revealSquare(x, y, team.progress!!)
 			broadcast(Messages.squareReveal(sender, x, y, trueIsChord)) {it.team == sender.team || it.team == 0}
-			if (board!!.isCompleted(team)) broadcast(Messages.teamFinish(team, System.currentTimeMillis()))
+			if (board!!.isCompleted(team.progress!!)) {
+				team.progress!!.hasFinished = true
+				team.progress!!.endTime = System.currentTimeMillis()
+				broadcast(Messages.teamFinish(team, team.progress!!.endTime!!))
+			}
 		}
 	}
 	suspend fun onSquareFlagMessage(sender : Gamer, message : ByteBuffer) {
@@ -159,8 +166,9 @@ class SessionHandler {
 		val team = teams.find { it.id == sender.team } ?: return
 		board ?: return
 		if (!board!!.inBounds(x, y)) return
+		if (team.progress == null) team.progress = TeamProgress(board!!)
 
-		board!!.flagSquare(x, y, sender, team, add, isPencil)
+		board!!.flagSquare(x, y, sender, team.progress!!, add, isPencil)
 
 		broadcast(Messages.squareFlag(sender, x, y, add, isPencil)) {it.team == sender.team || it.team == 0}
 	}
@@ -175,6 +183,13 @@ class SessionHandler {
 		val team = teams.find { it.id == teamID } ?: return
 		team.name = name
 		broadcast(Messages.teamNameUpdate(team.id, sender.id, name))
+	}
+
+	suspend fun onBoardClearMessage(sender : Gamer, message : ByteBuffer) {
+		gamers.forEach {it.hasLost = false}
+		teams.forEach { it.progress = null }
+		board = null
+		broadcast(Messages.boardClear())
 	}
 
 	suspend fun onGamerLeave(quitter : Gamer?) {
@@ -202,8 +217,9 @@ class SessionHandler {
 	suspend fun onMineClicked(gamer : Gamer, team : Team) {
 		broadcast(Messages.gamerLost(gamer))
 		if (currentSettings.isAllForOne || gamers.all { it.team != gamer.team || it.hasLost }) {
-			broadcast(Messages.teamLost(gamer))
-			team.hasLost = true
+			team.progress!!.endTime = System.currentTimeMillis()
+			team.progress!!.hasLost = true
+			broadcast(Messages.teamLost(gamer, team.progress!!.endTime!!))
 			gamers.filter { it.team == team.id }.forEach { it.hasLost = true }
 		} else {
 			broadcast(Messages.gamerLost(gamer)) {it.team == gamer.team}

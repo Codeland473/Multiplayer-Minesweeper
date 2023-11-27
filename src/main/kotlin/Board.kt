@@ -64,57 +64,52 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 	fun isMine(x : Int, y : Int) = get(x, y) == 9.toByte()
 	fun isMine(idx : Int) = get(idx) == 9.toByte()
 
-	fun isRevealed(x : Int, y : Int, team : Team) : Boolean {
+	fun isRevealed(x : Int, y : Int, team : TeamProgress) : Boolean {
 		if (!inBounds(x, y)) return true
-		team.boardMask ?: return false
-		return team.boardMask!![x + y * width]
+		return team.boardMask[x + y * width]
 	}
 
-	fun isFlagged(x : Int, y : Int, team : Team, acceptPencils : Boolean = false) : Boolean {
+	fun isFlagged(x : Int, y : Int, team : TeamProgress, acceptPencils : Boolean = false) : Boolean {
 		if (!inBounds(x, y)) return false
-		team.flagStates ?: return false
 		return if (acceptPencils) {
-			team.flagStates!![x + y * width] != 0
+			team.flagStates[x + y * width] != 0
 		} else {
-			team.flagStates!![x + y * width] > 0
+			team.flagStates[x + y * width] > 0
 		}
 	}
 
-	fun neighborFlags(x : Int, y : Int, team : Team, acceptPencils : Boolean = false) : Int {
+	fun neighborFlags(x : Int, y : Int, team : TeamProgress, acceptPencils : Boolean = false) : Int {
 		return adjacencyPairs.count { (dx, dy) ->
 			isFlagged(x + dx, y + dy, team, acceptPencils)
 		}
 	}
 
-	fun isSatisfied(x : Int, y : Int, team : Team, acceptPencils : Boolean = false) : Boolean {
+	fun isSatisfied(x : Int, y : Int, team : TeamProgress, acceptPencils : Boolean = false) : Boolean {
 		return neighborFlags(x, y, team, acceptPencils) == get(x, y).toInt()
 	}
 
-	fun neighborUnknowns(x : Int, y : Int, team : Team, acceptPencils : Boolean = false) : Int {
+	fun neighborUnknowns(x : Int, y : Int, team : TeamProgress, acceptPencils : Boolean = false) : Int {
 		return adjacencyPairs.count { (dx, dy) ->
 			!isRevealed(x + dx, y + dy, team) && !isFlagged(x + dx, y + dy, team, acceptPencils)
 		}
 	}
 
-	fun neighborUnflaggedMines(x : Int, y : Int, team : Team, acceptPencils : Boolean = false) : Int {
+	fun neighborUnflaggedMines(x : Int, y : Int, team : TeamProgress, acceptPencils : Boolean = false) : Int {
 		return adjacencyPairs.count {(dx, dy) ->
 			isMine(x + dx, y + dy) && !isFlagged(x + dx, y + dy, team, acceptPencils)
 		}
 	}
 
-	fun revealSquare(x : Int, y : Int, team : Team) : Boolean {
-		if (team.boardMask == null) {
-			team.boardMask = BooleanArray(width * height)
-		}
+	fun revealSquare(x : Int, y : Int, team : TeamProgress) : Boolean {
 		return if (isRevealed(x, y, team)) {
 			adjacencyPairs.forEach {(dx, dy) ->
 				if (inBounds(x + dx, y + dy)) {
-					team.boardMask!![x + dx + width * (y + dy)] = true
+					team.boardMask[x + dx + width * (y + dy)] = true
 				}
 			}
 			true
 		} else {
-			team.boardMask!![x + width * y] = true
+			team.boardMask[x + width * y] = true
 			if (get(x, y) == 0.toByte()) {
 				adjacents(x, y).forEach { (ax, ay) -> revealSquare(ax, ay, team) }
 			}
@@ -122,18 +117,13 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 		}
 	}
 
-	fun isCompleted(team : Team) : Boolean {
-		return (team.boardMask ?: return false).all { it }
-	}
+	fun isCompleted(team : TeamProgress) : Boolean = team.boardMask.all { it }
 
-	fun flagSquare(x : Int, y : Int, gamer : Gamer, team : Team, place : Boolean, isPencil : Boolean) {
-		if (team.flagStates == null) {
-			team.flagStates = IntArray(width * height) {0}
-		}
+	fun flagSquare(x : Int, y : Int, gamer : Gamer, team : TeamProgress, place : Boolean, isPencil : Boolean) {
 		if (!place) {
-			team.flagStates!![x + y * width] = 0
+			team.flagStates[x + y * width] = 0
 		} else {
-			team.flagStates!![x + y * width] = if (isPencil) -gamer.id else gamer.id
+			team.flagStates[x + y * width] = if (isPencil) -gamer.id else gamer.id
 		}
 	}
 

@@ -2,7 +2,7 @@
 # Data types
 
 Strings are a short followed by a byte array. The short specifies the length of the byte array (not including the 
-prefix).
+prefix). Times are represented as Unix time in milliseconds
 
 ### BoardPos (8 bytes)
 also used for board size, where x is width and y is height.
@@ -23,6 +23,19 @@ also used for board size, where x is width and y is height.
 | 4         | Int      | Mine Count                                  |
 | 4         | Int      | Countdown Length                            |
 
+### TeamProgress
+Flag states are laid out the same as the board,
+and represent if that square has been flagged, and if so by who. A value of zero means that the square is not flagged,
+otherwise it is the ID of the gamer that placed the flag. Negative values represent pencil flags.
+
+| Size      | Type   | Description                                           |
+|-----------|--------|-------------------------------------------------------|
+| Dependant | [Bool] | Reveal mask                                           |
+| Dependant | [Int]  | Flags (described above)                               |
+| 1         | Bool   | True if team has finished                             |
+| 1         | Bool   | True if team hs lost                                  |
+| 8         | Long   | Time team finished/lost (0 if they have not finished) |
+
 # Messages
 
 the first char/byte in any message should be an id for what kind of message it is, as shown below.
@@ -42,6 +55,7 @@ Client -> Server
 | 9   | [Square Flag](#Flagging-Squares)        |
 | 10  | [Cursor Update](#Cursor-Location)       |
 | 11  | [Team Name Update](#Changing-Team-Name) |
+| 12  | [Board Clear](#Ending-The-Game)         |
 | 50  | [Gamer Join](#Joining)                  |
 | 51  | [State Request](#Requesting-Game-State) |
 
@@ -60,6 +74,7 @@ Server -> Client events
 | 9   | [Square Flag](#Flagging-Squares)        |
 | 10  | [Cursor Update](#Cursor-Location)       |
 | 11  | [Team Name Update](#Changing-Team-Name) |
+| 12  | [Board Clear](#Ending-The-Game)         |
 | 50  | [Gamer Join](#Update-New-Gamer)         |
 | 51  | [Gamer Create](#Gamer-Joined)           |
 | 52  | [Gamer Remove](#Gamer-Left)             |
@@ -200,7 +215,7 @@ Nothing other than the message ID needs to be sent
 | 8         | Long     | Start time (Unix time millis) |
 | 8         | BoardPos | Start position                |
 | 22        | Settings | Game Settings                 |
-| Dependant | [byte]   | Board (described above)       |
+| Dependant | [Byte]   | Board (described above)       |
 
 ### Revealing Squares
 
@@ -276,6 +291,12 @@ I'll let the exact meaning of the cursor positions be handled by the client.
 | 4        | Int    | Sender ID                           |
 | Variable | String | Team name                           |
 
+### Ending The game
+
+When players are ready to move onto the next game or exit to lobby, one should send an empty message with ID 12 to the
+server. The server will then relay a similar message to all the players, this should clear the board and team 
+progresses, as if the game hadn't started yet.
+
 ## Exclusive Messages (Client -> Server)
 
 ### Joining
@@ -306,13 +327,10 @@ the server receives this, it will send back a [Gamer Join](#Update-New-Gamer) me
 
 ### Update New Gamer
 
-Board specification is the same as in [Starting Game](#Board-Format). Flag states are laid out the same as the board, 
-and represent if that square has been flagged, and if so by who. A value of zero means that the square is not flagged, 
-otherwise it is the ID of the gamer that placed the flag. Negative values represent pencil flags.
+Board specification is the same as in [Starting Game](#Board-Format). 
 
-The final two values (revealed board mask and flag states) will only show the state for the team the new gamer is on
-unless the gamer is on the spectator team, in which case the gamer will be given all the board states for each team in
-the same order as the team IDs.
+The team progresses will only show the state for the team the new gamer is on unless the gamer is on the spectator team,
+in which case the gamer will be given all the board states for each team in the same order as the team IDs.
 
 | Size      | Type             | Description                                                              |
 |-----------|------------------|--------------------------------------------------------------------------|
@@ -328,15 +346,13 @@ the same order as the team IDs.
 | 4 * g     | [Int]            | Gamer team IDs (0 means no team/spectator team)                          |
 | 8 * g     | [(Float, Float)] | Gamer cursor locations                                                   |
 | 4 * t     | [Int]            | Active team IDs                                                          |
-| t         | [Bool]           | Teams have lost (true if lost)                                           |
 | Dependant | [String]         | Team Names                                                               |
 | 1         | Bool             | True if a game is going (if false, the rest of this message is not sent) |
 | 22        | Settings         | Current game settings                                                    |
 | 8         | Long             | Game start time                                                          |
 | 8         | BoardPos         | Start position                                                           |
 | x * y     | [Byte]           | Board (described above)                                                  |
-| x * y     | [[Bool]]         | Revealed board mask (1 = revealed, 0 otherwise)                          |
-| 4 * x * y | [[Int]]          | Flag states (described above)                                            |
+| Dependant | [TeamProgress]   | Each teams board progression                                             |
 
 ### Gamer Joined
 
@@ -382,3 +398,4 @@ This message will not be sent when the "Team Lost" message is sent.
 | 1    | Byte | Message type (Team Lost: 55)         |
 | 4    | Int  | ID of gamer that Made the last click |
 | 4    | Int  | ID of team that Lost                 |
+| 8    | Long | Time the loss was processed          |

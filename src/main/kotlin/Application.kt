@@ -44,6 +44,7 @@ fun Application.module() {
 						9.toByte() -> handler.onSquareFlagMessage(gamer ?: continue, frame.buffer)
 						10.toByte() -> handler.onCursorUpdateMessage(gamer ?: continue, frame.buffer)
 						11.toByte() -> handler.onTeamNameUpdateMessage(gamer ?: continue, frame.buffer)
+						12.toByte() -> handler.onBoardClearMessage(gamer ?: continue, frame.buffer)
 
 						50.toByte() -> gamer = handler.onGamerJoin(this, frame.buffer)
 						51.toByte() -> handler.onStateRequest(gamer ?: continue, frame.buffer)
