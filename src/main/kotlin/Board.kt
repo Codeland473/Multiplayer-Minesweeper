@@ -101,6 +101,7 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 	}
 
 	fun revealSquare(x : Int, y : Int, team : TeamProgress) : Boolean {
+		if (isFlagged(x, y, team)) team.flagStates[x + y * width] = 0
 		return if (isRevealed(x, y, team)) {
 			adjacencyPairs.forEach {(dx, dy) ->
 				if (inBounds(x + dx, y + dy)) {
@@ -111,7 +112,7 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 		} else {
 			team.boardMask[x + width * y] = true
 			if (get(x, y) == 0.toByte()) {
-				adjacents(x, y).forEach { (ax, ay) -> revealSquare(ax, ay, team) }
+				adjacents(x, y).forEach { (ax, ay) -> if (!isRevealed(ax, ay, team)) revealSquare(ax, ay, team) }
 			}
 			false
 		}
