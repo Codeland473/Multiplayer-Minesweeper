@@ -24,6 +24,25 @@ also used for board size, where x is width and y is height.
 | 4         | Int      | Mine Count                                  |
 | 4         | Int      | Countdown Length                            |
 
+### Player
+
+| Size      | Type           | Description                                     |
+|-----------|----------------|-------------------------------------------------|
+| 4         | Int            | Id                                              |
+| 3         | Color          | Color                                           |
+| Dependant | String         | Name                                            |
+| 1         | Bool           | True if they have lost                          |
+| 4         | Int            | Team                                            |
+| 8         | (Float, Float) | Cursor location                                 |
+
+### Color (3 bytes)
+
+| Size | Type  | Description   |
+|------|-------|---------------|
+| 1    | Byte  | Red channel   |
+| 1    | Byte  | Green channel |
+| 1    | Byte  | Blue channel  |
+
 ### Team
 
 | Size      | Type   | Description                                           |
@@ -371,12 +390,7 @@ in which case the gamer will be given all the board states for each team in the 
 | 4         | Int              | Number of gamers (g)                                                     |
 | 4         | Int              | Number of teams (t)                                                      |
 | 4         | Int              | ID of new gamer                                                          |
-| 4 * g     | [Int]            | Active gamer IDs                                                         |
-| 3 * g     | [Byte]           | Gamer Colors                                                             |
-| g         | [Bool]           | Gamers have lost (true if lost)                                          |
-| Dependant | [String]         | gamer gamernames                                                         |
-| 4 * g     | [Int]            | Gamer team IDs (0 means no team/spectator team)                          |
-| 8 * g     | [(Float, Float)] | Gamer cursor locations                                                   |
+| Dependant | [Gamer]          | Active gamers                                                            |
 | Dependant | [Team]           | Active teams                                                             |
 | 1         | Bool             | True if a game is going (if false, the rest of this message is not sent) |
 | 22        | Settings         | Current game settings                                                    |
@@ -387,16 +401,10 @@ in which case the gamer will be given all the board states for each team in the 
 
 ### Gamer Joined
 
-| Size     | Type   | Description                     |
-|----------|--------|---------------------------------|
-| 1        | Byte   | Message type (Gamer Create: 51) |
-| 4        | Int    | Gamer ID                        |
-| 4        | Int    | Team of gamer                   |
-| 1        | Byte   | Red                             |
-| 1        | Byte   | Green                           |
-| 1        | Byte   | Blue                            |
-| 1        | Bool   | Has Lost                        |     
-| Variable | String | Name                            |
+| Size      | Type  | Description                     |
+|-----------|-------|---------------------------------|
+| 1         | Byte  | Message type (Gamer Create: 51) |
+| Dependant | Gamer | New gamer                       |
 
 ### Gamer Left
 

@@ -117,12 +117,7 @@ object Messages {
 		put(gamers.size)
 		put(teams.size)
 		put(newGamer.id)
-		for (gamer in gamers) put(gamer.id)
-		for (gamer in gamers) put(gamer.color)
-		for (gamer in gamers) put(gamer.hasLost)
-		for (gamer in gamers) put(gamer.name)
-		for (gamer in gamers) put(gamer.team)
-		for (gamer in gamers) put(gamer.cursorLocation)
+		for (gamer in gamers) put(gamer)
 		for (team in teams) put(team)
 		if (board != null && currentSettings != null) {
 			put(true)

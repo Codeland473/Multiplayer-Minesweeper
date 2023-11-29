@@ -5,7 +5,7 @@ import kotlin.random.Random
 
 
 fun main() {
-	genBoards(32, 32, 300, 1000)
+	genBoards(32, 32, 300, 50)
 	/*do {
 		val (avg, min, q1, med, q3, max) = measurePerformance(1, 5, width, height, mineCount)
 		val density = mineCount.toFloat() / (width * height).toFloat()

@@ -89,10 +89,11 @@ class MessageBuffer(private val initialMax : Int = 500) {
 	}
 	fun put(v : Gamer) {
 		put(v.id)
-		put(v.team)
 		put(v.color)
-		put(v.hasLost)
 		put(v.name)
+		put(v.hasLost)
+		put(v.team)
+		put(v.cursorLocation)
 	}
 
 	fun put(v : TeamProgress) {
