@@ -44,3 +44,6 @@ bin/
 ### web ###
 /web/node_modules
 /run/page/*
+
+# board buffers
+boards/

@@ -1,3 +1,5 @@
+import board.Board
+import board.Solver
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.delay
@@ -151,9 +153,9 @@ class SessionHandler {
 			val trueIsChord = board!!.revealSquare(x, y, team.progress!!)
 			broadcast(Messages.squareReveal(sender, x, y, trueIsChord)) {it.team == sender.team || it.team == 0}
 			if (board!!.isCompleted(team.progress!!)) {
-				team.progress!!.hasFinished = true
-				team.progress!!.endTime = System.currentTimeMillis()
-				broadcast(Messages.teamFinish(team, team.progress!!.endTime!!))
+				team.hasFinished = true
+				team.endTime = System.currentTimeMillis()
+				broadcast(Messages.teamFinish(team, team.endTime!!))
 			}
 		}
 	}
@@ -217,9 +219,9 @@ class SessionHandler {
 	suspend fun onMineClicked(gamer : Gamer, team : Team) {
 		broadcast(Messages.gamerLost(gamer))
 		if (currentSettings.isAllForOne || gamers.all { it.team != gamer.team || it.hasLost }) {
-			team.progress!!.endTime = System.currentTimeMillis()
-			team.progress!!.hasLost = true
-			broadcast(Messages.teamLost(gamer, team.progress!!.endTime!!))
+			team.endTime = System.currentTimeMillis()
+			team.hasLost = true
+			broadcast(Messages.teamLost(gamer, team.endTime!!))
 			gamers.filter { it.team == team.id }.forEach { it.hasLost = true }
 		} else {
 			broadcast(Messages.gamerLost(gamer)) {it.team == gamer.team}

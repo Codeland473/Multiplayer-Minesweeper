@@ -1,119 +1,14 @@
+package board
+
+import java.lang.Integer.max
 import java.lang.Integer.min
 import java.util.*
 import java.util.Random as JRandom
 import kotlin.collections.LinkedHashSet
 import kotlin.concurrent.thread
+import kotlin.math.abs
 import kotlin.random.asKotlinRandom
 import kotlin.random.Random as KRandom
-
-fun main() {
-	//measurePerformance(10, 30, 16, 240)
-	val width = 32
-	val height = 32
-	var mineCount = 472
-
-	do {
-		val (avg, min, q1, med, q3, max) = measurePerformance(0, 100, width, height, mineCount)
-		val density = mineCount.toFloat() / (width * height).toFloat()
-		println("$mineCount, $density, $min, $q1, $med, $q3, $max, $avg")
-		++mineCount
-
-	} while (q3 > 0)
-	//measurePerformance(0, 20, width, height, mineCount)
-	//measurePerformance(0, 10000)
-
-
-	//println("normal")
-	//val singlethreaded = measurePerformance(1, 5, 30, 16, mineCount)
-	/*
-	val board = Board(7, 3)
-	board.mineCounts[0] = 9
-	board.mineCounts[5] = 9
-	board.mineCounts[7] = 9
-	board.mineCounts[12] = 9
-	board.mineCounts[16] = 9
-	board.mineCounts[19] = 9
-	board.setMinecounts()
-	println(board.printableStr())
-	val solvableLoc = Solver(board).solve()
-	println(solvableLoc)
-
-	 */
-
-}
-
-/*
-
-average: 2.7642999649047852
-min: 1.328
-q1: 1.754
-median: 2.824
-q3: 3.958
-max: 4.924
-
-average: 2.00164999961853
-min: 1.08
-q1: 1.331
-median: 1.53
-q3: 3.296
-max: 4.051
-
-*/
-
-/*
-x2--2x-
-x3113x-
-??x??x-
- */
-
-data class PerformanceSummary(val average : Double, val min : Float, val q1 : Float, val median : Float, val q3 : Float, val max : Float)
-
-fun measurePerformance(
-	threads : Int = 1,
-	repetitions: Int = 10000,
-	width : Int = 30,
-	height : Int = 20,
-	mineCount : Int = 130,
-	seed : Long = 0L) : PerformanceSummary
-{
-	//val r = KRandom(seed)
-	val timings = Array(repetitions) {
-		val r = KRandom(seed + it)
-		if (threads > 1) {
-			time {
-				val (board, startPos) = Solver.generateBoardMultithreaded(width, height, mineCount, r, threads)
-				//println(board.printableStr())
-			}
-		} else if (threads == 1) {
-			time {
-				val board = Board(width, height)
-				board.generateBoard(mineCount, true, r)
-				//println(board.printableStr())
-			}
-		} else {
-			time {
-				val (board, startPos) = Solver.generateBoard(width, height, mineCount, r)
-			}
-		}
-	}
-
-	val average = timings.average()
-	val sorted = timings.sorted()
-	val min = timings.min()
-	val q1 = sorted[repetitions / 4]
-	val median = sorted[repetitions / 2]
-	val q3 = sorted[3 * repetitions / 4]
-	val max = timings.max()
-
-	//println("$repetitions ${width}x${height}/$mineCount boards generated on $threads thread(s), performance summary:")
-	//println("average: $average")
-	//println("min: $min")
-	//println("q1: $q1")
-	//println("median: $median")
-	//println("q3: $q3")
-	//println("max: $max")
-	return PerformanceSummary(average, min, q1, median, q3, max)
-}
 
 fun<T> time(f : () -> T) : Float {
 	val before = System.currentTimeMillis()
@@ -121,9 +16,9 @@ fun<T> time(f : () -> T) : Float {
 	return (System.currentTimeMillis() - before).toFloat() / 1000f
 }
 
-class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
+class Solver(var board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 	val regionIds = IntArray(board.width * board.height) {-1}
-	val squares = Array(board.width * board.height) {FrontSquare(it % board.width, it / board.width, board[it])}
+	val squares = Array(board.width * board.height) { FrontSquare(it % board.width, it / board.width, board[it]) }
 	val totalMines = board.mineCounts.count { it == 9.toByte() }
 
 	var numFlags = 0
@@ -134,6 +29,7 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 		while (true) {
 			solve()?.let { return it }
 			board.generateBoard(totalMines, false, r)
+			println("regenerating board")
 			reset()
 		}
 	}
@@ -150,8 +46,15 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 		numUnknown = board.width * board.height - 1
 	}
 
+	fun calculate3BV() : Int {
+		val numRegions = fillRegions()
+		return numRegions + squares.indices.count {
+			!board.isMine(it) && board.adjacents(it).all { (ax, ay) -> regionIds[idx(ax, ay)] == -1 }
+		}
+	}
+
 	fun solve() : Pair<Int, Int>? {
-		val numRegions = fillColors()
+		val numRegions = fillRegions()
 		val regionsVisited = Array(numRegions) {false}
 		if (regionsVisited.isEmpty()) return null
 		val regionStart = r.nextInt(regionsVisited.size)
@@ -179,7 +82,7 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 		return null
 	}
 
-	fun fillColors() : Int {
+	fun fillRegions() : Int {
 		var currentColor = 0
 		for (i in regionIds.indices) {
 			val x = i % board.width
@@ -218,13 +121,13 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 
 	}
 
-	fun heuristicSolve(pencil : Boolean = false, edge : List<FrontSquare> = squares.filter {it.knowlegeState == KnowlegeState.EDGE}) : Boolean {
+	fun heuristicSolve(pencil : Boolean = false, edge : List<FrontSquare> = squares.filter {it.knowledgeState == KnowledgeState.EDGE }) : Boolean {
 		var steps = 0
 		while (heuristicSolveStep(pencil, edge)) ++steps
 		return steps > 0
 	}
 
-	fun heuristicSolveStep(pencil : Boolean = false, edge : List<FrontSquare> = squares.filter { it.knowlegeState == KnowlegeState.EDGE }) : Boolean {
+	fun heuristicSolveStep(pencil : Boolean = false, edge : List<FrontSquare> = squares.filter { it.knowledgeState == KnowledgeState.EDGE }) : Boolean {
 		var madeProgress = false
 		edge.forEach { eSquare ->
 			if (heuristicCheckSquare(eSquare, pencil)) {
@@ -242,7 +145,7 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 		}
 		if (nFlags.toByte() == board[eSquare.x, eSquare.y]) {
 			unknowns.forEach {(x, y) -> if (pencil) pencilRevealSquare(x, y) else revealSquare(x, y) }
-			if (!pencil) eSquare.knowlegeState = KnowlegeState.SATISFIED
+			if (!pencil) eSquare.knowledgeState = KnowledgeState.SATISFIED
 			return unknowns.isNotEmpty()
 		} else if ((nFlags + unknowns.count()).toByte() == board[eSquare.x, eSquare.y]) {
 			unknowns.forEach { (x, y) -> if (pencil) pencilFlagSquare(x, y) else flagSquare(x, y) }
@@ -251,13 +154,97 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 		return false
 	}
 
+	fun trivialSolveRegion(squares : List<FrontSquare>, numMines : Int, pencil : Boolean = false) : Boolean {
+		var madeProgress = false
+		val nFlags = squares.count { it.solverState.isFlag(pencil) }
+		if (nFlags == numMines) squares.filter { it.solverState == SolverState.UNKNOWN }.forEach {
+			madeProgress = true
+			if (pencil) pencilRevealSquare(it.x, it.y) else revealSquare(it.x, it.y)
+		}
+		val nUnknowns = squares.count { it.solverState == SolverState.UNKNOWN }
+		if (nFlags + nUnknowns == numMines) squares.filter { it.solverState == SolverState.UNKNOWN }.forEach {
+			madeProgress = true
+			if (pencil) pencilFlagSquare(it.x, it.y) else flagSquare(it.x, it.y)
+		}
+		return madeProgress
+	}
+
+	fun diffSolve(eSquares : List<FrontSquare> = squares.filter { it.knowledgeState == KnowledgeState.EDGE }) : Boolean {
+		return eSquares.any { diffSolveSquare(it) }
+	}
+
+	fun diffSolveSquare(eSquare : FrontSquare) : Boolean {
+		val adjacents = board.adjacents(eSquare.x, eSquare.y)
+			.map { (ax, ay) -> squares[idx(ax, ay)] }
+			.filter { it.solverState != SolverState.REVEALED }
+		var minX = board.width - 1
+		var maxX = 0
+		val minY = eSquare.y
+		var maxY = 0
+		adjacents.forEach {
+			minX = min(it.x - 1, minX)
+			maxX = max(it.x + 1, maxX)
+			maxY = max(it.y + 1, maxY)
+		}
+		minX = max(0, minX)
+		maxX = min(board.width - 1, maxX)
+		maxY = min(board.height - 1, maxY)
+
+		var x = eSquare.x + 1
+		var y = minY
+		while (y <= maxY) {
+			while (x <= maxX) {
+				if (squares[idx(x, y)].knowledgeState == KnowledgeState.EDGE) {
+					val (overlap, onlyA) = adjacents.partition { abs(it.x - x) <= 1 && abs(it.y - y) <= 1 }
+					val onlyB = board.adjacents(x, y)
+						.map { (ax, ay) -> squares[idx(ax, ay)] }
+						.filter { it.solverState != SolverState.REVEALED }
+						.filterNot { abs(it.x - eSquare.x) <= 1 && abs(it.y - eSquare.y) <= 1 }
+					if (diffSolvePair(eSquare, squares[idx(x, y)], onlyA, overlap, onlyB)) return true
+				}
+				++x
+			}
+			x = minX
+			++y
+		}
+		return false
+	}
+
+	fun diffSolvePair(a : FrontSquare, b : FrontSquare, onlyA : List<FrontSquare>, overlap : List<FrontSquare>, onlyB : List<FrontSquare>) : Boolean{
+		if (overlap.all { it.knowledgeState != KnowledgeState.FRONT }) return false // would be solved by trivial solver
+		val oaFlags = onlyA.count { it.solverState == SolverState.FLAG }
+		val obFlags = onlyB.count { it.solverState == SolverState.FLAG }
+		val oaSquares = onlyA.size
+		val obSquares = onlyB.size
+		val abDiff = board[a.x, a.y] - board[b.x, b.y]
+
+		val trivialSolves = {am : Int, om : Int, bm : Int ->
+			trivialSolveRegion(onlyA, am) || trivialSolveRegion(overlap, om) || trivialSolveRegion(onlyB, bm)
+		}
+
+		val lowerBoundOAMines = max(obFlags + abDiff, oaFlags)
+		val lowerBoundOBMines = max(oaFlags - abDiff, obFlags)
+
+		return if (min(obSquares + abDiff, oaSquares) == lowerBoundOAMines) {
+			val overlappedMines = board[a.x, a.y] - lowerBoundOAMines
+			val obMines = board[b.x, b.y] - overlappedMines
+
+			trivialSolves(lowerBoundOAMines, overlappedMines, obMines)
+		} else if (min(oaSquares - abDiff, obSquares) == lowerBoundOBMines) {
+			val overlappedMines = board[b.x, b.y] - lowerBoundOBMines
+			val oaMines = board[a.x, a.y] - overlappedMines
+
+			trivialSolves(oaMines, overlappedMines, lowerBoundOBMines)
+		} else false
+	}
+
 	fun flagSquare(x : Int, y : Int)  = flagSquare(idx(x, y))
 	fun flagSquare(idx : Int) {
 		if (!board.isMine(idx)) throw RuntimeException("attempted to flag non-mine square")
 		val square = squares[idx]
 		square.solverState = SolverState.FLAG
 		numFlags += 1
-		square.knowlegeState = KnowlegeState.SATISFIED
+		square.knowledgeState = KnowledgeState.SATISFIED
 	}
 
 	fun pencilFlagSquare(x : Int, y : Int) = pencilFlagSquare(idx(x, y))
@@ -273,13 +260,13 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 		val square = squares[idx(x, y)]
 		square.solverState = SolverState.REVEALED
 
-		square.knowlegeState = KnowlegeState.EDGE
+		square.knowledgeState = KnowledgeState.EDGE
 		board.adjacents(x, y)
 			.map { (ax, ay) -> squares[idx(ax, ay)] }
-			.filter { it.knowlegeState == KnowlegeState.UNKNOWN }
+			.filter { it.knowledgeState == KnowledgeState.UNKNOWN }
 			.forEach {
 				numUnknown -= 1
-				it.knowlegeState = KnowlegeState.FRONT
+				it.knowledgeState = KnowledgeState.FRONT
 			}
 		heuristicCheckSquare(square)
 	}
@@ -290,7 +277,7 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 	}
 	fun pencilRevealSquare(x : Int, y : Int) = pencilRevealSquare(idx(x, y))
 
-	fun bruteSolve(front : List<FrontSquare> = squares.filter { it.knowlegeState == KnowlegeState.FRONT }) : Boolean {
+	fun bruteSolve(front : List<FrontSquare> = squares.filter { it.knowledgeState == KnowledgeState.FRONT }) : Boolean {
 		var minPencilFlags : Int = front.count { it.mineShownPossible }
 		for (i in front.indices) {
 			val fSquare = front[i]
@@ -313,7 +300,7 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 		front.forEach { it.resetPencil(board[it.x, it.y]) }
 		numPencilFlags
 		if (minPencilFlags + numFlags == totalMines && numUnknown > 0) {
-			squares.forEach { if (it.knowlegeState == KnowlegeState.UNKNOWN) {
+			squares.forEach { if (it.knowledgeState == KnowledgeState.UNKNOWN) {
 				--numUnknown
 				revealSquare(it.x, it.y)
 			} }
@@ -322,13 +309,14 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 		return false
 	}
 
-	fun bruteStep(front : List<FrontSquare>, startIndex : Int = 0) : Boolean {
-		for (i in startIndex until front.size) {
+	fun bruteStep(front : List<FrontSquare>) : Boolean {
+		for (i in front.indices) {
 			if (front[i].solverState == SolverState.UNKNOWN) {
 
 				if (front[i].safeShownPossible) pencilFlagSquare(front[i].x, front[i].y) else pencilRevealSquare(front[i].x, front[i].y)
+				val unknownFront = front.filter { it.solverState == SolverState.UNKNOWN }
 				heuristicSolve(true)
-				if (!feasable() || !bruteStep(front, i + 1)) {
+				if (!feasable() || !bruteStep(unknownFront)) {
 					front[i].solverState = if (front[i].safeShownPossible) {
 						numPencilFlags -= 1
 						SolverState.PENCIL_SAFE
@@ -336,7 +324,11 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 						numPencilFlags += 1
 						SolverState.PENCIL_FLAG
 					}
-					if (!feasable() || !bruteStep(front, i + 1)) {
+					unknownFront.forEach {
+						if (it.solverState.isFlag(true)) --numPencilFlags
+						it.solverState = SolverState.UNKNOWN
+					}
+					if (!feasable() || !bruteStep(unknownFront)) {
 						if (!front[i].safeShownPossible) numPencilFlags -= 1
 						front[i].solverState = SolverState.UNKNOWN
 						return false
@@ -391,7 +383,7 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 		println(builder.toString())
 	}
 
-	fun printKnowlege() {
+	fun printKnowledge() {
 		val builder = StringBuilder()
 		builder.append("${"-".repeat(board.width + 2)}\n")
 		repeat(board.height) { y ->
@@ -402,11 +394,11 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 					9.toByte() -> 'X'
 					else -> board[x, y].toInt().toString()
 				}
-				char = when (squares[idx(x, y)].knowlegeState) {
-					KnowlegeState.UNKNOWN -> ' '
-					KnowlegeState.FRONT -> 'F'
-					KnowlegeState.EDGE -> 'E'
-					KnowlegeState.SATISFIED -> char
+				char = when (squares[idx(x, y)].knowledgeState) {
+					KnowledgeState.UNKNOWN -> ' '
+					KnowledgeState.FRONT -> 'F'
+					KnowledgeState.EDGE -> 'E'
+					KnowledgeState.SATISFIED -> char
 				}
 				builder.append(char)
 			}
@@ -414,6 +406,24 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 		}
 		builder.append("-".repeat(board.width + 2))
 		println(builder.toString())
+	}
+
+	fun printKnowledgeSimplified() {
+		var satisfied = 0
+		var edge = 0
+		var front = 0
+		var unknown = 0
+
+		squares.forEach {
+			when (it.knowledgeState) {
+				KnowledgeState.SATISFIED -> ++satisfied
+				KnowledgeState.EDGE -> ++edge
+				KnowledgeState.FRONT -> ++front
+				KnowledgeState.UNKNOWN -> ++unknown
+			}
+		}
+
+		println("satisfied: $satisfied, edge: $edge, front: $front, unknown: $unknown")
 	}
 
 	private fun idx(x : Int, y : Int) = x + y * board.width
@@ -462,14 +472,14 @@ class Solver(val board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 
 class FrontSquare(val x : Int, val y : Int, mineCount : Byte) {
 	var solverState = SolverState.UNKNOWN
-	var knowlegeState = KnowlegeState.UNKNOWN
+	var knowledgeState = KnowledgeState.UNKNOWN
 
 	var mineShownPossible = mineCount == 9.toByte()
 	var safeShownPossible = mineCount < 9
 
 	fun reveal() {
 		solverState = SolverState.REVEALED
-		knowlegeState = KnowlegeState.EDGE
+		knowledgeState = KnowledgeState.EDGE
 	}
 
 	fun resetPencil(mineCount : Byte) {
@@ -482,7 +492,7 @@ class FrontSquare(val x : Int, val y : Int, mineCount : Byte) {
 		mineShownPossible = mineCount == 9.toByte()
 		safeShownPossible = mineCount < 9
 		solverState = SolverState.UNKNOWN
-		knowlegeState = KnowlegeState.UNKNOWN
+		knowledgeState = KnowledgeState.UNKNOWN
 	}
 
 	fun savePencil() {
@@ -519,7 +529,7 @@ enum class SolverState {
 	}
 }
 
-enum class KnowlegeState {
+enum class KnowledgeState {
 	SATISFIED,
 	EDGE,
 	FRONT,

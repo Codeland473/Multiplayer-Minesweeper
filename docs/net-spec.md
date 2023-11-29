@@ -5,6 +5,7 @@ Strings are a short followed by a byte array. The short specifies the length of 
 prefix). Times are represented as Unix time in milliseconds
 
 ### BoardPos (8 bytes)
+
 also used for board size, where x is width and y is height.
 
 | Size | Type | Description |
@@ -23,7 +24,18 @@ also used for board size, where x is width and y is height.
 | 4         | Int      | Mine Count                                  |
 | 4         | Int      | Countdown Length                            |
 
+### Team
+
+| Size      | Type   | Description                                           |
+|-----------|--------|-------------------------------------------------------|
+| 4         | Int    | Id                                                    |
+| Dependant | String | Team name                                             |
+| 1         | Bool   | True if team has finished                             |
+| 1         | Bool   | True if team hs lost                                  |
+| 8         | Long   | Time team finished/lost (0 if they have not finished) |
+
 ### TeamProgress
+
 Flag states are laid out the same as the board,
 and represent if that square has been flagged, and if so by who. A value of zero means that the square is not flagged,
 otherwise it is the ID of the gamer that placed the flag. Negative values represent pencil flags.
@@ -32,9 +44,6 @@ otherwise it is the ID of the gamer that placed the flag. Negative values repres
 |-----------|--------|-------------------------------------------------------|
 | Dependant | [Bool] | Reveal mask                                           |
 | Dependant | [Int]  | Flags (described above)                               |
-| 1         | Bool   | True if team has finished                             |
-| 1         | Bool   | True if team hs lost                                  |
-| 8         | Long   | Time team finished/lost (0 if they have not finished) |
 
 # Messages
 
@@ -85,12 +94,14 @@ Server -> Client events
 ### Creating a Team
 
 #### Client -> Server
+
 | Size     | Type   | Description                   |
 |----------|--------|-------------------------------|
 | 1        | Byte   | Message type (Team Create: 1) |
 | Variable | String | Team name                     |
 
 #### Server -> Client
+
 | Size     | Type   | Description                   |
 |----------|--------|-------------------------------|
 | 1        | Byte   | Message type (Team Create: 1) |
@@ -101,12 +112,14 @@ Server -> Client events
 ### Removing a Team
 
 #### Client -> Server
+
 | Size     | Type   | Description                   |
 |----------|--------|-------------------------------|
 | 1        | Byte   | Message type (Team Remove: 2) |
 | 4        | Int    | Team ID                       |
 
 #### Server -> Client
+
 | Size     | Type   | Description                   |
 |----------|--------|-------------------------------|
 | 1        | Byte   | Message type (Team Remove: 2) |
@@ -116,12 +129,14 @@ Server -> Client events
 ### Changing Names
 
 #### Client -> Server
+
 | Size     | Type   | Description                         |
 |----------|--------|-------------------------------------|
 | 1        | Byte   | Message type (Gamer Name Update: 3) |
 | Variable | String | New name                            |
 
 #### Server -> Client
+
 | Size     | Type   | Description                         |
 |----------|--------|-------------------------------------|
 | 1        | Byte   | Message type (Gamer Name Update: 3) |
@@ -132,6 +147,7 @@ Server -> Client events
 ### Changing Colors
 
 #### Client -> Server
+
 | Size | Type | Description                          |
 |------|------|--------------------------------------|
 | 1    | Byte | Message type (Gamer Color Update: 4) |
@@ -140,6 +156,7 @@ Server -> Client events
 | 1    | Byte | Blue                                 |
 
 #### Server -> Client
+
 | Size | Type | Description                          |
 |------|------|--------------------------------------|
 | 1    | Byte | Message type (Gamer Color Update: 4) |
@@ -153,12 +170,14 @@ Server -> Client events
 Team 0 is spectating team. gamers are automatically put on the spectator team when joining
 
 #### Client -> Server
+
 | Size | Type | Description                         |
 |------|------|-------------------------------------|
 | 1    | Byte | Message type (Gamer Team Update: 5) |
 | 4    | Int  | ID of team to join                  |
 
 #### Server -> Client
+
 | Size | Type | Description                         |
 |------|------|-------------------------------------|
 | 1    | Byte | Message type (Gamer Team Update: 5) |
@@ -179,6 +198,7 @@ Settings are Listed below
 | 5   | 4    | Int      | Countdown Length                            |
 
 #### Client -> Server
+
 | Size      | Type      | Description                      |
 |-----------|-----------|----------------------------------|
 | 1         | Byte      | Message type (Setting Update: 6) |
@@ -186,6 +206,7 @@ Settings are Listed below
 | Dependant | Dependant | New value of the setting         |
 
 #### Server -> Client
+
 | Size      | Type      | Description                      |
 |-----------|-----------|----------------------------------|
 | 1         | Byte      | Message type (Setting Update: 6) |
@@ -196,6 +217,7 @@ Settings are Listed below
 ### Starting Game
 
 #### Board Format
+
 each byte represents one square as if it was fully revealed. A Value of 9 means that it is a mine. Format is rows-first,
 so [0, 1, 1, 0, 2, 9, 0, 2, 9] would be:
 
@@ -208,6 +230,7 @@ so [0, 1, 1, 0, 2, 9, 0, 2, 9] would be:
 Nothing other than the message ID needs to be sent
 
 #### Server -> Client
+
 | Size      | Type     | Description                   |
 |-----------|----------|-------------------------------|
 | 1         | Byte     | Message type (Game Start: 7)  |
@@ -222,6 +245,7 @@ Nothing other than the message ID needs to be sent
 Is chord should be false when the user clicks on a 0 mine.
 
 #### Client -> Server
+
 | Size  | Type     | Description                     |
 |-------|----------|---------------------------------|
 | 1     | Byte     | Message type (Square Reveal: 8) |
@@ -229,6 +253,7 @@ Is chord should be false when the user clicks on a 0 mine.
 | 1     | Boolean  | Is chord                        |
 
 #### Server -> Client
+
 | Size | Type     | Description                     |
 |------|----------|---------------------------------|
 | 1    | Byte     | Message type (Square Reveal: 8) |
@@ -240,6 +265,7 @@ Is chord should be false when the user clicks on a 0 mine.
 ### Flagging Squares
 
 #### Client -> Server
+
 | Size | Type     | Description                                                       |
 |------|----------|-------------------------------------------------------------------|
 | 1    | Byte     | Message type (Square Flag: 9)                                     |
@@ -248,6 +274,7 @@ Is chord should be false when the user clicks on a 0 mine.
 | 1    | Bool     | Is Pencil flag                                                    |
 
 #### Server -> Client
+
 | Size | Type     | Description                                                       |
 |------|----------|-------------------------------------------------------------------|
 | 1    | Byte     | Message type (Square Flag: 9)                                     |
@@ -258,9 +285,11 @@ Is chord should be false when the user clicks on a 0 mine.
 | 1    | Bool     | Is Pencil flag                                                    |
 
 ### Cursor Location
+
 I'll let the exact meaning of the cursor positions be handled by the client.
 
 #### Client -> Server
+
 | Size | Type  | Description                      |
 |------|-------|----------------------------------|
 | 1    | Byte  | Message type (Cursor Update: 10) |
@@ -268,6 +297,7 @@ I'll let the exact meaning of the cursor positions be handled by the client.
 | 4    | Float | y position of cursor             |
 
 #### Server -> Client
+
 | Size     | Type                  | Description                      |
 |----------|-----------------------|----------------------------------|
 | 1        | Byte                  | Message type (Cursor Update: 10) |
@@ -277,6 +307,7 @@ I'll let the exact meaning of the cursor positions be handled by the client.
 ### Changing Team Name
 
 #### Client -> Server
+
 | Size     | Type   | Description                         |
 |----------|--------|-------------------------------------|
 | 1        | Byte   | Message type (Team Name Update: 11) |
@@ -284,6 +315,7 @@ I'll let the exact meaning of the cursor positions be handled by the client.
 | Variable | String | Team name                           |
 
 #### Server -> Client
+
 | Size     | Type   | Description                         |
 |----------|--------|-------------------------------------|
 | 1        | Byte   | Message type (Team Name Update: 11) |
@@ -345,8 +377,7 @@ in which case the gamer will be given all the board states for each team in the 
 | Dependant | [String]         | gamer gamernames                                                         |
 | 4 * g     | [Int]            | Gamer team IDs (0 means no team/spectator team)                          |
 | 8 * g     | [(Float, Float)] | Gamer cursor locations                                                   |
-| 4 * t     | [Int]            | Active team IDs                                                          |
-| Dependant | [String]         | Team Names                                                               |
+| Dependant | [Team]           | Active teams                                                             |
 | 1         | Bool             | True if a game is going (if false, the rest of this message is not sent) |
 | 22        | Settings         | Current game settings                                                    |
 | 8         | Long             | Game start time                                                          |

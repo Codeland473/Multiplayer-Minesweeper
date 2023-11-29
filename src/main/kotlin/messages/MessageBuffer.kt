@@ -4,6 +4,7 @@ import Color
 import CursorLocation
 import Gamer
 import Settings
+import Team
 import TeamProgress
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -97,6 +98,11 @@ class MessageBuffer(private val initialMax : Int = 500) {
 	fun put(v : TeamProgress) {
 		put(v.flagStates)
 		put(v.flagStates)
+	}
+
+	fun put(v : Team) {
+		put(v.id)
+		put(v.name)
 		put(v.hasFinished)
 		put(v.hasLost)
 		put(v.endTime ?: -1L)

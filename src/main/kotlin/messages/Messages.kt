@@ -1,6 +1,6 @@
 package messages
 
-import Board
+import board.Board
 import Color
 import Gamer
 import SETTING_BOARD_SIZE
@@ -123,7 +123,7 @@ object Messages {
 		for (gamer in gamers) put(gamer.name)
 		for (gamer in gamers) put(gamer.team)
 		for (gamer in gamers) put(gamer.cursorLocation)
-		for (team in teams) put(team.id)
+		for (team in teams) put(team)
 		if (board != null && currentSettings != null) {
 			put(true)
 			put(settings)

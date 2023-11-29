@@ -1,3 +1,10 @@
+package board
+
+import Gamer
+import Settings
+import TeamProgress
+import java.nio.ByteBuffer
+import kotlin.math.ceil
 import java.util.Random as JRandom
 import kotlin.random.asKotlinRandom
 import kotlin.random.Random as KRandom
@@ -95,7 +102,7 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 	}
 
 	fun neighborUnflaggedMines(x : Int, y : Int, team : TeamProgress, acceptPencils : Boolean = false) : Int {
-		return adjacencyPairs.count {(dx, dy) ->
+		return adjacencyPairs.count { (dx, dy) ->
 			isMine(x + dx, y + dy) && !isFlagged(x + dx, y + dy, team, acceptPencils)
 		}
 	}
@@ -103,7 +110,7 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 	fun revealSquare(x : Int, y : Int, team : TeamProgress) : Boolean {
 		if (isFlagged(x, y, team)) team.flagStates[x + y * width] = 0
 		return if (isRevealed(x, y, team)) {
-			adjacencyPairs.forEach {(dx, dy) ->
+			adjacencyPairs.forEach { (dx, dy) ->
 				if (inBounds(x + dx, y + dy)) {
 					team.boardMask[x + dx + width * (y + dy)] = true
 				}
@@ -154,6 +161,27 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 		builder.append("-".repeat(width + 2))
 		return builder.toString()
 	}
+
+	fun toBytesCompact(includeSize : Boolean = true) : ByteArray {
+		val bytes = ByteBuffer.allocate(ceil(width * height.toFloat() / 8f + if (includeSize) 4 else 0).toInt())
+		if (includeSize) {
+			bytes.putShort(width.toShort())
+			bytes.putShort(height.toShort())
+		}
+		var currentByte = 0
+		for (i in mineCounts.indices) {
+			if (isMine(i)) currentByte += 1 shl (i % 8)
+			if (i % 8 == 7) {
+				bytes.put(currentByte.toByte())
+				currentByte = 0
+			}
+		}
+		if (mineCounts.size % 8 != 0) {
+			bytes.put(currentByte.toByte())
+		}
+		return bytes.array()
+	}
+
 	companion object {
 		val adjacencyPairs = arrayOf(
 			Pair(-1, -1), Pair(0, -1), Pair(1, -1),
