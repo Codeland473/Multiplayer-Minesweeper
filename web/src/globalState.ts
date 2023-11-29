@@ -50,7 +50,7 @@ export type TeamGameStats = Immutable<{
 export type Game = Immutable<{
 	board: Board;
 	settings: GameSettings;
-	gameTimer: number;
+	startTime: number;
 	cursors: Cursor[];
 	playersGameState: { [id: number]: PlayerGameStats };
 	teamsGameState: { [id: number]: TeamGameStats };

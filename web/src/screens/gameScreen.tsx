@@ -3,38 +3,6 @@ import { Game, TeamGameStats, useGlobalState } from '../globalState.js';
 import { Board } from '../components/board.js';
 import { Sender } from '../socket/sender.js';
 
-const toIndex = (x: number, y: number, width: number): number => y * width + x;
-
-const getFlagsAround = (
-	flags: readonly number[],
-	width: number,
-	height: number,
-	x: number,
-	y: number,
-): number => {
-	let count = 0;
-
-	if (x > 0 && flags[toIndex(x - 1, y, width)] !== 0) ++count;
-	if (x < width - 1 && flags[toIndex(x + 1, y, width)] !== 0) ++count;
-	if (y > 0 && flags[toIndex(x, y - 1, width)] !== 0) ++count;
-	if (y < height - 1 && flags[toIndex(x, y + 1, width)] !== 0) ++count;
-
-	if (x > 0 && y > 0 && flags[toIndex(x - 1, y - 1, width)] !== 0) ++count;
-	if (x > 0 && y < height - 1 && flags[toIndex(x - 1, y + 1, width)] !== 0)
-		++count;
-
-	if (x < width - 1 && y > 0 && flags[toIndex(x + 1, y - 1, width)] !== 0)
-		++count;
-	if (
-		x < width - 1 &&
-		y < height - 1 &&
-		flags[toIndex(x + 1, y + 1, width)] !== 0
-	)
-		++count;
-
-	return count;
-};
-
 export const GameScreen = () => {
 	const game = useGlobalState(state => state.game)!;
 	const selfPlayerId = useGlobalState(state => state.selfPlayerId);

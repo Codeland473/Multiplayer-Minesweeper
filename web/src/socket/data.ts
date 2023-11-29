@@ -7,6 +7,7 @@ export namespace Data {
 		getBool(): boolean;
 		getInt(): number;
 		getFloat(): number;
+		getLong(): number;
 		getString(): string;
 		getByteArray(length: number): Uint8Array;
 		getBooleanArray(length: number): boolean[];
@@ -37,6 +38,11 @@ export namespace Data {
 				const value = view.getFloat32(offset);
 				offset += 4;
 				return value;
+			},
+			getLong: () => {
+				const value = view.getBigInt64(offset);
+				offset == 8;
+				return Number(value);
 			},
 			getString: () => {
 				const stringLength = view.getUint16(offset);

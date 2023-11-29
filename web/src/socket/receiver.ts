@@ -256,7 +256,9 @@ export namespace Receiver {
 					const settings = readSettings(reader);
 					const { boardWidth, boardHeight } = settings;
 
-					const gameTimer = reader.getFloat();
+					const startTime = reader.getLong();
+					const startX = reader.getInt();
+					const startY = reader.getInt();
 
 					const board = reader.getByteArray(boardWidth * boardHeight);
 
@@ -320,10 +322,12 @@ export namespace Receiver {
 							board: Array.from(board),
 							width: boardWidth,
 							height: boardHeight,
+							startX,
+							startY,
 						},
 						teamsGameState,
 						settings,
-						gameTimer,
+						startTime,
 						cursors,
 						playersGameState,
 					} satisfies Game;
@@ -380,13 +384,36 @@ export namespace Receiver {
 	Socket.registerReceiver(ReceiveCode.GAME_START, reader => {
 		const _fromPlayerId = reader.getInt();
 
+		const startTime = reader.getLong();
+
 		const startX = reader.getInt();
 		const startY = reader.getInt();
 
+		// i want these
 		const board = reader.getByteArray(boardWidth * boardHeight);
 	});
 
-	Socket.registerReceiver(ReceiveCode.SQUARE_REVEAL, reader => {});
+	Socket.registerReceiver(ReceiveCode.SQUARE_REVEAL, reader => {
+		const _fromPlayerId = reader.getInt();
+
+		const teamId = reader.getInt();
+		const x = reader.getInt();
+		const y = reader.getInt();
+
+		update(state => {
+			if (state.game === undefined) return;
+			const { width, height } = state.game.board;
+			if (x < 0 || y < 0 || x >= width || y >= height) return;
+
+			const index = y * width + x;
+
+			const teamGameStats = state.game.teamsGameState[teamId];
+			if (teamGameStats === undefined) return;
+
+			if (teamGameStats.revealed === undefined) return;
+			teamGameStats.revealed[index] = true;
+		});
+	});
 
 	Socket.registerReceiver(ReceiveCode.SQUARE_FLAG, reader => {});
 
