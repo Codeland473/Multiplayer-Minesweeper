@@ -4,6 +4,7 @@ import Color
 import CursorLocation
 import Gamer
 import Settings
+import TeamProgress
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.text.toByteArray
@@ -91,6 +92,14 @@ class MessageBuffer(private val initialMax : Int = 500) {
 		put(v.color)
 		put(v.hasLost)
 		put(v.name)
+	}
+
+	fun put(v : TeamProgress) {
+		put(v.flagStates)
+		put(v.flagStates)
+		put(v.hasFinished)
+		put(v.hasLost)
+		put(v.endTime ?: -1L)
 	}
 
 	fun put(v : BooleanArray) {

@@ -11,6 +11,7 @@ import SETTING_MINE_COUNT
 import SETTING_UPDATE_RATE
 import Settings
 import Team
+import TeamProgress
 
 object Messages {
 	private val buffer = MessageBuffer()
@@ -65,19 +66,21 @@ object Messages {
 		}
 	}
 
-	fun gameStart(senderID : Int, startPos : Pair<Int, Int>, board : Board) = message(7) {
+	fun gameStart(senderID : Int, startPos : Pair<Int, Int>, settings : Settings, board : Board) = message(7) {
 		put(senderID)
 		put(board.startTime)
 		put(startPos.first)
 		put(startPos.second)
+		put(settings)
 		put(board.mineCounts)
 	}
 
-	fun squareReveal(gamer : Gamer, posX : Int, posY : Int) = message(8) {
+	fun squareReveal(gamer : Gamer, posX : Int, posY : Int, isChord : Boolean) = message(8) {
 		put(gamer.id)
 		put(gamer.team)
 		put(posX)
 		put(posY)
+		put(isChord)
 	}
 
 	fun squareFlag(gamer : Gamer, posX : Int, posY : Int, isPlacing : Boolean, isPencil : Boolean) = message(9) {
@@ -100,6 +103,8 @@ object Messages {
 		put(name)
 	}
 
+	fun boardClear() = message(12) {}
+
 	fun updateNewGamer(
 		settings : Settings,
 	    gamers : Array<Gamer>,
@@ -119,7 +124,6 @@ object Messages {
 		for (gamer in gamers) put(gamer.team)
 		for (gamer in gamers) put(gamer.cursorLocation)
 		for (team in teams) put(team.id)
-		for (team in teams) put(team.hasLost)
 		if (board != null && currentSettings != null) {
 			put(true)
 			put(settings)
@@ -130,11 +134,13 @@ object Messages {
 			put(board.mineCounts)
 			val gamersTeam = teams.find { it.id == newGamer.team }
 			if (gamersTeam != null) {
-				put(gamersTeam.boardMask ?: BooleanArray(board.width * board.height) {false})
-				put(gamersTeam.flagStates ?: IntArray(board.width * board.height) {0})
+				if (gamersTeam.progress == null) gamersTeam.progress = TeamProgress(board)
+				put(gamersTeam.progress!!)
 			} else {
-				for (team in teams) put(team.boardMask ?: BooleanArray(board.width * board.height) {false})
-				for (team in teams) put(team.flagStates ?: IntArray(board.width * board.height) {0})
+				for (team in teams) {
+					if (team.progress == null) team.progress = TeamProgress(board)
+					put(team.progress!!)
+				}
 			}
 		} else {
 			put(false)
@@ -145,12 +151,16 @@ object Messages {
 
 	fun gamerRemove(quitter : Gamer?) = message(52) { put(quitter!!.id) }
 
-	fun teamFinish(winner : Team) = message(53) { put(winner.id) }
+	fun teamFinish(winner : Team, time : Long) = message(53) {
+		put(winner.id)
+		put(time)
+	}
 
 	fun gamerLost(loser : Gamer) = message(54) { put(loser.id) }
 
-	fun teamLost(loser : Gamer) = message(55) {
+	fun teamLost(loser : Gamer, time : Long) = message(55) {
 		put(loser.id)
 		put(loser.team)
+		put(time)
 	}
 }
