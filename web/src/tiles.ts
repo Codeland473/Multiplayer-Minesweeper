@@ -1,140 +1,189 @@
 import { Draft } from 'immer';
-import { PlayerGameStats, TeamGameStats } from './globalState.js';
+import {
+	Game,
+	Player,
+	ActiveTeamData,
+	TeamData,
+	Board,
+} from './globalState.js';
+import { imm } from './util.js';
 
 const toIndex = (x: number, y: number, width: number): number => y * width + x;
+const toXY = (index: number, width: number) =>
+	[index % width, Math.floor(index / width)] as const;
 
-const toIndexSafe = (
+export const isInbounds = (
 	x: number,
 	y: number,
 	width: number,
 	height: number,
-): number | undefined =>
-	x < 0 || y < 0 || x >= width || y >= height ? undefined : y * width + x;
+): boolean => {
+	return x >= 0 && y >= 0 && x < width && y < height;
+};
 
-const getFlagsAround = (
+export const isInboundsBoard = (
+	x: number,
+	y: number,
+	board: Board,
+): boolean => {
+	return x >= 0 && y >= 0 && x < board.width && y < board.height;
+};
+
+const indicesAround = (
+	x: number,
+	y: number,
+	width: number,
+	height: number,
+): readonly number[] => {
+	const indices: number[] = [];
+
+	if (x >= 0) {
+		indices.push(toIndex(x - 1, y, width));
+		if (y >= 0) indices.push(toIndex(x - 1, y - 1, width));
+		if (y < height) indices.push(toIndex(x - 1, y + 1, width));
+	}
+	if (x < width) {
+		indices.push(toIndex(x + 1, y, width));
+		if (y >= 0) indices.push(toIndex(x + 1, y - 1, width));
+		if (y < height) indices.push(toIndex(x + 1, y + 1, width));
+	}
+	if (y >= 0) indices.push(toIndex(x, y - 1, width));
+	if (y < height) indices.push(toIndex(x, y + 1, width));
+
+	return indices;
+};
+
+const getTeamPlayers = (
+	players: readonly Player[],
+	teamId: number,
+): readonly Player[] => {
+	return players.filter(player => player.teamId === teamId);
+};
+
+export const countFlagsAround = (
+	x: number,
+	y: number,
+	width: number,
+	height: number,
 	flags: readonly number[],
-	width: number,
-	height: number,
-	x: number,
-	y: number,
 ): number => {
 	let count = 0;
 
-	if (x > 0 && flags[toIndex(x - 1, y, width)] !== 0) ++count;
-	if (x < width - 1 && flags[toIndex(x + 1, y, width)] !== 0) ++count;
-	if (y > 0 && flags[toIndex(x, y - 1, width)] !== 0) ++count;
-	if (y < height - 1 && flags[toIndex(x, y + 1, width)] !== 0) ++count;
-
-	if (x > 0 && y > 0 && flags[toIndex(x - 1, y - 1, width)] !== 0) ++count;
-	if (x > 0 && y < height - 1 && flags[toIndex(x - 1, y + 1, width)] !== 0)
-		++count;
-
-	if (x < width - 1 && y > 0 && flags[toIndex(x + 1, y - 1, width)] !== 0)
-		++count;
-	if (
-		x < width - 1 &&
-		y < height - 1 &&
-		flags[toIndex(x + 1, y + 1, width)] !== 0
-	)
-		++count;
+	for (const index of indicesAround(x, y, width, height)) {
+		if (flags[index]) ++count;
+	}
 
 	return count;
 };
 
-const revealChord = (
-	x: number,
-	y: number,
-	width: number,
-	height: number,
-	flags: readonly number[],
-	revealed: Draft<boolean[]>,
+export const lose = (
+	draftGame: Draft<Game>,
+	players: readonly Player[],
+	playerId: number,
 ) => {
-	const left = Math.max(x - 1, 0);
-	const right = Math.min(x + 1, width - 1);
-	const up = Math.max(y - 1, 0);
-	const down = Math.min(y + 1, height - 1);
+	const game = imm(draftGame);
 
-	for (let j = up; j <= down; ++j) {
-		for (let i = left; i <= right; ++i) {
-			const index = toIndex(i, j, width);
-			if (flags[index] === 0) {
-				revealed[index] = true;
-			}
-		}
+	draftGame.playerDatas[playerId].alive = false;
+	const player = players.find(({ id }) => id === playerId)!;
+
+	const allTeamPlayers = getTeamPlayers(players, player.id);
+	if (allTeamPlayers.every(({ id }) => !game.teamDatas[id].alive)) {
+		draftGame.teamDatas[player.teamId!].alive = false;
 	}
 };
 
+export const isActiveTeamData = (
+	teamData: TeamData | undefined,
+): teamData is ActiveTeamData => {
+	if (teamData === undefined) return false;
+	return teamData.revealed !== undefined;
+};
+
 /**
- * 
- * @param x 
- * @param y 
- * @param width 
- * @param height 
- * @param board 
- * @param flags 
- * @param revealed 
+ *
+ * @param x
+ * @param y
+ * @param width
+ * @param height
+ * @param board
+ * @param flags
+ * @param revealed
  */
-const reveal = (
+export const reveal = (
 	x: number,
 	y: number,
-	width: number,
-	height: number,
-	board: readonly number[],
-	flags: Draft<number[]>,
-	revealed: Draft<boolean[]>,
-	PlayerGameStats: Draft<PlayerGameStats>,
-) => {
-	const stack: number[] = [toIndex(x, y, width)];
+	draftGame: Draft<Game>,
+	draftTeamData: Draft<ActiveTeamData>,
+	isChord: boolean,
+): boolean => {
+	const { revealed, flags } = imm(draftTeamData);
+	const { width, height, board } = draftGame.board;
 
-	const pushSafe = (index: number | undefined) => {
-		if (index !== undefined) stack.push(index);
-	};
+	const stack: number[] = [];
 
+	/* initial tiles to reveal from click */
+	if (isChord) {
+		for (const aroundIndex of indicesAround(x, y, width, height)) {
+			if (flags[aroundIndex] === 0 && !revealed[aroundIndex])
+				stack.push(aroundIndex);
+		}
+	} else {
+		const revealIndex = toIndex(x, y, width);
+		if (!revealed[revealIndex]) stack.push(revealIndex);
+	}
+
+	/* recursively reveal tiles */
 	let topIndex: number | undefined;
 	while ((topIndex = stack.pop()) !== undefined) {
-		/* already revealed */
-		if (revealed[topIndex]) continue;
-
 		if (board[topIndex] === 0) {
-			const x = topIndex % width;
-			const y = Math.floor(topIndex / width);
-			
-			const left = Math.max(x - 1, 0);
-			const right = Math.min(x + 1, width - 1);
-			const up = Math.max(y - 1, 0);
-			const down = Math.min(y + 1, height - 1);
-	
-			for (let j = up; j <= down; ++j) {
-				for (let i = left; i <= right; ++i) {
-					const index = toIndex(i, j, width);
-	
-					flags[index] = 0;
-					revealed[index] = true;
-	
-					const value = board[index];
-					if (value === 0) {
-						pushSafe(toIndexSafe(x - 1, y, width, height));
-						pushSafe(toIndexSafe(x + 1, y, width, height));
-						pushSafe(toIndexSafe(x - 1, y - 1, width, height));
-						pushSafe(toIndexSafe(x + 1, y - 1, width, height));
-						pushSafe(toIndexSafe(x, y - 1, width, height));
-						pushSafe(toIndexSafe(x - 1, y + 1, width, height));
-						pushSafe(toIndexSafe(x + 1, y + 1, width, height));
+			const [x, y] = toXY(topIndex, width);
+
+			for (const aroundIndex of indicesAround(x, y, width, height)) {
+				const [x, y] = toXY(aroundIndex, width);
+
+				draftTeamData.flags[aroundIndex] = 0;
+				draftTeamData.revealed[aroundIndex] = true;
+
+				const value = board[aroundIndex];
+				if (value === 0) {
+					for (const spreadIndex of indicesAround(
+						x,
+						y,
+						width,
+						height,
+					)) {
+						if (!revealed[spreadIndex]) stack.push(spreadIndex);
 					}
 				}
 			}
 		} else if (board[topIndex] === 9) {
-			flags[topIndex] = 0;
-			revealed[topIndex] = true;
-
-			
+			draftTeamData.flags[topIndex] = 0;
+			draftTeamData.revealed[topIndex] = true;
+			return true;
 		} else {
-			flags[topIndex] = 0;
-			revealed[topIndex] = true;
-
-			if () {
-
-			}
+			draftTeamData.flags[topIndex] = 0;
+			draftTeamData.revealed[topIndex] = true;
 		}
 	}
+
+	return false;
+};
+
+export const setFlag = (
+	x: number,
+	y: number,
+	draftGame: Draft<Game>,
+	draftTeamData: Draft<ActiveTeamData>,
+	playerId: number,
+	isFlagAdded: boolean,
+	isPencil: boolean,
+) => {
+	const game = imm(draftGame);
+	const index = toIndex(x, y, game.board.width);
+
+	draftTeamData.flags[index] = isFlagAdded
+		? isPencil
+			? -playerId
+			: playerId
+		: 0;
 };

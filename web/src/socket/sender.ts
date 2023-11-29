@@ -65,16 +65,16 @@ export namespace Sender {
 	export const settingUpdate = Socket.registerSender(
 		(setSetting: Partial<GameSettings>) => {
 			if (
-				setSetting.boardHeight !== undefined &&
-				setSetting.boardWidth !== undefined
+				setSetting.height !== undefined &&
+				setSetting.width !== undefined
 			) {
 				const sendBuffer = new Uint8Array(1 + 4 + 8);
 				const writer = Data.createWriter(sendBuffer);
 
 				writer.writeByte(SendCode.SETTINGS_UPDATE);
 				writer.writeInt(SettingCode.BOARD_SIZE);
-				writer.writeInt(setSetting.boardWidth);
-				writer.writeInt(setSetting.boardHeight);
+				writer.writeInt(setSetting.width);
+				writer.writeInt(setSetting.height);
 
 				return sendBuffer;
 			} else if (setSetting.isNoGuessing !== undefined) {
@@ -102,6 +102,15 @@ export namespace Sender {
 				writer.writeByte(SendCode.SETTINGS_UPDATE);
 				writer.writeInt(SettingCode.MINE_COUNT);
 				writer.writeInt(setSetting.mineCount);
+
+				return sendBuffer;
+			} else if (setSetting.countdownLength !== undefined) {
+				const sendBuffer = new Uint8Array(1 + 4 + 4);
+				const writer = Data.createWriter(sendBuffer);
+
+				writer.writeByte(SendCode.SETTINGS_UPDATE);
+				writer.writeInt(SettingCode.COUNTDOWN_LENGTH);
+				writer.writeInt(setSetting.countdownLength);
 
 				return sendBuffer;
 			} else {

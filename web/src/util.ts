@@ -1,3 +1,5 @@
+import { Draft, Immutable, original } from 'immer';
+
 export const short = (error: Error) => {
 	throw error;
 };
@@ -36,4 +38,14 @@ export const groupBy = <Type>(
 	return obj;
 };
 
-export type AllOrNothing<T> = T | { [key in keyof T]?: undefined };
+export type AllOrNothing<T> =
+	| Immutable<T>
+	| { readonly [key in keyof T]?: undefined };
+
+export type Define<T, K extends keyof T> = {
+	readonly [Key in K]-?: Exclude<T[Key], undefined>;
+} & { readonly [Key in Exclude<keyof T, K>]: T[Key] };
+
+export const imm = <T>(draft: Draft<T>): Immutable<T> => {
+	return original(draft) as Immutable<T>;
+};

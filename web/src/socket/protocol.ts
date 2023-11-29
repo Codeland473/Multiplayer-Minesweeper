@@ -3,6 +3,7 @@ export enum SettingCode {
 	IS_SUDDEN_DEATH = 2,
 	BOARD_SIZE = 3,
 	MINE_COUNT = 4,
+	COUNTDOWN_LENGTH = 5,
 }
 
 export enum SendCode {
@@ -37,8 +38,8 @@ export enum ReceiveCode {
 	SETTINGS_UPDATE = 6,
 
 	GAME_START = 7,
-	SQUARE_REVEAL = 8,
-	SQUARE_FLAG = 9,
+	TILE_REVEAL = 8,
+	TILE_FLAG = 9,
 	CURSOR_UPDATE = 10,
 	TEAM_FINISH = 53,
 	PLAYER_LOSE = 54,

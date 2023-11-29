@@ -1,5 +1,5 @@
 import React from 'react';
-import { Game, TeamGameStats, useGlobalState } from '../globalState.js';
+import { Game, TeamData, useGlobalState } from '../globalState.js';
 import { Board } from '../components/board.js';
 import { Sender } from '../socket/sender.js';
 
@@ -11,12 +11,12 @@ export const GameScreen = () => {
 	const selfPlayer = players.find(({ id }) => id === selfPlayerId)!;
 	if (selfPlayer.teamId === undefined) throw Error('spec not impl');
 
-	const gameState = game.teamsGameState[selfPlayer.teamId];
+	const gameState = game.teamDatas[selfPlayer.teamId];
 
 	const gameRef = React.useRef<Game>(game);
 	gameRef.current = game;
 
-	const gameStateRef = React.useRef<TeamGameStats>(gameState);
+	const gameStateRef = React.useRef<TeamData>(gameState);
 	gameStateRef.current = gameState;
 
 	const onClickBoard = React.useCallback(

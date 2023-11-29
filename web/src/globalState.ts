@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { combine } from 'zustand/middleware';
 import { Draft, Immutable, nothing, produce } from 'immer';
 import { Log } from './log.js';
+import { AllOrNothing, Define } from './util.js';
 
 export type Color = Immutable<[number, number, number]>;
 
@@ -37,31 +38,38 @@ export type Cursor = Immutable<{
 	playerId: number;
 }>;
 
-export type PlayerGameStats = Immutable<{
+export type PlayerData = Immutable<{
 	alive: boolean;
 }>;
+export type PlayerDatas = Immutable<Record<number, PlayerData>>;
 
-export type TeamGameStats = Immutable<{
+export type TeamData = Immutable<{
 	alive: boolean;
-	flags: number[] | undefined;
-	revealed: boolean[] | undefined;
-}>;
+	finishTime: number | undefined;
+}> &
+	AllOrNothing<{
+		flags: number[];
+		revealed: boolean[];
+	}>;
+export type ActiveTeamData = Define<TeamData, 'flags' | 'revealed'>;
+export type TeamDatas = Immutable<Record<number, TeamData>>;
 
 export type Game = Immutable<{
 	board: Board;
 	settings: GameSettings;
 	startTime: number;
 	cursors: Cursor[];
-	playersGameState: { [id: number]: PlayerGameStats };
-	teamsGameState: { [id: number]: TeamGameStats };
+	playerDatas: { [id: number]: PlayerData };
+	teamDatas: { [id: number]: TeamData };
 }>;
 
 export type GameSettings = Immutable<{
 	isNoGuessing: boolean;
 	isSuddenDeath: boolean;
-	boardWidth: number;
-	boardHeight: number;
+	width: number;
+	height: number;
 	mineCount: number;
+	countdownLength: number;
 }>;
 
 export type ConnectionStatus = 'loading' | 'connected' | 'error';
