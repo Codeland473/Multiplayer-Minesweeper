@@ -1,7 +1,8 @@
 import React from 'react';
-import { Game, TeamData, useGlobalState } from '../globalState.js';
+import { Game, TeamData, update, useGlobalState } from '../globalState.js';
 import { Board } from '../components/board.js';
 import { Sender } from '../socket/sender.js';
+import { handleClickTile, isShownTeamData } from '../tiles.js';
 
 export const GameScreen = () => {
 	const game = useGlobalState(state => state.game)!;
@@ -21,41 +22,21 @@ export const GameScreen = () => {
 
 	const onClickBoard = React.useCallback(
 		(x: number, y: number, button: number) => {
-			const { board, width, height } = gameRef.current.board;
-			const index = toIndex(x, y, width);
-			const { alive, flags, revealed } = gameStateRef.current;
+			update(draftState => {
+				if (draftState.game === undefined) return;
+				if (selfPlayer.teamId === undefined) return;
+				const teamData = draftState.game.teamDatas[selfPlayer.teamId];
+				if (!isShownTeamData(teamData)) return;
 
-			if (flags === undefined || revealed === undefined) return;
-			if (!alive) return;
-
-			if (button === 0) {
-				const value = board[index];
-
-				/* already flagged do nothing */
-				if (flags[index] !== 0) return;
-
-				if (revealed[index]) {
-					/* do nothing on empty square */
-					if (value === 0) return;
-
-					const flagsAround = getFlagsAround(
-						flags,
-						width,
-						height,
-						x,
-						y,
-					);
-
-					/* do nothing on random number click */
-					if (flagsAround !== value) return;
-
-					/* chord */
-					Sender.revealTile(x, y);
-				} else {
-					//if (value === 0)
-				}
-			} else if (button === 1) {
-			}
+				handleClickTile(
+					x,
+					y,
+					button,
+					draftState.game,
+					teamData,
+					selfPlayer.id,
+				);
+			});
 		},
 		[],
 	);
@@ -73,8 +54,8 @@ export const GameScreen = () => {
 						revealed={gameState.revealed}
 						width={game.board.width}
 						height={game.board.height}
-						showMines={!gameState.alive}
-						players={}
+						showMines={!gameState.isAlive}
+						players={players}
 						onClick={onClickBoard}
 					/>
 				)}

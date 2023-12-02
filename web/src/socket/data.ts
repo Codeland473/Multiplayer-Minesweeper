@@ -9,7 +9,7 @@ export namespace Data {
 		getFloat(): number;
 		getLong(): number;
 		getString(): string;
-		getByteArray(length: number): Uint8Array;
+		getByteArray(length: number): number[];
 		getBooleanArray(length: number): boolean[];
 		getIntArray(length: number): number[];
 	};
@@ -52,10 +52,10 @@ export namespace Data {
 				offset += 2 + stringLength;
 				return value;
 			},
-			getByteArray: (length: number): Uint8Array => {
+			getByteArray: (length: number): number[] => {
 				const value = new Uint8Array(data, offset, length);
 				offset += length;
-				return value;
+				return Array.from(value);
 			},
 			getBooleanArray: (length: number): boolean[] => {
 				const value = Array.from(

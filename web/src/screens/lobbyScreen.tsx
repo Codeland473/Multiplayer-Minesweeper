@@ -275,6 +275,13 @@ export const LobbyScreen = () => {
 		Sender.teamRemove(team.id);
 	}, []);
 
+	const canStartGame =
+		selfTeam !== undefined &&
+		players.some(({ teamId }) => teamId !== undefined);
+	const onStartGame = React.useCallback(() => {
+		Sender.startGame();
+	}, []);
+
 	return (
 		<div className={PageStyle.pageContainer}>
 			{teamEditState === undefined ? null : (
@@ -332,7 +339,9 @@ export const LobbyScreen = () => {
 						</button>
 					) : null}
 				</div>
-				<button disabled={selfTeam === undefined}>Start</button>
+				<button disabled={!canStartGame} onClick={onStartGame}>
+					Start
+				</button>
 			</div>
 		</div>
 	);

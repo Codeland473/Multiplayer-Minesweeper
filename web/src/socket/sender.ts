@@ -162,14 +162,63 @@ export namespace Sender {
 		},
 	);
 
-	export const revealTile = Socket.registerSender((x: number, y: number) => {
-		const sendBuffer = new Uint8Array(1 + 4 + 4);
+	export const revealTile = Socket.registerSender(
+		(x: number, y: number, isChord: boolean) => {
+			const sendBuffer = new Uint8Array(1 + 4 + 4 + 1);
+
+			const writer = Data.createWriter(sendBuffer);
+
+			writer.writeByte(SendCode.SQUARE_REVEAL);
+			writer.writeInt(x);
+			writer.writeInt(y);
+			writer.writeBool(isChord);
+
+			return sendBuffer;
+		},
+	);
+
+	export const recover = Socket.registerSender(() => {
+		const sendBuffer = new Uint8Array(1);
 
 		const writer = Data.createWriter(sendBuffer);
+		writer.writeByte(SendCode.RECOVER);
 
-		writer.writeByte(SendCode.SQUARE_REVEAL);
-		writer.writeInt(x);
-		writer.writeInt(y);
+		return sendBuffer;
+	});
+
+	export const updateCursor = Socket.registerSender(
+		(cursorX: number, cursorY: number) => {
+			const sendBuffer = new Uint8Array(1 + 8);
+
+			const writer = Data.createWriter(sendBuffer);
+			writer.writeByte(SendCode.CURSOR_UPDATE);
+			writer.writeFloat(cursorX);
+			writer.writeFloat(cursorY);
+
+			return sendBuffer;
+		},
+	);
+
+	export const flagTile = Socket.registerSender(
+		(x: number, y: number, isAdding: boolean, isPencil: boolean) => {
+			const sendBuffer = new Uint8Array(1 + 4 + 4 + 1 + 1);
+
+			const writer = Data.createWriter(sendBuffer);
+			writer.writeByte(SendCode.SQUARE_FLAG);
+			writer.writeInt(x);
+			writer.writeInt(y);
+			writer.writeBool(isAdding);
+			writer.writeBool(isPencil);
+
+			return sendBuffer;
+		},
+	);
+
+	export const startGame = Socket.registerSender(() => {
+		const sendBuffer = new Uint8Array(1);
+
+		const writer = Data.createWriter(sendBuffer);
+		writer.writeByte(SendCode.GAME_START);
 
 		return sendBuffer;
 	});

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { combine } from 'zustand/middleware';
 import { Draft, Immutable, nothing, produce } from 'immer';
 import { Log } from './log.js';
-import { AllOrNothing, Define } from './util.js';
+import { AllOrNothing, Define, Undefine } from './util.js';
 
 export type Color = Immutable<[number, number, number]>;
 
@@ -39,19 +39,23 @@ export type Cursor = Immutable<{
 }>;
 
 export type PlayerData = Immutable<{
-	alive: boolean;
+	isAlive: boolean;
 }>;
 export type PlayerDatas = Immutable<Record<number, PlayerData>>;
 
+export type TeamProgress = Immutable<{
+	flags: number[];
+	revealed: boolean[];
+}>;
+
 export type TeamData = Immutable<{
-	alive: boolean;
+	isAlive: boolean;
 	finishTime: number | undefined;
 }> &
-	AllOrNothing<{
-		flags: number[];
-		revealed: boolean[];
-	}>;
-export type ActiveTeamData = Define<TeamData, 'flags' | 'revealed'>;
+	AllOrNothing<TeamProgress>;
+
+export type HiddenTeamData = Undefine<TeamData, keyof TeamProgress>;
+export type ShownTeamData = Define<TeamData, keyof TeamProgress>;
 export type TeamDatas = Immutable<Record<number, TeamData>>;
 
 export type Game = Immutable<{

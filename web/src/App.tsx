@@ -11,14 +11,14 @@ export const App = () => {
 	const game = useGlobalState(state => state.game);
 
 	if (connectionState.status === 'connected') {
-		if (selfPlayerId === undefined) {
-			if (game === undefined) {
-				return <IntroScreen />;
-			} else {
+		if (selfPlayerId !== undefined) {
+			if (game !== undefined) {
 				return <GameScreen />;
+			} else {
+				return <LobbyScreen />;
 			}
 		} else {
-			return <LobbyScreen />;
+			return <IntroScreen />;
 		}
 	} else {
 		return <ConnectScreen />;

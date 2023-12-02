@@ -46,6 +46,17 @@ export type Define<T, K extends keyof T> = {
 	readonly [Key in K]-?: Exclude<T[Key], undefined>;
 } & { readonly [Key in Exclude<keyof T, K>]: T[Key] };
 
+export type Undefine<T, K extends keyof T> = {
+	readonly [Key in K]?: undefined;
+} & { readonly [Key in Exclude<keyof T, K>]: T[Key] };
+
 export const imm = <T>(draft: Draft<T>): Immutable<T> => {
 	return original(draft) as Immutable<T>;
+};
+
+export const mapToObject = <T, K extends string | number, O>(
+	array: T[],
+	transformer: (element: T, index: number) => { [Key in K]: O },
+): { [Key in K]: O } => {
+	return Object.assign({}, ...array.map(transformer));
 };

@@ -156,7 +156,7 @@ export type BoardProps = {
 	width: number;
 	height: number;
 	showMines: boolean;
-	players: Player[];
+	players: readonly Player[];
 	onClick: (x: number, y: number, button: number) => void;
 };
 

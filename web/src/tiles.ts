@@ -1,12 +1,7 @@
 import { Draft } from 'immer';
-import {
-	Game,
-	Player,
-	ActiveTeamData,
-	TeamData,
-	Board,
-} from './globalState.js';
+import { Game, Player, ShownTeamData, TeamData, Board } from './globalState.js';
 import { imm } from './util.js';
+import { Sender } from './socket/sender.js';
 
 const toIndex = (x: number, y: number, width: number): number => y * width + x;
 const toXY = (index: number, width: number) =>
@@ -60,20 +55,23 @@ const getTeamPlayers = (
 	return players.filter(player => player.teamId === teamId);
 };
 
-export const countFlagsAround = (
+export const countFlagsCoveredAround = (
 	x: number,
 	y: number,
 	width: number,
 	height: number,
 	flags: readonly number[],
-): number => {
-	let count = 0;
+	revealed: readonly boolean[],
+): [number, number] => {
+	let flagCount = 0;
+	let revealCount = 0;
 
 	for (const index of indicesAround(x, y, width, height)) {
-		if (flags[index]) ++count;
+		if (flags[index]) ++flagCount;
+		else if (revealed[index]) ++revealCount;
 	}
 
-	return count;
+	return [flagCount, revealCount];
 };
 
 export const lose = (
@@ -83,18 +81,18 @@ export const lose = (
 ) => {
 	const game = imm(draftGame);
 
-	draftGame.playerDatas[playerId].alive = false;
+	draftGame.playerDatas[playerId].isAlive = false;
 	const player = players.find(({ id }) => id === playerId)!;
 
 	const allTeamPlayers = getTeamPlayers(players, player.id);
-	if (allTeamPlayers.every(({ id }) => !game.teamDatas[id].alive)) {
-		draftGame.teamDatas[player.teamId!].alive = false;
+	if (allTeamPlayers.every(({ id }) => !game.teamDatas[id].isAlive)) {
+		draftGame.teamDatas[player.teamId!].isAlive = false;
 	}
 };
 
-export const isActiveTeamData = (
+export const isShownTeamData = (
 	teamData: TeamData | undefined,
-): teamData is ActiveTeamData => {
+): teamData is ShownTeamData => {
 	if (teamData === undefined) return false;
 	return teamData.revealed !== undefined;
 };
@@ -113,7 +111,7 @@ export const reveal = (
 	x: number,
 	y: number,
 	draftGame: Draft<Game>,
-	draftTeamData: Draft<ActiveTeamData>,
+	draftTeamData: Draft<ShownTeamData>,
 	isChord: boolean,
 ): boolean => {
 	const { revealed, flags } = imm(draftTeamData);
@@ -173,7 +171,7 @@ export const setFlag = (
 	x: number,
 	y: number,
 	draftGame: Draft<Game>,
-	draftTeamData: Draft<ActiveTeamData>,
+	draftTeamData: Draft<ShownTeamData>,
 	playerId: number,
 	isFlagAdded: boolean,
 	isPencil: boolean,
@@ -186,4 +184,66 @@ export const setFlag = (
 			? -playerId
 			: playerId
 		: 0;
+};
+
+export const handleClickTile = (
+	x: number,
+	y: number,
+	button: number,
+	draftGame: Draft<Game>,
+	draftTeamData: Draft<ShownTeamData>,
+	playerId: number,
+) => {
+	const game = imm(draftGame);
+	const teamData = imm(draftTeamData);
+
+	const {
+		board: { board, width, height },
+	} = game;
+	const index = toIndex(x, y, width);
+	const { flags, revealed } = teamData;
+
+	if (button === 0) {
+		const value = board[index];
+
+		/* already flagged do nothing */
+		if (flags[index] !== 0) return;
+
+		if (revealed[index]) {
+			/* do nothing on empty square */
+			if (value === 0) return;
+
+			const [flagCount, coveredCount] = countFlagsCoveredAround(
+				x,
+				y,
+				width,
+				height,
+				flags,
+				revealed,
+			);
+
+			/* do nothing on random number click */
+			if (flagCount !== value || coveredCount === 0) return;
+
+			/* chord */
+			reveal(x, y, draftGame, draftTeamData, true);
+			Sender.revealTile(x, y, true);
+		} else {
+			reveal(x, y, draftGame, draftTeamData, false);
+			Sender.revealTile(x, y, false);
+		}
+	} else if (button === 1 || button === 2) {
+		const isPencil = button === 1;
+		const placedFlagId = isPencil ? -playerId : playerId;
+
+		if (revealed[index]) return;
+
+		if (flags[index] === 0) {
+			draftTeamData.flags[index] = placedFlagId;
+			Sender.flagTile(x, y, true, isPencil);
+		} else {
+			draftTeamData.flags[index] = 0;
+			Sender.flagTile(x, y, false, false);
+		}
+	}
 };

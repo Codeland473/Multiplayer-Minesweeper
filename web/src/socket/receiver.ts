@@ -7,23 +7,26 @@ import {
 	GlobalState,
 	Player,
 	PlayerData,
-	ActiveTeamData,
+	ShownTeamData,
 	TeamData,
 	update,
 	TeamDatas,
+	Team,
+	HiddenTeamData,
+	TeamProgress,
 } from '../globalState.js';
 import { Log } from '../log.js';
 import { Data } from './data.js';
 import { Socket } from './socket.js';
 import { ReceiveCode, SettingCode } from './protocol.js';
 import {
-	isActiveTeamData,
+	isShownTeamData,
 	lose,
 	reveal,
 	setFlag,
 	isInboundsBoard,
 } from '../tiles.js';
-import { imm } from '../util.js';
+import { imm, mapToObject } from '../util.js';
 
 export namespace Receiver {
 	const readSettings = (reader: Data.Reader): GameSettings => {
@@ -39,16 +42,58 @@ export namespace Receiver {
 		};
 	};
 
-	const readPlayer = (reader: Data.Reader): Player & { alive: boolean } => {
+	const readPlayer = (
+		reader: Data.Reader,
+	): Player & { isAlive: boolean; cursorX: number; cursorY: number } => {
 		const id = reader.getInt();
+		const color = [
+			reader.getByte(),
+			reader.getByte(),
+			reader.getByte(),
+		] as const;
+		const name = reader.getString();
+		const isDead = reader.getBool();
 		const inputTeamId = reader.getInt();
+		const cursorX = reader.getInt();
+		const cursorY = reader.getInt();
 
 		return {
 			id,
+			color,
+			name,
+			isAlive: !isDead,
 			teamId: inputTeamId === 0 ? undefined : inputTeamId,
-			color: [reader.getByte(), reader.getByte(), reader.getByte()],
-			alive: !reader.getBool(),
-			name: reader.getString(),
+			cursorX,
+			cursorY,
+		};
+	};
+
+	const readTeam = (reader: Data.Reader): Team & HiddenTeamData => {
+		const id = reader.getInt();
+		const name = reader.getString();
+		const isFinished = reader.getBool();
+		const isDead = reader.getBool();
+		const finishTime = reader.getLong();
+
+		return {
+			id,
+			name,
+			isAlive: !isDead,
+			finishTime: isFinished ? undefined : finishTime,
+		};
+	};
+
+	const readTeamProgress = (
+		reader: Data.Reader,
+		width: number,
+		height: number,
+	): Pick<ShownTeamData, 'revealed' | 'flags'> => {
+		const revealed = reader.getBooleanArray(width * height);
+		const flags = reader.getIntArray(width * height);
+
+		return {
+			revealed,
+			flags,
 		};
 	};
 
@@ -141,7 +186,7 @@ export namespace Receiver {
 	});
 
 	Socket.registerReceiver(ReceiveCode.PLAYER_CREATE, reader => {
-		const { alive, color, id, name, teamId } = readPlayer(reader);
+		const { isAlive, color, id, name, teamId } = readPlayer(reader);
 
 		update(state => {
 			const [existingIndex] = findPlayerIndex(state, id);
@@ -165,8 +210,8 @@ export namespace Receiver {
 			}
 
 			if (state.game !== undefined) {
-				state.game.playerDatas[id] ??= { alive: true };
-				state.game.playerDatas[id].alive = alive;
+				state.game.playerDatas[id] ??= { isAlive: true };
+				state.game.playerDatas[id].isAlive = isAlive;
 			}
 		});
 	});
@@ -227,17 +272,34 @@ export namespace Receiver {
 		});
 	});
 
-	//TODO
-	const readTeamData = (
+	const readGame = (
 		reader: Data.Reader,
-		width: number,
-		height: number,
-	): TeamData => {
-		const revealed = reader.getBooleanArray(width * height);
-		const flags = reader.getIntArray(width * height);
-		const isFinished = reader.getBool();
-		const isDead = reader.getBool();
-		const finishTime = reader.getLong();
+		numTeamDatas: number,
+	): Pick<Game, 'settings' | 'board' | 'startTime'> & {
+		teamProgresses: TeamProgress[];
+	} => {
+		const settings = readSettings(reader);
+		const { width, height } = settings;
+		const startTime = reader.getLong();
+		const startX = reader.getInt();
+		const startY = reader.getInt();
+		const board = reader.getByteArray(width * height);
+		const teamProgresses = Data.readArray(numTeamDatas, () =>
+			readTeamProgress(reader, width, height),
+		);
+
+		return {
+			board: {
+				board,
+				width,
+				height,
+				startX,
+				startY,
+			},
+			startTime,
+			settings,
+			teamProgresses,
+		};
 	};
 
 	Socket.registerReceiver(ReceiveCode.SELF_JOIN, reader => {
@@ -250,111 +312,15 @@ export namespace Receiver {
 		const selfPlayerId = reader.getInt();
 
 		/* players */
-		const playerIds = Data.readArray(numPlayers, () => reader.getInt());
-		const playerColors = Data.readArray(
-			numPlayers,
-			() =>
-				[reader.getByte(), reader.getByte(), reader.getByte()] as const,
-		);
-		const playerIsDeads = Data.readArray(numPlayers, () =>
-			reader.getBool(),
-		);
-		const playerNames = Data.readArray(numPlayers, () =>
-			reader.getString(),
-		);
-		const playerTeamIds = Data.readArray(numPlayers, () => reader.getInt());
-		const cursorLocations = Data.readArray(
-			numPlayers,
-			() => [reader.getInt(), reader.getInt()] as const,
-		);
-
-		/* teams */
-		const teamIds = Data.readArray(numTeams, () => reader.getInt());
-		const teamIsDeads = Data.readArray(numTeams, () => reader.getBool());
-		const teamNames = Data.readArray(numTeams, () => reader.getString());
+		const players = Data.readArray(numPlayers, () => readPlayer(reader));
+		const teams = Data.readArray(numPlayers, () => readTeam(reader));
 
 		const gameGoing = reader.getBool();
 
-		const game: Game | undefined = gameGoing
-			? (() => {
-					const settings = readSettings(reader);
-					const { width: boardWidth, height: boardHeight } = settings;
+		const isSpectator = players[selfPlayerId].teamId === undefined;
 
-					const startTime = reader.getLong();
-					const startX = reader.getInt();
-					const startY = reader.getInt();
-
-					const board = reader.getByteArray(boardWidth * boardHeight);
-
-					const selfIndex = playerTeamIds.findIndex(
-						teamId => teamId === selfPlayerId,
-					);
-					const isSpectator = playerTeamIds[selfIndex] === 0;
-
-					const numTeamStates = isSpectator ? numTeams : 1;
-					const revealedMasks = Data.readArray(numTeamStates, () =>
-						reader.getBooleanArray(boardWidth * boardHeight),
-					);
-					const flagStates = Data.readArray(numTeamStates, () =>
-						reader.getIntArray(boardWidth * boardHeight),
-					);
-
-					const cursors: Cursor[] = cursorLocations.map(
-						([x, y], index) => {
-							const playerId = playerIds[index];
-							return { playerId, x, y };
-						},
-					);
-
-					const playersGameState: { [id: number]: PlayerData } = {};
-					for (let i = 0; i < numPlayers; ++i) {
-						playersGameState[playerIds[i]] = {
-							alive: !playerIsDeads[i],
-						};
-					}
-
-					const teamsGameState: { [id: number]: TeamData } = {};
-					for (let i = 0; i < numTeams; ++i) {
-						const teamId = teamIds[i];
-
-						if (isSpectator) {
-							teamsGameState[teamId] = {
-								alive: !teamIsDeads[i],
-								flags: flagStates[teamId],
-								revealed: revealedMasks[teamId],
-							};
-						} else {
-							if (teamId === playerTeamIds[selfIndex]) {
-								teamsGameState[teamId] = {
-									alive: !teamIsDeads[i],
-									flags: flagStates[0],
-									revealed: revealedMasks[0],
-								};
-							} else {
-								teamsGameState[teamId] = {
-									alive: !teamIsDeads[i],
-									flags: undefined,
-									revealed: undefined,
-								};
-							}
-						}
-					}
-
-					return {
-						board: {
-							board: Array.from(board),
-							width: boardWidth,
-							height: boardHeight,
-							startX,
-							startY,
-						},
-						teamDatas: teamsGameState,
-						settings,
-						startTime,
-						cursors,
-						playerDatas: playersGameState,
-					} satisfies Game;
-			  })()
+		const game = gameGoing
+			? readGame(reader, isSpectator ? numTeams : 1)
 			: undefined;
 
 		update(state => {
@@ -362,22 +328,53 @@ export namespace Receiver {
 
 			state.selfPlayerId = selfPlayerId;
 
-			state.players = Array.from(new Array(numPlayers), (_, index) => ({
-				id: playerIds[index],
-				color: playerColors[index] as Draft<Color>,
-				name: playerNames[index],
-				teamId:
-					playerTeamIds[index] === 0
-						? undefined
-						: playerTeamIds[index],
+			state.players = players.map(player => ({
+				id: player.id,
+				color: castDraft(player.color),
+				name: player.name,
+				teamId: player.teamId,
 			}));
 
-			state.teams = Array.from(new Array(numTeams), (_, index) => ({
-				id: teamIds[index],
-				name: teamNames[index],
+			state.teams = teams.map(team => ({
+				id: team.id,
+				name: team.name,
 			}));
 
-			state.game = castDraft(game);
+			if (game === undefined) {
+				state.game = undefined;
+			} else {
+				state.game = {
+					board: castDraft(game.board),
+					settings: game.settings,
+					startTime: game.startTime,
+					cursors: players.map(player => ({
+						playerId: player.id,
+						x: player.cursorX,
+						y: player.cursorY,
+					})),
+					playerDatas: mapToObject(players, ({ isAlive, id }) => ({
+						[id]: { isAlive },
+					})),
+					teamDatas: mapToObject(
+						teams,
+						({ id, finishTime, isAlive }, index) => {
+							const teamProgress = isSpectator
+								? game.teamProgresses[index]
+								: id === players[selfPlayerId].teamId
+								? game.teamProgresses[0]
+								: {};
+
+							return {
+								[id]: {
+									finishTime,
+									isAlive,
+									...teamProgress,
+								},
+							};
+						},
+					),
+				};
+			}
 		});
 	});
 
@@ -421,9 +418,7 @@ export namespace Receiver {
 
 		const settings = readSettings(reader);
 
-		const board = Array.from(
-			reader.getByteArray(settings.width * settings.height),
-		);
+		const board = reader.getByteArray(settings.width * settings.height);
 
 		update(draftState => {
 			const state = imm(draftState);
@@ -443,7 +438,7 @@ export namespace Receiver {
 				playerDatas: Object.assign(
 					{},
 					...state.players.map(player => ({
-						[player.id]: { alive: true } satisfies PlayerData,
+						[player.id]: { isAlive: true } satisfies PlayerData,
 					})),
 				),
 				teamDatas: Object.assign(
@@ -452,7 +447,7 @@ export namespace Receiver {
 						[id]:
 							id === selfTeamId || selfTeamId === undefined
 								? ({
-										alive: true,
+										isAlive: true,
 										flags: genFlags(
 											settings.width,
 											settings.height,
@@ -462,9 +457,9 @@ export namespace Receiver {
 											settings.height,
 										),
 										finishTime: undefined,
-								  } satisfies ActiveTeamData)
+								  } satisfies ShownTeamData)
 								: ({
-										alive: true,
+										isAlive: true,
 										flags: undefined,
 										revealed: undefined,
 										finishTime: undefined,
@@ -481,9 +476,9 @@ export namespace Receiver {
 	const getTeamData = (
 		teamDatas: Draft<TeamDatas>,
 		teamId: number,
-	): Draft<ActiveTeamData> | undefined => {
+	): Draft<ShownTeamData> | undefined => {
 		const teamData = teamDatas[teamId];
-		if (!isActiveTeamData(teamData)) return undefined;
+		if (!isShownTeamData(teamData)) return undefined;
 		return teamData;
 	};
 
@@ -555,9 +550,54 @@ export namespace Receiver {
 		});
 	});
 
-	Socket.registerReceiver(ReceiveCode.TEAM_FINISH, reader => {});
+	Socket.registerReceiver(ReceiveCode.TEAM_FINISH, reader => {
+		const teamId = reader.getInt();
+		const time = reader.getLong();
 
-	Socket.registerReceiver(ReceiveCode.PLAYER_LOSE, reader => {});
+		update(draftState => {
+			if (draftState.game === undefined) return;
 
-	Socket.registerReceiver(ReceiveCode.TEAM_LOSE, reader => {});
+			const teamData = draftState.game.teamDatas[teamId];
+			if (teamData === undefined) return;
+
+			teamData.finishTime = time;
+		});
+	});
+
+	Socket.registerReceiver(ReceiveCode.PLAYER_LOSE, reader => {
+		const playerId = reader.getInt();
+
+		update(draftState => {
+			if (draftState.game === undefined) return;
+
+			const playerData = draftState.game.playerDatas[playerId];
+			playerData.isAlive = false;
+		});
+	});
+
+	Socket.registerReceiver(ReceiveCode.TEAM_LOSE, reader => {
+		const _clickPlayerId = reader.getInt();
+		const teamId = reader.getInt();
+		const _loseTime = reader.getLong();
+
+		update(draftState => {
+			if (draftState.game === undefined) return;
+
+			const teamData = draftState.game.teamDatas[teamId];
+			teamData.isAlive = false;
+			teamData.finishTime = undefined;
+
+			for (const player of imm(draftState.players)) {
+				if (player.teamId === teamId) {
+					draftState.game.playerDatas[player.id].isAlive = false;
+				}
+			}
+		});
+	});
+
+	Socket.registerReceiver(ReceiveCode.BOARD_CLEAR, reader => {
+		update(draftState => {
+			draftState.game = undefined;
+		});
+	});
 }
