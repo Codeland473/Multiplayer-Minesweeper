@@ -1,7 +1,8 @@
 import React from 'react';
-import { BoardStyle } from './board.css.js';
-import { Player } from '../globalState.js';
+import { BoardStyle } from './BoardComponent.css.js';
+import { Board, Player } from '../global-state.js';
 import { rgbToHex } from '../util.js';
+import { styleVariants } from '@vanilla-extract/css';
 
 const Revealed = ({ x, y }: { x: number; y: number }) => {
 	return (
@@ -53,23 +54,49 @@ const Covered = ({ x, y }: { x: number; y: number }) => {
 	);
 };
 
-const Flag = ({ x, y, color }: { x: number; y: number; color: string }) => {
+const Flag = ({
+	x,
+	y,
+	color,
+	isPencil,
+}: {
+	x: number;
+	y: number;
+	color: string;
+	isPencil: boolean;
+}) => {
+	return (
+		<polygon
+			style={
+				isPencil
+					? { stroke: color, fill: 'none' }
+					: { stroke: 'none', fill: color }
+			}
+			points={`${x + 10.93} ${y + 7.99} ${x + 10.93} ${y + 12} ${
+				x + 7.46
+			} ${y + 10} ${x + 4} ${y + 7.99} ${x + 7.46} ${y + 6} ${
+				x + 10.93
+			} ${y + 4} ${x + 10.93} ${y + 7.99}`}
+		/>
+	);
+};
+
+const StartingMarker = ({ x, y }: { x: number; y: number }) => {
 	return (
 		<>
-			<rect
-				className={BoardStyle.flagPole}
-				x={x + 10}
-				y={y + 3}
-				width="2"
-				height="10"
+			<line
+				className={BoardStyle.startingLine}
+				x1={x + 5}
+				y1={y + 11}
+				x2={x + 11}
+				y2={y + 5}
 			/>
-			<polygon
-				style={{ fill: color }}
-				points={`${x + 10} ${y + 6.46} ${x + 10} ${y + 9.93} ${x + 7} ${
-					y + 8.2
-				} ${x + 4} ${y + 6.46} ${x + 7} ${y + 4.73} ${x + 10} ${
-					y + 3
-				} ${x + 10} ${y + 6.46}`}
+			<line
+				className={BoardStyle.startingLine}
+				x1={x + 5}
+				y1={y + 5}
+				x2={x + 11}
+				y2={y + 11}
 			/>
 		</>
 	);
@@ -116,60 +143,84 @@ const Mine = ({ x, y }: { x: number; y: number }) => {
 	);
 };
 
+type MineCount = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+const isMineCount = (number: number): number is MineCount => {
+	return number >= 1 && number <= 8;
+};
+
 type TileProps = {
 	x: number;
 	y: number;
 	value: number;
 	revealed: boolean;
 	flagColor: string | undefined;
+	isPencil: boolean;
 	showMines: boolean;
+	isStarting: boolean;
 };
 
-const Tile = ({ x, y, value, revealed, flagColor, showMines }: TileProps) => {
-	const base = revealed ? <Revealed x={x} y={y} /> : <Covered x={x} y={y} />;
-	const flag =
-		flagColor === undefined ? null : <Flag color={flagColor} x={x} y={y} />;
-	const number =
-		value === 9 ? (
-			showMines ? (
-				<Mine x={x} y={y} />
-			) : null
-		) : value === 0 ? null : (
-			<text x={x + 8} y={y + 8}>
-				{value}
-			</text>
+const Tile = ({
+	x,
+	y,
+	value,
+	revealed,
+	flagColor,
+	isPencil,
+	showMines,
+	isStarting,
+}: TileProps) => {
+	if (revealed) {
+		return (
+			<>
+				<Revealed x={x} y={y} />
+				{value === 9 ? (
+					<Mine x={x} y={y} />
+				) : isMineCount(value) ? (
+					<text
+						x={x + 8}
+						y={y + 8}
+						className={BoardStyle.number[value]}
+					>
+						{value}
+					</text>
+				) : null}
+			</>
 		);
-
-	return (
-		<>
-			{base}
-			{flag}
-			{number}
-		</>
-	);
+	} else {
+		return (
+			<>
+				<Covered x={x} y={y} />
+				{showMines && value === 9 ? (
+					<Mine x={x} y={y} />
+				) : flagColor !== undefined ? (
+					<Flag color={flagColor} x={x} y={y} isPencil={isPencil} />
+				) : !revealed && isStarting ? (
+					<StartingMarker x={x} y={y} />
+				) : null}
+			</>
+		);
+	}
 };
 
 export type BoardProps = {
-	board: readonly number[];
+	board: Board;
 	flags: readonly number[];
 	revealed: readonly boolean[];
-	width: number;
-	height: number;
 	showMines: boolean;
 	players: readonly Player[];
 	onClick: (x: number, y: number, button: number) => void;
 };
 
-export const Board = ({
-	board,
+export const BoardComponent = ({
+	board: inBoard,
 	flags,
 	revealed,
-	width,
-	height,
 	showMines,
 	players,
 	onClick,
 }: BoardProps) => {
+	const { width, height, board, startX, startY } = inBoard;
+
 	const flagColors = React.useMemo(
 		() =>
 			Object.assign(
@@ -205,11 +256,13 @@ export const Board = ({
 					<Tile
 						key={index}
 						flagColor={flagColors[flags[index]]}
+						isPencil={flags[index] < 0}
 						revealed={revealed[index]}
 						showMines={showMines}
 						value={value}
 						x={x}
 						y={y}
+						isStarting={x === startX && y === startY}
 					/>
 				);
 			})}

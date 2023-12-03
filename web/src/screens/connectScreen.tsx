@@ -1,9 +1,9 @@
 import React from 'react';
 import { Socket } from '../socket/socket.js';
-import { Loader } from '../components/loader.js';
-import { PageStyle } from './page.css.js';
-import { ConnectScreenStyle } from './connectScreen.css.js';
-import { useGlobalState } from '../globalState.js';
+import { Loader } from '../components/Loader.js';
+import { PageStyle } from './Page.css.js';
+import { ConnectScreenStyle } from './ConnectScreen.css.js';
+import { useGlobalState } from '../global-state.js';
 
 export const ConnectScreen = () => {
 	const connectionState = useGlobalState(state => state.connectionState);

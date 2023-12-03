@@ -1,8 +1,8 @@
 import React from 'react';
 import { useImmer } from 'use-immer';
 import { hexToRgb, randIntRange, rgbToHex } from '../util.js';
-import { PageStyle } from './page.css.js';
-import { IntroScreenStyle } from './introScreen.css.js';
+import { PageStyle } from './Page.css.js';
+import { IntroScreenStyle } from './IntroScreen.css.js';
 import { Sender } from '../socket/sender.js';
 
 type PlayerSetup = {

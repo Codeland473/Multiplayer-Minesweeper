@@ -1,5 +1,11 @@
 import { Draft } from 'immer';
-import { Game, Player, ShownTeamData, TeamData, Board } from './globalState.js';
+import {
+	Game,
+	Player,
+	ShownTeamData,
+	TeamData,
+	Board,
+} from './global-state.js';
 import { imm } from './util.js';
 import { Sender } from './socket/sender.js';
 
@@ -55,6 +61,13 @@ const getTeamPlayers = (
 	return players.filter(player => player.teamId === teamId);
 };
 
+export const isFlagged = (flag: number) => {
+	return flag > 0;
+};
+export const isAnyFlagged = (flag: number) => {
+	return flag !== 0;
+};
+
 export const countFlagsCoveredAround = (
 	x: number,
 	y: number,
@@ -67,7 +80,7 @@ export const countFlagsCoveredAround = (
 	let revealCount = 0;
 
 	for (const index of indicesAround(x, y, width, height)) {
-		if (flags[index]) ++flagCount;
+		if (isFlagged(flags[index])) ++flagCount;
 		else if (revealed[index]) ++revealCount;
 	}
 
@@ -122,7 +135,7 @@ export const reveal = (
 	/* initial tiles to reveal from click */
 	if (isChord) {
 		for (const aroundIndex of indicesAround(x, y, width, height)) {
-			if (flags[aroundIndex] === 0 && !revealed[aroundIndex])
+			if (!isFlagged(flags[aroundIndex]) && !revealed[aroundIndex])
 				stack.push(aroundIndex);
 		}
 	} else {
@@ -207,7 +220,7 @@ export const handleClickTile = (
 		const value = board[index];
 
 		/* already flagged do nothing */
-		if (flags[index] !== 0) return;
+		if (isAnyFlagged(flags[index])) return;
 
 		if (revealed[index]) {
 			/* do nothing on empty square */
@@ -238,12 +251,12 @@ export const handleClickTile = (
 
 		if (revealed[index]) return;
 
-		if (flags[index] === 0) {
-			draftTeamData.flags[index] = placedFlagId;
-			Sender.flagTile(x, y, true, isPencil);
-		} else {
+		if (isAnyFlagged(flags[index])) {
 			draftTeamData.flags[index] = 0;
 			Sender.flagTile(x, y, false, false);
+		} else {
+			draftTeamData.flags[index] = placedFlagId;
+			Sender.flagTile(x, y, true, isPencil);
 		}
 	}
 };

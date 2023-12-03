@@ -1,5 +1,5 @@
 import React from 'react';
-import { LoaderStyle } from './loader.css.js';
+import { LoaderStyle } from './Loader.css.js';
 
 export type LoaderProps = {
 	className?: string;

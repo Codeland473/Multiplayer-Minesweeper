@@ -1,4 +1,4 @@
-import { Color, GameSettings } from '../globalState.js';
+import { Color, GameSettings } from '../global-state.js';
 import { Data } from './data.js';
 import { Socket } from './socket.js';
 import { SendCode, SettingCode } from './protocol.js';

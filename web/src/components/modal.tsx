@@ -1,5 +1,5 @@
 import React from 'react';
-import { ModalStyle } from './modal.css.js';
+import { ModalStyle } from './Modal.css.js';
 
 export type ModalProps = {
 	open?: boolean;

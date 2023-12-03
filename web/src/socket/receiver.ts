@@ -14,7 +14,7 @@ import {
 	Team,
 	HiddenTeamData,
 	TeamProgress,
-} from '../globalState.js';
+} from '../global-state.js';
 import { Log } from '../log.js';
 import { Data } from './data.js';
 import { Socket } from './socket.js';
@@ -578,14 +578,14 @@ export namespace Receiver {
 	Socket.registerReceiver(ReceiveCode.TEAM_LOSE, reader => {
 		const _clickPlayerId = reader.getInt();
 		const teamId = reader.getInt();
-		const _loseTime = reader.getLong();
+		const loseTime = reader.getLong();
 
 		update(draftState => {
 			if (draftState.game === undefined) return;
 
 			const teamData = draftState.game.teamDatas[teamId];
 			teamData.isAlive = false;
-			teamData.finishTime = undefined;
+			teamData.finishTime = loseTime;
 
 			for (const player of imm(draftState.players)) {
 				if (player.teamId === teamId) {

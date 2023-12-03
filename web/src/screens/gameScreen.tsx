@@ -1,7 +1,10 @@
 import React from 'react';
-import { Game, TeamData, update, useGlobalState } from '../globalState.js';
-import { Board } from '../components/board.js';
+import { TeamData, update, useGlobalState } from '../global-state.js';
+import { BoardComponent } from '../components/BoardComponent.js';
 import { handleClickTile, isShownTeamData } from '../tiles.js';
+import { Icon } from '../components/Icon.js';
+import { rgbToHex } from '../util.js';
+import { PlayerDisplay } from '../components/PlayerDisplay.js';
 
 export const GameScreen = () => {
 	const game = useGlobalState(state => state.game)!;
@@ -10,22 +13,34 @@ export const GameScreen = () => {
 
 	const [currentTime, setCurrentTime] = React.useState(Date.now());
 	const secondsTillStart = Math.ceil((game.startTime - currentTime) / 1000);
-	const isGameGoing = secondsTillStart <= 0;
+	const isCountdownDone = secondsTillStart <= 0;
 
 	const selfPlayer = players.find(({ id }) => id === selfPlayerId)!;
 	if (selfPlayer.teamId === undefined) throw Error('spec not impl');
 
-	const gameState = game.teamDatas[selfPlayer.teamId];
+	const teamPlayers = players.filter(
+		player => player.teamId === selfPlayer.teamId,
+	);
 
-	const gameRef = React.useRef<Game>(game);
-	gameRef.current = game;
+	const playerData = game.playerDatas[selfPlayer.id];
+	const teamData = game.teamDatas[selfPlayer.teamId];
 
-	const gameStateRef = React.useRef<TeamData>(gameState);
-	gameStateRef.current = gameState;
+	const gameSeconds = Math.floor(
+		(Math.min(teamData.finishTime ?? Number.MAX_SAFE_INTEGER, currentTime) -
+			game.startTime) /
+			1000,
+	);
+
+	const teamStateRef = React.useRef<TeamData>(teamData);
+	teamStateRef.current = teamData;
+
+	const isAlive = playerData.isAlive;
+	const isTeamAlive = teamData.isAlive;
+	const canInteract = isCountdownDone && isTeamAlive && isAlive;
 
 	const onClickBoard = React.useCallback(
 		(x: number, y: number, button: number) => {
-			if (!isGameGoing) return;
+			if (!canInteract) return;
 			update(draftState => {
 				if (draftState.game === undefined) return;
 				if (selfPlayer.teamId === undefined) return;
@@ -42,7 +57,7 @@ export const GameScreen = () => {
 				);
 			});
 		},
-		[isGameGoing, selfPlayer.id, selfPlayer.teamId],
+		[canInteract, selfPlayer.id, selfPlayer.teamId],
 	);
 
 	React.useEffect(() => {
@@ -58,25 +73,40 @@ export const GameScreen = () => {
 	return (
 		<div>
 			<div>
-				{isGameGoing ? null : (
+				{isCountdownDone ? null : (
 					<div>
 						<span>{secondsTillStart}</span>
 					</div>
 				)}
-				{gameState.revealed === undefined ||
-				gameState.flags === undefined ? (
+				{teamData.revealed === undefined ||
+				teamData.flags === undefined ? (
 					<div>?</div>
 				) : (
-					<Board
-						board={game.board.board}
-						flags={gameState.flags}
-						revealed={gameState.revealed}
-						width={game.board.width}
-						height={game.board.height}
-						showMines={!gameState.isAlive}
-						players={players}
-						onClick={onClickBoard}
-					/>
+					<div>
+						<div>
+							<div>
+								{teamPlayers.map(({ color, id, name }) => (
+									<PlayerDisplay
+										color={color}
+										isAlive={game.playerDatas[id]}
+										isSelf={id === selfPlayerId}
+										name={name}
+										key={id}
+									/>
+								))}
+							</div>
+							<div>{isTeamAlive ? '😄' : '💀'}</div>
+							<div>{gameSeconds}</div>
+						</div>
+						<BoardComponent
+							board={game.board}
+							flags={teamData.flags}
+							revealed={teamData.revealed}
+							showMines={!isTeamAlive}
+							players={players}
+							onClick={onClickBoard}
+						/>
+					</div>
 				)}
 			</div>
 		</div>

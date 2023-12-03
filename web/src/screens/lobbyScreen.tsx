@@ -1,46 +1,13 @@
 import React from 'react';
-import { PageStyle } from './page.css.js';
-import { Color, Player, Team, useGlobalState } from '../globalState.js';
-import { LobbyStyle } from './lobbyScreen.css.js';
-import { Icon } from '../components/icon.js';
+import { PageStyle } from './Page.css.js';
+import { Color, Player, Team, useGlobalState } from '../global-state.js';
+import { LobbyStyle } from './LobbyScreen.css.js';
+import { Icon } from '../components/Icon.js';
 import { AllOrNothing, groupBy, rgbToHex } from '../util.js';
 import { Updater, useImmer } from 'use-immer';
-import { Modal } from '../components/modal.js';
+import { Modal } from '../components/Modal.js';
 import { Sender } from '../socket/sender.js';
-
-type BarPlayerProps = AllOrNothing<{
-	color: Color;
-	name: string;
-	isSelf: boolean;
-	onClick?: () => void;
-}>;
-
-const BarPlayer = ({ color, name, isSelf, onClick }: BarPlayerProps) => {
-	const style = React.useMemo<React.CSSProperties>(
-		() =>
-			color === undefined
-				? {}
-				: { color: rgbToHex(color[0], color[1], color[2]) },
-		[color],
-	);
-
-	return (
-		<div className={LobbyStyle.playerHolder}>
-			<div className={LobbyStyle.playerIconHolder}>
-				{color === undefined ? null : (
-					<Icon
-						className={LobbyStyle.playerIcon}
-						style={style}
-						name="person"
-						weight={isSelf ? 'fill' : 'outline'}
-					/>
-				)}
-				<div className={LobbyStyle.playerShowcase} onClick={onClick} />
-			</div>
-			<span className={LobbyStyle.playerName}>{name}</span>
-		</div>
-	);
-};
+import { PlayerDisplay } from '../components/PlayerDisplay.js';
 
 type TeamBoxProps = AllOrNothing<{
 	team: Team;
@@ -301,13 +268,14 @@ export const LobbyScreen = () => {
 
 						const barPlayers =
 							players.length === 0 ? (
-								<BarPlayer />
+								<PlayerDisplay />
 							) : (
 								players.map(player => (
-									<BarPlayer
+									<PlayerDisplay
 										key={player.id}
 										color={player.color}
 										name={player.name}
+										isAlive={true}
 										isSelf={player.id === selfPlayerId}
 									/>
 								))

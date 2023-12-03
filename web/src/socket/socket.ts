@@ -1,4 +1,4 @@
-import { update, useGlobalState } from '../globalState.js';
+import { update, useGlobalState } from '../global-state.js';
 import { Data } from './data.js';
 
 export namespace Socket {

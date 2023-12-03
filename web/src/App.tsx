@@ -1,9 +1,9 @@
 import React from 'react';
-import { useGlobalState } from './globalState.js';
-import { IntroScreen } from './screens/introScreen.js';
-import { ConnectScreen } from './screens/connectScreen.js';
-import { LobbyScreen } from './screens/lobbyScreen.js';
-import { GameScreen } from './screens/gameScreen.js';
+import { useGlobalState } from './global-state.js';
+import { IntroScreen } from './screens/IntroScreen.js';
+import { ConnectScreen } from './screens/ConnectScreen.js';
+import { LobbyScreen } from './screens/LobbyScreen.js';
+import { GameScreen } from './screens/GameScreen.js';
 
 export const App = () => {
 	const connectionState = useGlobalState(state => state.connectionState);

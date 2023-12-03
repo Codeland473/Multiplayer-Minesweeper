@@ -1,4 +1,4 @@
-import { Color } from './globalState.js';
+import { Color } from './global-state.js';
 
 export namespace Log {
 	export enum Type {
