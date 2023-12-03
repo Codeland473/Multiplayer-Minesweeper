@@ -10,7 +10,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.text.toByteArray
 
-class MessageBuffer(private val initialMax : Int = 500) {
+class MessageBuffer(private val initialMax : Int = 1024) {
 	private val internalBuffers = arrayListOf(ByteBuffer.allocate(initialMax))
 	val buffer : ByteBuffer get() = internalBuffers.last()
 
