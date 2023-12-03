@@ -312,7 +312,7 @@ export namespace Receiver {
 
 		/* players */
 		const players = Data.readArray(numPlayers, () => readPlayer(reader));
-		const teams = Data.readArray(numPlayers, () => readTeam(reader));
+		const teams = Data.readArray(numTeams, () => readTeam(reader));
 
 		const gameGoing = reader.getBool();
 
