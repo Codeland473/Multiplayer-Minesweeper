@@ -103,7 +103,7 @@ Server -> Client events
 | 10  | [Cursor Update](#Cursor-Location)       |
 | 11  | [Team Name Update](#Changing-Team-Name) |
 | 12  | [Board Clear](#Ending-The-Game)         |
-| 50  | [Gamer Join](#Update-New-Gamer)         |
+| 50  | [Lobby State](#Lobby-State)             |
 | 51  | [Gamer Create](#Gamer-Joined)           |
 | 52  | [Gamer Remove](#Gamer-Left)             |
 | 53  | [Team Finish](#Team-Finished)           |
@@ -246,7 +246,9 @@ so [0, 1, 1, 0, 2, 9, 0, 2, 9] would be:
 
 #### Client -> Server
 
-Nothing other than the message ID needs to be sent
+| Size     | Type   | Description                  |
+|----------|--------|------------------------------|
+| 1        | Byte   | Message type (Game Start: 7) |
 
 #### Server -> Client
 
@@ -342,11 +344,23 @@ I'll let the exact meaning of the cursor positions be handled by the client.
 | 4        | Int    | Sender ID                           |
 | Variable | String | Team name                           |
 
-### Ending The game
+### Ending The Game
 
-When players are ready to move onto the next game or exit to lobby, one should send an empty message with ID 12 to the
-server. The server will then relay a similar message to all the players, this should clear the board and team 
-progresses, as if the game hadn't started yet.
+When players are ready to move onto the next game or exit to lobby, one player should send an empty message with ID 12 
+to the server. The server will then relay a similar message to all the players, this should clear the board and team 
+progresses, as if the game hadn't started yet. Teams, users, and settings will remain unchanged.
+
+#### Client -> Server
+
+| Size     | Type   | Description                         |
+|----------|--------|-------------------------------------|
+| 1        | Byte   | Message type (Team Name Update: 12) |
+
+#### Server -> Client
+
+| Size     | Type   | Description                         |
+|----------|--------|-------------------------------------|
+| 1        | Byte   | Message type (Team Name Update: 12) |
 
 ## Exclusive Messages (Client -> Server)
 
@@ -368,7 +382,7 @@ if the color given is #000000
 ### Requesting Game State
 
 If the client reaches an unrecoverable error state and needs to re-sync with the server they can send this message. When
-the server receives this, it will send back a [Gamer Join](#Update-New-Gamer) message.
+the server receives this, it will send back a [Lobby State](#Lobby-State) message.
 
 | Size     | Type   | Description                      |
 |----------|--------|----------------------------------|
@@ -376,7 +390,7 @@ the server receives this, it will send back a [Gamer Join](#Update-New-Gamer) me
 
 ## Exclusive Messages (Server -> Client)
 
-### Update New Gamer
+### Lobby State
 
 Board specification is the same as in [Starting Game](#Board-Format). 
 
@@ -385,7 +399,7 @@ in which case the gamer will be given all the board states for each team in the 
 
 | Size      | Type             | Description                                                              |
 |-----------|------------------|--------------------------------------------------------------------------|
-| 1         | Byte             | Message type (Gamer Join: 50)                                            |
+| 1         | Byte             | Message type (Lobby State: 50)                                           |
 | 22        | Settings         | Settings                                                                 |
 | 4         | Int              | Number of gamers (g)                                                     |
 | 4         | Int              | Number of teams (t)                                                      |
