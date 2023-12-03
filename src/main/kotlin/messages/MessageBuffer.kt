@@ -86,6 +86,7 @@ class MessageBuffer(private val initialMax : Int = 500) {
 		put(v.boardWidth)
 		put(v.boardHeight)
 		put(v.mineCount)
+		put(v.countdownLength)
 	}
 	fun put(v : Gamer) {
 		put(v.id)
