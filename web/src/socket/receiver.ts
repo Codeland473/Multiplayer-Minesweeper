@@ -301,7 +301,7 @@ export namespace Receiver {
 		};
 	};
 
-	Socket.registerReceiver(ReceiveCode.SELF_JOIN, reader => {
+	Socket.registerReceiver(ReceiveCode.LOBBY_STATE, reader => {
 		/* settings */
 		const globalSettings = readSettings(reader);
 
@@ -316,7 +316,10 @@ export namespace Receiver {
 
 		const gameGoing = reader.getBool();
 
-		const isSpectator = players[selfPlayerId].teamId === undefined;
+		const selfPlayer = players.find(({ id }) => selfPlayerId === id);
+		if (selfPlayer === undefined) throw Error('No self player');
+
+		const isSpectator = selfPlayer.teamId === undefined;
 
 		const game = gameGoing
 			? readGame(reader, isSpectator ? numTeams : 1)
