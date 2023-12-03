@@ -41,7 +41,7 @@ export namespace Data {
 			},
 			getLong: () => {
 				const value = view.getBigInt64(offset);
-				offset == 8;
+				offset += 8;
 				return Number(value);
 			},
 			getString: () => {

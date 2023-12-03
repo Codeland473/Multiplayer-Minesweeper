@@ -268,7 +268,7 @@ export const LobbyScreen = () => {
 
 						const barPlayers =
 							players.length === 0 ? (
-								<PlayerDisplay />
+								<PlayerDisplay key="empty" />
 							) : (
 								players.map(player => (
 									<PlayerDisplay

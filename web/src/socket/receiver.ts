@@ -426,7 +426,10 @@ export namespace Receiver {
 			const state = imm(draftState);
 
 			if (state.selfPlayerId === undefined) return;
-			const selfTeamId = state.players[state.selfPlayerId].teamId;
+			const [, { teamId: selfTeamId }] = findPlayerIndex(
+				draftState,
+				state.selfPlayerId,
+			);
 
 			draftState.game = {
 				board: {

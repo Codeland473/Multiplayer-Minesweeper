@@ -2,7 +2,6 @@ import React from 'react';
 import { BoardStyle } from './BoardComponent.css.js';
 import { Board, Player } from '../global-state.js';
 import { rgbToHex } from '../util.js';
-import { styleVariants } from '@vanilla-extract/css';
 
 const Revealed = ({ x, y }: { x: number; y: number }) => {
 	return (
@@ -249,8 +248,8 @@ export const BoardComponent = ({
 	return (
 		<svg onClick={onClickSvg} viewBox={`0 0 ${width * 16} ${height * 16}`}>
 			{board.map((value, index) => {
-				const x = (index % width) * 16;
-				const y = Math.floor(index / width) * 16;
+				const x = index % width;
+				const y = Math.floor(index / width);
 
 				return (
 					<Tile
@@ -260,8 +259,8 @@ export const BoardComponent = ({
 						revealed={revealed[index]}
 						showMines={showMines}
 						value={value}
-						x={x}
-						y={y}
+						x={x * 16}
+						y={y * 16}
 						isStarting={x === startX && y === startY}
 					/>
 				);

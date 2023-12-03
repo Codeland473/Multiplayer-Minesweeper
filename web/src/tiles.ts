@@ -211,18 +211,24 @@ export const handleClickTile = (
 	const teamData = imm(draftTeamData);
 
 	const {
-		board: { board, width, height },
+		board: { board, width, height, startX, startY },
 	} = game;
-	const index = toIndex(x, y, width);
+	const clickIndex = toIndex(x, y, width);
 	const { flags, revealed } = teamData;
 
+	/* must start on start */
+	if (startX !== undefined && startY !== undefined) {
+		const startIndex = toIndex(startX, startY, width);
+		if (clickIndex !== startIndex && !revealed[startIndex]) return;
+	}
+
 	if (button === 0) {
-		const value = board[index];
+		const value = board[clickIndex];
 
 		/* already flagged do nothing */
-		if (isAnyFlagged(flags[index])) return;
+		if (isAnyFlagged(flags[clickIndex])) return;
 
-		if (revealed[index]) {
+		if (revealed[clickIndex]) {
 			/* do nothing on empty square */
 			if (value === 0) return;
 
@@ -249,13 +255,13 @@ export const handleClickTile = (
 		const isPencil = button === 1;
 		const placedFlagId = isPencil ? -playerId : playerId;
 
-		if (revealed[index]) return;
+		if (revealed[clickIndex]) return;
 
-		if (isAnyFlagged(flags[index])) {
-			draftTeamData.flags[index] = 0;
+		if (isAnyFlagged(flags[clickIndex])) {
+			draftTeamData.flags[clickIndex] = 0;
 			Sender.flagTile(x, y, false, false);
 		} else {
-			draftTeamData.flags[index] = placedFlagId;
+			draftTeamData.flags[clickIndex] = placedFlagId;
 			Sender.flagTile(x, y, true, isPencil);
 		}
 	}
