@@ -3,6 +3,7 @@ import ReactDom from 'react-dom/client';
 import { App } from './App.js';
 import { short } from './util.js';
 import { Socket } from './socket/socket.js';
+import './socket/receiver.js';
 
 Socket.startup();
 

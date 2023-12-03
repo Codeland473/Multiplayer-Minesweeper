@@ -88,7 +88,7 @@ export const GameScreen = () => {
 								{teamPlayers.map(({ color, id, name }) => (
 									<PlayerDisplay
 										color={color}
-										isAlive={game.playerDatas[id]}
+										isAlive={game.playerDatas[id].isAlive}
 										isSelf={id === selfPlayerId}
 										name={name}
 										key={id}

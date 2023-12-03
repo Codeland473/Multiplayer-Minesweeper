@@ -1,6 +1,5 @@
 import { type Draft, Immutable, castDraft } from 'immer';
 import {
-	Color,
 	Cursor,
 	Game,
 	GameSettings,
