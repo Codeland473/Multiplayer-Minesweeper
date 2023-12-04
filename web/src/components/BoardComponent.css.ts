@@ -32,6 +32,7 @@ export namespace BoardStyle {
 		textAnchor: 'middle',
 		fontSize: 12,
 		fontFamily: 'sans-serif',
+		userSelect: 'none',
 	});
 
 	export const number = styleVariants({
