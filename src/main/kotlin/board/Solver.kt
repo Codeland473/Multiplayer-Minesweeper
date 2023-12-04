@@ -293,7 +293,7 @@ class Solver(var board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 	fun pencilRevealSquare(x : Int, y : Int) = pencilRevealSquare(idx(x, y))
 
 	fun bruteSolve() : Boolean {
-		val minPencilFlags = if (totalMines - numFlags > numUnknown - squares.count { it.knowledgeState == KnowledgeState.FRONT }) {
+		val minPencilFlags = if (totalMines - numFlags > numUnknown) {
 			//must do full
 			bruteSolveSegmentWrap(squares.filter { it.knowledgeState == KnowledgeState.FRONT }) ?: return true
 		} else {
@@ -325,7 +325,10 @@ class Solver(var board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 			if (fSquare.safeShownPossible && fSquare.mineShownPossible) {
 				continue
 			}
-			fSquare.solverState = if (board.isMine(fSquare.x, fSquare.y)) SolverState.PENCIL_SAFE else SolverState.PENCIL_FLAG
+			fSquare.solverState = if (board.isMine(fSquare.x, fSquare.y)) SolverState.PENCIL_SAFE else {
+				++numPencilFlags
+				SolverState.PENCIL_FLAG
+			}
 			logicSolves(true)
 			if (!feasable() || !bruteStep(front)) {
 				front.forEach { it.resetPencil(board[it.x, it.y]) }

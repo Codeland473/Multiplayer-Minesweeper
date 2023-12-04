@@ -14,6 +14,18 @@ fun<T> time(f : () -> T) : Pair<Float, T> {
 fun main() {
 	//genBoards(32, 32, 300, 100)
 
+	/*val boardStr = """
+		--------
+		--------
+		--x--x--
+		--x-xx--		
+	""".filter { it in "-x" }
+
+	val board = Board(8, 4, boardStr.map {(if (it == 'x') 9 else 0).toByte()}.toByteArray())
+	board.setMinecounts()
+	println(board.printableStr())
+	println(Solver(board).solve())*/
+
 	val r = Random(1)
 	val n = 100000
 	val boards = Array(n) {
