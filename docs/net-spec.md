@@ -55,14 +55,21 @@ also used for board size, where x is width and y is height.
 
 ### TeamProgress
 
+For the board, each byte represents one square as if it was fully revealed. A Value of 10 means that the square is not
+revealed yet. Format is rows-first, so [0, 1, 1, 0, 2, 10, 0, 2, 10] would be:
+
+- 0 1 1
+- 0 2
+- 0 2
+
 Flag states are laid out the same as the board,
 and represent if that square has been flagged, and if so by who. A value of zero means that the square is not flagged,
 otherwise it is the ID of the gamer that placed the flag. Negative values represent pencil flags.
 
-| Size      | Type   | Description                                           |
-|-----------|--------|-------------------------------------------------------|
-| Dependant | [Bool] | Reveal mask                                           |
-| Dependant | [Int]  | Flags (described above)                               |
+| Size      | Type   | Description             |
+|-----------|--------|-------------------------|
+| Dependant | [Byte] | board                   |
+| Dependant | [Int]  | Flags (described above) |
 
 # Messages
 
@@ -235,15 +242,6 @@ Settings are Listed below
 
 ### Starting Game
 
-#### Board Format
-
-each byte represents one square as if it was fully revealed. A Value of 9 means that it is a mine. Format is rows-first,
-so [0, 1, 1, 0, 2, 9, 0, 2, 9] would be:
-
-- 0 1 1 
-- 0 2 9
-- 0 2 9
-
 #### Client -> Server
 
 | Size     | Type   | Description                  |
@@ -259,11 +257,8 @@ so [0, 1, 1, 0, 2, 9, 0, 2, 9] would be:
 | 8         | Long     | Start time (Unix time millis) |
 | 8         | BoardPos | Start position                |
 | 22        | Settings | Game Settings                 |
-| Dependant | [Byte]   | Board (described above)       |
 
 ### Revealing Squares
-
-Is chord should be false when the user clicks on a 0 mine.
 
 #### Client -> Server
 
@@ -275,13 +270,14 @@ Is chord should be false when the user clicks on a 0 mine.
 
 #### Server -> Client
 
-| Size | Type     | Description                     |
-|------|----------|---------------------------------|
-| 1    | Byte     | Message type (Square Reveal: 8) |
-| 4    | Int      | Gamer ID                        |
-| 4    | Int      | Team ID                         |
-| 8    | BoardPos | Position of square              |
-| 1    | Boolean  | Is chord                        |
+| Size      | Type     | Description                                                                                   |
+|-----------|----------|-----------------------------------------------------------------------------------------------|
+| 1         | Byte     | Message type (Square Reveal: 8)                                                               |
+| 4         | Int      | Gamer ID                                                                                      |
+| 4         | Int      | Team ID                                                                                       |
+| 8         | BoardPos | Min x, y of newly revealed squares                                                            |
+| 8         | BoardPos | Width, height of newly revealed squares                                                       |
+| Dependant | [Byte]   | Mine counts for nearby mines, 10 if the state of the indicated square should remain unchanged |
 
 ### Flagging Squares
 
@@ -392,8 +388,6 @@ the server receives this, it will send back a [Lobby State](#Lobby-State) messag
 
 ### Lobby State
 
-Board specification is the same as in [Starting Game](#Board-Format). 
-
 The team progresses will only show the state for the team the new gamer is on unless the gamer is on the spectator team,
 in which case the gamer will be given all the board states for each team in the same order as the team IDs.
 
@@ -410,7 +404,6 @@ in which case the gamer will be given all the board states for each team in the 
 | 22        | Settings         | Current game settings                                                    |
 | 8         | Long             | Game start time                                                          |
 | 8         | BoardPos         | Start position                                                           |
-| x * y     | [Byte]           | Board (described above)                                                  |
 | Dependant | [TeamProgress]   | Each teams board progression                                             |
 
 ### Gamer Joined

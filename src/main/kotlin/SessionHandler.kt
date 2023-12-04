@@ -9,6 +9,7 @@ import java.lang.Integer.min
 import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.LinkedHashSet
+import kotlin.math.max
 
 class SessionHandler {
 	var nextID = 1
@@ -46,7 +47,7 @@ class SessionHandler {
 		broadcast(Messages.gamerJoined(gamer))
 
 		gamers += gamer
-		gamer.connection.send(Messages.updateNewGamer(
+		gamer.connection.send(Messages.lobbyState(
 			settings,
 			gamers.toTypedArray(),
 			teams.toTypedArray(),
@@ -59,7 +60,7 @@ class SessionHandler {
 	}
 
 	suspend fun onStateRequest(sender : Gamer, message : ByteBuffer) {
-		sender.connection.send(Messages.updateNewGamer(
+		sender.connection.send(Messages.lobbyState(
 			settings,
 			gamers.toTypedArray(),
 			teams.toTypedArray(),
@@ -150,8 +151,37 @@ class SessionHandler {
 			onMineClicked(sender, team)
 		} else {
 			if (board!!.isRevealed(x, y, team.progress!!) != isChord) return
-			val trueIsChord = board!!.revealSquare(x, y, team.progress!!)
-			broadcast(Messages.squareReveal(sender, x, y, trueIsChord)) {it.team == sender.team || it.team == 0}
+			var minRectX = board!!.width
+			var maxRectX = 0
+			var minRectY = board!!.height
+			var maxRectY = 0
+
+			val positions = ArrayList<Pair<Int, Int>>()
+
+			val updateFun : (Int, Int) -> Unit = {mx, my ->
+				minRectX = min(mx, minRectX)
+				maxRectX = max(mx, maxRectX)
+				minRectY = min(my, minRectY)
+				maxRectY = max(my, maxRectY)
+				positions.add(Pair(mx, my))
+			}
+
+			if (board!!.isRevealed(x, y, team.progress!!) && board!!.isSatisfied(x, y, team.progress!!)) {
+				board!!.adjacents(x, y).forEach { (ax, ay) ->
+					board!!.revealSquare(ax, ay, team.progress!!, updateFun)
+				}
+			} else {
+				board!!.revealSquare(x, y, team.progress!!, updateFun)
+			}
+			if (positions.isEmpty()) return
+			val rectWidth = maxRectX - minRectX
+			val rectHeight = maxRectY - minRectY
+
+			val diffRect = ByteArray(rectWidth * rectHeight) { 10 }
+
+			positions.forEach { (modX, modY) -> diffRect[modX - minRectX + rectWidth * (modY - minRectY)] = board!![modX, modY] }
+
+			broadcast(Messages.squareReveal(sender, x, y, rectWidth, rectHeight, diffRect)) {it.team == sender.team || it.team == 0}
 			if (board!!.isCompleted(team.progress!!)) {
 				team.hasFinished = true
 				team.endTime = System.currentTimeMillis()

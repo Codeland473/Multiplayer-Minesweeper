@@ -72,15 +72,16 @@ object Messages {
 		put(startPos.first)
 		put(startPos.second)
 		put(settings)
-		put(board.mineCounts)
 	}
 
-	fun squareReveal(gamer : Gamer, posX : Int, posY : Int, isChord : Boolean) = message(8) {
+	fun squareReveal(gamer : Gamer, minX : Int, maxX : Int, width : Int, height : Int, diffRect : ByteArray) = message(8) {
 		put(gamer.id)
 		put(gamer.team)
-		put(posX)
-		put(posY)
-		put(isChord)
+		put(minX)
+		put(maxX)
+		put(width)
+		put(height)
+		put(diffRect)
 	}
 
 	fun squareFlag(gamer : Gamer, posX : Int, posY : Int, isPlacing : Boolean, isPencil : Boolean) = message(9) {
@@ -105,7 +106,7 @@ object Messages {
 
 	fun boardClear() = message(12) {}
 
-	fun updateNewGamer(
+	fun lobbyState(
 		settings : Settings,
 	    gamers : Array<Gamer>,
 	    teams : Array<Team>,
@@ -130,11 +131,11 @@ object Messages {
 			val gamersTeam = teams.find { it.id == newGamer.team }
 			if (gamersTeam != null) {
 				if (gamersTeam.progress == null) gamersTeam.progress = TeamProgress(board)
-				put(gamersTeam.progress!!)
+				put(gamersTeam.progress!!, board)
 			} else {
 				for (team in teams) {
 					if (team.progress == null) team.progress = TeamProgress(board)
-					put(team.progress!!)
+					put(team.progress!!, board)
 				}
 			}
 		} else {

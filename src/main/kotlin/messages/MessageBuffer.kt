@@ -6,6 +6,7 @@ import Gamer
 import Settings
 import Team
 import TeamProgress
+import board.Board
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.text.toByteArray
@@ -97,8 +98,13 @@ class MessageBuffer(private val initialMax : Int = 1024) {
 		put(v.cursorLocation)
 	}
 
-	fun put(v : TeamProgress) {
-		put(v.flagStates)
+	fun put(v : TeamProgress, board : Board) {
+		v.boardMask.indices.forEach {
+			put(when (v.boardMask[it]) {
+				true -> board[it]
+				false -> 10.toByte()
+			})
+		}
 		put(v.flagStates)
 	}
 
