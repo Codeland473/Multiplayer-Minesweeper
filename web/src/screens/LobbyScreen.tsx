@@ -283,7 +283,7 @@ export const LobbyScreen = () => {
 
 						if (team === undefined) {
 							return players.length === 0 ? null : (
-								<TeamBox>{barPlayers}</TeamBox>
+								<TeamBox key={'no-team'}>{barPlayers}</TeamBox>
 							);
 						} else {
 							return (

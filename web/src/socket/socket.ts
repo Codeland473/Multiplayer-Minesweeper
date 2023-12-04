@@ -71,9 +71,7 @@ export namespace Socket {
 		}
 
 		console.log(`received code ${messageId}`);
-		console.log('before:', useGlobalState.getState());
 		receiver(reader);
-		console.log('after:', useGlobalState.getState());
 	};
 
 	export const newSocket = () => {

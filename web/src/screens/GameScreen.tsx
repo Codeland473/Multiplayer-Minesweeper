@@ -44,15 +44,16 @@ export const GameScreen = () => {
 			update(draftState => {
 				if (draftState.game === undefined) return;
 				if (selfPlayer.teamId === undefined) return;
-				const teamData = draftState.game.teamDatas[selfPlayer.teamId];
-				if (!isShownTeamData(teamData)) return;
+				const draftTeamData =
+					draftState.game.teamDatas[selfPlayer.teamId];
+				if (!isShownTeamData(draftTeamData)) return;
 
 				handleClickTile(
 					x,
 					y,
 					button,
 					draftState.game,
-					teamData,
+					draftTeamData,
 					selfPlayer.id,
 				);
 			});

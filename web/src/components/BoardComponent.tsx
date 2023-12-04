@@ -231,8 +231,13 @@ export const BoardComponent = ({
 		[players],
 	);
 
-	const onClickSvg = React.useCallback(
+	const onClickSVG = React.useCallback(
 		(event: React.MouseEvent) => {
+			event.preventDefault();
+			event.stopPropagation();
+
+			if (event.button < 0 || event.button > 2) return;
+
 			const rect = event.currentTarget.getBoundingClientRect();
 			const x = Math.floor(
 				((event.clientX - rect.x) / rect.width) * width,
@@ -245,8 +250,18 @@ export const BoardComponent = ({
 		[height, onClick, width],
 	);
 
+	const preventer = React.useCallback((event: React.MouseEvent) => {
+		event.preventDefault();
+		event.stopPropagation();
+	}, []);
+
 	return (
-		<svg onClick={onClickSvg} viewBox={`0 0 ${width * 16} ${height * 16}`}>
+		<svg
+			onClick={onClickSVG}
+			onContextMenu={preventer}
+			onAuxClick={onClickSVG}
+			viewBox={`0 0 ${width * 16} ${height * 16}`}
+		>
 			{board.map((value, index) => {
 				const x = index % width;
 				const y = Math.floor(index / width);

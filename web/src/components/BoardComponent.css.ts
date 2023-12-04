@@ -31,17 +31,18 @@ export namespace BoardStyle {
 		dominantBaseline: 'central',
 		textAnchor: 'middle',
 		fontSize: 12,
+		fontFamily: 'sans-serif',
 	});
 
 	export const number = styleVariants({
-		1: [baseNumber, { color: '#395fd8' }],
-		2: [baseNumber, { color: '#39c1ea' }],
-		3: [baseNumber, { color: '#54ea24' }],
-		4: [baseNumber, { color: '#e8e32e' }],
-		5: [baseNumber, { color: '#ea8521' }],
-		6: [baseNumber, { color: '#ef2222' }],
-		7: [baseNumber, { color: '#d83f72' }],
-		8: [baseNumber, { color: '#af51e0' }],
+		1: [baseNumber, { fill: '#395fd8' }],
+		2: [baseNumber, { fill: '#39c1ea' }],
+		3: [baseNumber, { fill: '#54ea24' }],
+		4: [baseNumber, { fill: '#e8e32e' }],
+		5: [baseNumber, { fill: '#ea8521' }],
+		6: [baseNumber, { fill: '#ef2222' }],
+		7: [baseNumber, { fill: '#d83f72' }],
+		8: [baseNumber, { fill: '#af51e0' }],
 	});
 
 	export const startingLine = style({
