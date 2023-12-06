@@ -171,7 +171,7 @@ class SessionHandler {
 		val rectWidth = maxRectX - minRectX
 		val rectHeight = maxRectY - minRectY
 
-		val diffRect = ByteArray(rectWidth * rectHeight) { 10 }
+		val diffRect = ByteArray((rectWidth + 1) * (rectHeight + 1)) { 10 }
 
 		positions.forEach { (modX, modY) -> diffRect[modX - minRectX + rectWidth * (modY - minRectY)] = board!![modX, modY] }
 
