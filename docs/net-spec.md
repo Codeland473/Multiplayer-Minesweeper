@@ -115,7 +115,6 @@ Server -> Client events
 | 52  | [Gamer Remove](#Gamer-Left)             |
 | 53  | [Team Finish](#Team-Finished)           |
 | 54  | [Gamer Lost](#Gamer-Lost)               |
-| 55  | [Team Lost](#Team-Lost)                 |
 
 ### Creating a Team
 
@@ -270,6 +269,8 @@ Settings are Listed below
 
 #### Server -> Client
 
+When any of the mine counts is 9, the team should process this as a loss.
+
 | Size      | Type     | Description                                                                                   |
 |-----------|----------|-----------------------------------------------------------------------------------------------|
 | 1         | Byte     | Message type (Square Reveal: 8)                                                               |
@@ -278,6 +279,7 @@ Settings are Listed below
 | 8         | BoardPos | Min x, y of newly revealed squares                                                            |
 | 8         | BoardPos | Width, height of newly revealed squares                                                       |
 | Dependant | [Byte]   | Mine counts for nearby mines, 10 if the state of the indicated square should remain unchanged |
+| 8         | Long     | Time the action was processed                                                                 |
 
 ### Flagging Squares
 
@@ -430,18 +432,13 @@ in which case the gamer will be given all the board states for each team in the 
 
 ### Gamer Lost
 
-This message will not be sent when the "Team Lost" message is sent.
+If a team has not lost, then the team id will be 0. This message is not sent to team which lost. Instead that should be
+handled by the client when they receive a square reveal message that has a mine in it.
 
 | Size | Type | Description                   |
 |------|------|-------------------------------|
 | 1    | Byte | Message type (Gamer Lost: 54) |
 | 4    | Int  | ID of gamer that Lost         |
+| 4    | Int  | ID of team that Lost          |
+| 8    | Long | Time the loss was processed   |
 
-### Team Lost
-
-| Size | Type | Description                          |
-|------|------|--------------------------------------|
-| 1    | Byte | Message type (Team Lost: 55)         |
-| 4    | Int  | ID of gamer that Made the last click |
-| 4    | Int  | ID of team that Lost                 |
-| 8    | Long | Time the loss was processed          |

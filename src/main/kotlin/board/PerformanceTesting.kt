@@ -14,19 +14,106 @@ fun<T> time(f : () -> T) : Pair<Float, T> {
 fun main() {
 	//genBoards(32, 32, 300, 100)
 
-	/*val boardStr = """
-		--------
-		--------
-		--x--x--
-		--x-xx--		
-	""".filter { it in "-x" }
+	val boardStrs = arrayOf(
+		/*"""
+			--x-----xx
+			-xxx-xxx--
+			x--xx-----
+			xx---x-xxx
+			x-x--x----
+			xx--------
+			-x----x---
+			x---------
+			--x-xxxx--
+			xx--x----x
+		""",
+		"""
+			--x--x--xx
+			-------xxx
+			---x-x--x-
+			x------x--
+			-xxx----x-
+			----x---x-
+			--xxx-x-xx
+			xx-x-----x
+			x--x------
+			x---xxx-x-
+		""",
+		"""
+			x--xxxxxx-
+			-----x----
+			-x----x-x-
+			x---xx----
+			--x---x-xx
+			x--------x
+			x------xxx
+			x-x----x--
+			xxx----x--
+			--xxx----x
+		""",
+		"""
+			--xx-x-x--
+			----------
+			x-xx---x--
+			--------x-
+			---------x
+			-x----x--x
+			--x----x--
+			----x--x--
+			--xx------
+			----x-x--x
+		""",
+		"""
+			xx--------
+			x---------
+			--x-------
+			----------
+			----------
+			----------
+			----------
+			----------
+			----------
+			----------
+		""",
+		"""
+			----------
+			-x--------
+			--x-------
+			----------
+			----------
+			----------
+			----------
+			----------
+			----------
+			----------
+		""",*/
+		"""
+			-----x----------xx---xxx-x-xx-
+			-x----x----x-x-x----x----x----
+			--x-------------x------xx---xx
+			------------x-------x--x-----x
+			-x-----x-------x-x--x----x----
+			------x---x-x----x---xxx------
+			-------xx-----x--x---------x--
+			----xx--x--------x---x-x-----x
+			---x---x----x------------x-x--
+			-x-xxx-----x------x--x--------
+			------x-----x--------------xxx
+			x-x-------xx-------x----------
+			x------x-------x---x-x--x---x-
+			----------------xx---------xx-
+			x-----x------------x-x-x-xx---
+			--x--x------x----x-xx---x-x---
+		"""
+	).map{it.filter { it in "-x" }}
 
-	val board = Board(8, 4, boardStr.map {(if (it == 'x') 9 else 0).toByte()}.toByteArray())
-	board.setMinecounts()
-	println(board.printableStr())
-	println(Solver(board).solve())*/
-
-	val r = Random(1)
+	for (boardStr in boardStrs) {
+		val board = Board(30, 15, boardStr.map { (if (it == 'x') 9 else 0).toByte() }.toByteArray())
+		board.setMinecounts()
+		println(board.printableStr())
+		println(Solver(board).solve())//*/
+	}
+	/*val r = Random(1)
 	val n = 100000
 	val boards = Array(n) {
 		val b = Board(30, 20)
@@ -76,7 +163,7 @@ fun main() {
 		6047, // : 1528
 		56725, // : 9049s
 		72767, // : 3336s
-	)
+	)*/
 
 	/*for (boardI in boardsOfInterest) {
 		val s = Solver(boards[boardI], Random(0))

@@ -53,7 +53,7 @@ fun Application.module() {
 					}
 				}
 			} catch (e: Exception) {
-				println(e.localizedMessage)
+				println(e.stackTrace)
 			} finally {
 				handler.onGamerLeave(gamer)
 			}

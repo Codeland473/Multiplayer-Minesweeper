@@ -144,49 +144,46 @@ class SessionHandler {
 
 		if (board!!.isFlagged(x, y, team.progress!!)) return
 
-		if (board!![x, y] == 9.toByte() ||
-			(board!!.isSatisfied(x, y, team.progress!!)) &&
-			board!!.isRevealed(x, y, team.progress!!) &&
-			board!!.neighborUnflaggedMines(x, y, team.progress!!) > 0) {
-			onMineClicked(sender, team)
+		if (board!!.isRevealed(x, y, team.progress!!) != isChord) return
+		var minRectX = board!!.width
+		var maxRectX = 0
+		var minRectY = board!!.height
+		var maxRectY = 0
+
+		val positions = ArrayList<Pair<Int, Int>>()
+
+		val updateFun : (Int, Int) -> Unit = {mx, my ->
+			minRectX = min(mx, minRectX)
+			maxRectX = max(mx, maxRectX)
+			minRectY = min(my, minRectY)
+			maxRectY = max(my, maxRectY)
+			positions.add(Pair(mx, my))
+		}
+
+		if (board!!.isRevealed(x, y, team.progress!!) && board!!.isSatisfied(x, y, team.progress!!)) {
+			board!!.adjacents(x, y).forEach { (ax, ay) ->
+				board!!.revealSquare(ax, ay, team.progress!!, updateFun)
+			}
 		} else {
-			if (board!!.isRevealed(x, y, team.progress!!) != isChord) return
-			var minRectX = board!!.width
-			var maxRectX = 0
-			var minRectY = board!!.height
-			var maxRectY = 0
+			board!!.revealSquare(x, y, team.progress!!, updateFun)
+		}
+		if (positions.isEmpty()) return
+		val rectWidth = maxRectX - minRectX
+		val rectHeight = maxRectY - minRectY
 
-			val positions = ArrayList<Pair<Int, Int>>()
+		val diffRect = ByteArray(rectWidth * rectHeight) { 10 }
 
-			val updateFun : (Int, Int) -> Unit = {mx, my ->
-				minRectX = min(mx, minRectX)
-				maxRectX = max(mx, maxRectX)
-				minRectY = min(my, minRectY)
-				maxRectY = max(my, maxRectY)
-				positions.add(Pair(mx, my))
-			}
+		positions.forEach { (modX, modY) -> diffRect[modX - minRectX + rectWidth * (modY - minRectY)] = board!![modX, modY] }
 
-			if (board!!.isRevealed(x, y, team.progress!!) && board!!.isSatisfied(x, y, team.progress!!)) {
-				board!!.adjacents(x, y).forEach { (ax, ay) ->
-					board!!.revealSquare(ax, ay, team.progress!!, updateFun)
-				}
-			} else {
-				board!!.revealSquare(x, y, team.progress!!, updateFun)
-			}
-			if (positions.isEmpty()) return
-			val rectWidth = maxRectX - minRectX
-			val rectHeight = maxRectY - minRectY
+		val time = System.currentTimeMillis()
 
-			val diffRect = ByteArray(rectWidth * rectHeight) { 10 }
+		if (diffRect.any { it == 9.toByte() }) onMineClicked(sender, team, time)
 
-			positions.forEach { (modX, modY) -> diffRect[modX - minRectX + rectWidth * (modY - minRectY)] = board!![modX, modY] }
-
-			broadcast(Messages.squareReveal(sender, x, y, rectWidth, rectHeight, diffRect)) {it.team == sender.team || it.team == 0}
-			if (board!!.isCompleted(team.progress!!)) {
-				team.hasFinished = true
-				team.endTime = System.currentTimeMillis()
-				broadcast(Messages.teamFinish(team, team.endTime!!))
-			}
+		broadcast(Messages.squareReveal(sender, x, y, rectWidth, rectHeight, diffRect, time)) {it.team == sender.team || it.team == 0}
+		if (board!!.isCompleted(team.progress!!)) {
+			team.hasFinished = true
+			team.endTime = System.currentTimeMillis()
+			broadcast(Messages.teamFinish(team, team.endTime!!))
 		}
 	}
 	suspend fun onSquareFlagMessage(sender : Gamer, message : ByteBuffer) {
@@ -246,16 +243,14 @@ class SessionHandler {
 		}
 	}
 
-	suspend fun onMineClicked(gamer : Gamer, team : Team) {
-		broadcast(Messages.gamerLost(gamer))
-		if (currentSettings.isAllForOne || gamers.all { it.team != gamer.team || it.hasLost }) {
-			team.endTime = System.currentTimeMillis()
+	suspend fun onMineClicked(gamer : Gamer, team : Team, time : Long) {
+		val teamHasLost = currentSettings.isAllForOne || gamers.all { it.team != gamer.team || it.hasLost }
+		gamer.hasLost = true
+		if (teamHasLost) {
 			team.hasLost = true
-			broadcast(Messages.teamLost(gamer, team.endTime!!))
-			gamers.filter { it.team == team.id }.forEach { it.hasLost = true }
-		} else {
-			broadcast(Messages.gamerLost(gamer)) {it.team == gamer.team}
-			gamer.hasLost = true
+			team.endTime = time
 		}
+
+		broadcast(Messages.gamerLost(gamer, teamHasLost, time)) {it.team != gamer.team && it.team != 0}
 	}
 }

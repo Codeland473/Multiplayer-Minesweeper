@@ -74,7 +74,7 @@ object Messages {
 		put(settings)
 	}
 
-	fun squareReveal(gamer : Gamer, minX : Int, maxX : Int, width : Int, height : Int, diffRect : ByteArray) = message(8) {
+	fun squareReveal(gamer : Gamer, minX : Int, maxX : Int, width : Int, height : Int, diffRect : ByteArray, time : Long) = message(8) {
 		put(gamer.id)
 		put(gamer.team)
 		put(minX)
@@ -82,6 +82,7 @@ object Messages {
 		put(width)
 		put(height)
 		put(diffRect)
+		put(time)
 	}
 
 	fun squareFlag(gamer : Gamer, posX : Int, posY : Int, isPlacing : Boolean, isPencil : Boolean) = message(9) {
@@ -152,11 +153,9 @@ object Messages {
 		put(time)
 	}
 
-	fun gamerLost(loser : Gamer) = message(54) { put(loser.id) }
-
-	fun teamLost(loser : Gamer, time : Long) = message(55) {
+	fun gamerLost(loser : Gamer, teamLost : Boolean, time : Long) = message(54) {
 		put(loser.id)
-		put(loser.team)
+		put(if (teamLost) loser.team else 0)
 		put(time)
 	}
 }
