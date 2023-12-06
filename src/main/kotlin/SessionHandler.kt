@@ -179,7 +179,7 @@ class SessionHandler {
 
 		if (diffRect.any { it == 9.toByte() }) onMineClicked(sender, team, time)
 
-		broadcast(Messages.squareReveal(sender, x, y, rectWidth, rectHeight, diffRect, time)) {it.team == sender.team || it.team == 0}
+		broadcast(Messages.squareReveal(sender, minRectX, minRectY, rectWidth, rectHeight, diffRect, time)) {it.team == sender.team || it.team == 0}
 		if (board!!.isCompleted(team.progress!!)) {
 			team.hasFinished = true
 			team.endTime = System.currentTimeMillis()
