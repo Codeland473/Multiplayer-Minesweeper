@@ -86,12 +86,12 @@ export namespace Receiver {
 		reader: Data.Reader,
 		width: number,
 		height: number,
-	): Pick<ShownTeamData, 'revealed' | 'flags'> => {
-		const revealed = reader.getBooleanArray(width * height);
+	): Draft<TeamProgress> => {
+		const board = reader.getByteArray(width * height);
 		const flags = reader.getIntArray(width * height);
 
 		return {
-			revealed,
+			board,
 			flags,
 		};
 	};
@@ -274,27 +274,21 @@ export namespace Receiver {
 	const readGame = (
 		reader: Data.Reader,
 		numTeamDatas: number,
-	): Pick<Game, 'settings' | 'board' | 'startTime'> & {
-		teamProgresses: TeamProgress[];
-	} => {
+	): Draft<
+		Pick<Game, 'startTime' | 'startingPosition' | 'settings'> & {
+			teamProgresses: TeamProgress[];
+		}
+	> => {
 		const settings = readSettings(reader);
-		const { width, height } = settings;
 		const startTime = reader.getLong();
 		const startX = reader.getInt();
 		const startY = reader.getInt();
-		const board = reader.getByteArray(width * height);
 		const teamProgresses = Data.readArray(numTeamDatas, () =>
-			readTeamProgress(reader, width, height),
+			readTeamProgress(reader, settings.width, settings.height),
 		);
 
 		return {
-			board: {
-				board,
-				width,
-				height,
-				startX,
-				startY,
-			},
+			startingPosition: [startX, startY],
 			startTime,
 			settings,
 			teamProgresses,
@@ -346,9 +340,9 @@ export namespace Receiver {
 				state.game = undefined;
 			} else {
 				state.game = {
-					board: castDraft(game.board),
 					settings: game.settings,
 					startTime: game.startTime,
+					startingPosition: game.startingPosition,
 					cursors: players.map(player => ({
 						playerId: player.id,
 						x: player.cursorX,
@@ -407,8 +401,8 @@ export namespace Receiver {
 
 	const genFlags = (width: number, height: number): number[] =>
 		Array.from(new Array(width * height), () => 0);
-	const genRevealed = (width: number, height: number): boolean[] =>
-		Array.from(new Array(width * height), () => false);
+	const genBoard = (width: number, height: number): number[] =>
+		Array.from(new Array(width * height), () => 10);
 
 	Socket.registerReceiver(ReceiveCode.GAME_START, reader => {
 		const _fromPlayerId = reader.getInt();
@@ -420,8 +414,6 @@ export namespace Receiver {
 
 		const settings = readSettings(reader);
 
-		const board = reader.getByteArray(settings.width * settings.height);
-
 		update(draftState => {
 			const state = imm(draftState);
 
@@ -432,13 +424,9 @@ export namespace Receiver {
 			);
 
 			draftState.game = {
-				board: {
-					board,
-					startX: settings.isNoGuessing ? startX : undefined,
-					startY: settings.isNoGuessing ? startY : undefined,
-					width: settings.width,
-					height: settings.height,
-				},
+				startingPosition: settings.isNoGuessing
+					? [startX, startY]
+					: undefined,
 				cursors: [],
 				playerDatas: Object.assign(
 					{},
@@ -457,7 +445,7 @@ export namespace Receiver {
 											settings.width,
 											settings.height,
 										),
-										revealed: genRevealed(
+										board: genBoard(
 											settings.width,
 											settings.height,
 										),
@@ -466,7 +454,7 @@ export namespace Receiver {
 								: ({
 										isAlive: true,
 										flags: undefined,
-										revealed: undefined,
+										board: undefined,
 										finishTime: undefined,
 								  } satisfies TeamData),
 					})),
@@ -488,23 +476,30 @@ export namespace Receiver {
 	};
 
 	Socket.registerReceiver(ReceiveCode.TILE_REVEAL, reader => {
-		const playerId = reader.getInt();
+		const _playerId = reader.getInt();
 		const teamId = reader.getInt();
 		const x = reader.getInt();
 		const y = reader.getInt();
-		const isChord = reader.getBool();
+		const width = reader.getInt();
+		const height = reader.getInt();
+		const tiles = reader.getByteArray(width * height);
 
 		update(draftState => {
 			if (draftState.game === undefined) return;
 			const game = imm(draftState.game);
 
-			if (!isInboundsBoard(x, y, game.board)) return;
-
 			const teamData = getTeamData(draftState.game.teamDatas, teamId);
 			if (teamData === undefined) return;
 
-			const didLose = reveal(x, y, draftState.game, teamData, isChord);
-			if (didLose) lose(draftState.game, draftState.players, playerId);
+			for (let j = 0; j < height; ++j) {
+				for (let i = 0; i < width; ++i) {
+					const inputTile = tiles[j * width + i];
+					if (inputTile !== 10)
+						teamData.board[
+							(j + y) * game.settings.width + (i + x)
+						] = inputTile;
+				}
+			}
 		});
 	});
 
@@ -520,7 +515,7 @@ export namespace Receiver {
 			if (draftState.game === undefined) return;
 			const game = imm(draftState.game);
 
-			if (!isInboundsBoard(x, y, game.board)) return;
+			if (!isInboundsBoard(x, y, game.settings)) return;
 
 			const teamData = getTeamData(draftState.game.teamDatas, teamId);
 			if (teamData === undefined) return;
@@ -528,7 +523,7 @@ export namespace Receiver {
 			setFlag(
 				x,
 				y,
-				draftState.game,
+				game.settings.width,
 				teamData,
 				playerId,
 				isFlagAdded,

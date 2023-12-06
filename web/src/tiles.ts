@@ -1,13 +1,6 @@
 import { Draft } from 'immer';
-import {
-	Game,
-	Player,
-	ShownTeamData,
-	TeamData,
-	Board,
-} from './global-state.js';
+import { Game, Player, ShownTeamData, TeamData } from './global-state.js';
 import { imm } from './util.js';
-import { Sender } from './socket/sender.js';
 
 const toIndex = (x: number, y: number, width: number): number => y * width + x;
 const toXY = (index: number, width: number) =>
@@ -25,9 +18,9 @@ export const isInbounds = (
 export const isInboundsBoard = (
 	x: number,
 	y: number,
-	board: Board,
+	{ width, height }: { width: number; height: number },
 ): boolean => {
-	return x >= 0 && y >= 0 && x < board.width && y < board.height;
+	return x >= 0 && y >= 0 && x < width && y < height;
 };
 
 const indicesAround = (
@@ -61,12 +54,11 @@ const getTeamPlayers = (
 	return players.filter(player => player.teamId === teamId);
 };
 
-export const isFlagged = (flag: number) => {
-	return flag > 0;
-};
-export const isAnyFlagged = (flag: number) => {
-	return flag !== 0;
-};
+export const isMarkedAsMine = (flag: number, tile: number) =>
+	flag > 0 || tile === 9;
+export const isRevealedSafe = (tile: number) => tile >= 0 && tile <= 8;
+export const isCovered = (tile: number) => tile === 10;
+export const isAnyFlagged = (flag: number) => flag !== 0;
 
 export const countFlagsCoveredAround = (
 	x: number,
@@ -74,17 +66,17 @@ export const countFlagsCoveredAround = (
 	width: number,
 	height: number,
 	flags: readonly number[],
-	revealed: readonly boolean[],
+	board: readonly number[],
 ): [number, number] => {
 	let flagCount = 0;
-	let revealCount = 0;
+	let coveredCount = 0;
 
 	for (const index of indicesAround(x, y, width, height)) {
-		if (isFlagged(flags[index])) ++flagCount;
-		else if (revealed[index]) ++revealCount;
+		if (isMarkedAsMine(flags[index], board[index])) ++flagCount;
+		else if (isCovered(board[index])) ++coveredCount;
 	}
 
-	return [flagCount, revealCount];
+	return [flagCount, coveredCount];
 };
 
 export const lose = (
@@ -107,7 +99,7 @@ export const isShownTeamData = (
 	teamData: TeamData | undefined,
 ): teamData is ShownTeamData => {
 	if (teamData === undefined) return false;
-	return teamData.revealed !== undefined;
+	return teamData.board !== undefined;
 };
 
 /**
@@ -123,102 +115,136 @@ export const isShownTeamData = (
 export const reveal = (
 	x: number,
 	y: number,
-	draftGame: Draft<Game>,
+	width: number,
+	height: number,
 	draftTeamData: Draft<ShownTeamData>,
 	isChord: boolean,
-): boolean => {
-	const { width, height, board } = draftGame.board;
-
-	const stack: number[] = [];
-
-	/* initial tiles to reveal from click */
+) => {
 	if (isChord) {
 		for (const aroundIndex of indicesAround(x, y, width, height)) {
 			if (
-				!isFlagged(draftTeamData.flags[aroundIndex]) &&
-				!draftTeamData.revealed[aroundIndex]
-			)
-				stack.push(aroundIndex);
+				!isMarkedAsMine(
+					draftTeamData.flags[aroundIndex],
+					draftTeamData.board[aroundIndex],
+				) &&
+				isCovered(draftTeamData.board[aroundIndex])
+			) {
+				draftTeamData.board[aroundIndex] = 0;
+			}
 		}
 	} else {
 		const revealIndex = toIndex(x, y, width);
-		if (!draftTeamData.revealed[revealIndex]) stack.push(revealIndex);
-	}
-
-	/* recursively reveal tiles */
-	let topIndex: number | undefined;
-	while ((topIndex = stack.pop()) !== undefined) {
-		draftTeamData.flags[topIndex] = 0;
-		draftTeamData.revealed[topIndex] = true;
-
-		if (board[topIndex] === 9) {
-			return true;
-		} else if (board[topIndex] === 0) {
-			for (const aroundIndex of indicesAround(
-				...toXY(topIndex, width),
-				width,
-				height,
-			)) {
-				if (!draftTeamData.revealed[aroundIndex])
-					stack.push(aroundIndex);
-			}
+		if (isCovered(draftTeamData.board[revealIndex])) {
+			draftTeamData.board[revealIndex] = 0;
 		}
 	}
-
-	return false;
 };
 
 export const setFlag = (
 	x: number,
 	y: number,
-	draftGame: Draft<Game>,
+	width: number,
 	draftTeamData: Draft<ShownTeamData>,
 	playerId: number,
 	isFlagAdded: boolean,
 	isPencil: boolean,
 ) => {
-	const game = imm(draftGame);
-	const index = toIndex(x, y, game.board.width);
-
-	draftTeamData.flags[index] = isFlagAdded
+	draftTeamData.flags[toIndex(x, y, width)] = isFlagAdded
 		? isPencil
 			? -playerId
 			: playerId
 		: 0;
 };
 
-export const handleClickTile = (
-	x: number,
-	y: number,
-	button: number,
+export enum ClickResultType {
+	REVEAL,
+	FLAG,
+}
+
+export type ClickResult = {
+	x: number;
+	y: number;
+} & (
+	| {
+			type: ClickResultType.REVEAL;
+			isChord: boolean;
+	  }
+	| {
+			type: ClickResultType.FLAG;
+			isAdd: boolean;
+			isPencil: boolean;
+	  }
+);
+
+export const processClickResult = (
 	draftGame: Draft<Game>,
 	draftTeamData: Draft<ShownTeamData>,
 	playerId: number,
+	clickResult: ClickResult | undefined,
 ) => {
-	const game = imm(draftGame);
-	const teamData = imm(draftTeamData);
+	if (clickResult === undefined) return;
 
+	const { width, height } = draftGame.settings;
+
+	if (clickResult.type === ClickResultType.REVEAL) {
+		reveal(
+			clickResult.x,
+			clickResult.y,
+			width,
+			height,
+			draftTeamData,
+			clickResult.isChord,
+		);
+	} else {
+		setFlag(
+			clickResult.x,
+			clickResult.y,
+			width,
+			draftTeamData,
+			playerId,
+			clickResult.isAdd,
+			clickResult.isPencil,
+		);
+	}
+};
+
+export const getClickResult = (
+	x: number,
+	y: number,
+	button: number,
+	game: Game,
+	teamData: ShownTeamData,
+): ClickResult | undefined => {
+	const { flags, board } = teamData;
 	const {
-		board: { board, width, height, startX, startY },
+		startingPosition,
+		settings: { width, height },
 	} = game;
-	const clickIndex = toIndex(x, y, width);
-	const { flags, revealed } = teamData;
 
-	/* must start on start */
-	if (startX !== undefined && startY !== undefined) {
-		const startIndex = toIndex(startX, startY, width);
-		if (clickIndex !== startIndex && !revealed[startIndex]) return;
+	const clickIndex = toIndex(x, y, width);
+
+	/* must start on start, can't flag start */
+	if (startingPosition !== undefined) {
+		const startIndex = toIndex(...startingPosition, width);
+		if (
+			isCovered(board[startIndex]) && button === 0
+				? clickIndex !== startIndex
+				: clickIndex === startIndex
+		)
+			return undefined;
 	}
 
 	if (button === 0) {
 		const value = board[clickIndex];
 
 		/* already flagged do nothing */
-		if (isAnyFlagged(flags[clickIndex])) return;
+		if (isAnyFlagged(flags[clickIndex])) return undefined;
 
-		if (revealed[clickIndex]) {
-			/* do nothing on empty square */
-			if (value === 0) return;
+		if (isCovered(board[clickIndex])) {
+			return { type: ClickResultType.REVEAL, isChord: false, x, y };
+		} else {
+			/* no chords on empty tile */
+			if (value === 0) return undefined;
 
 			const [flagCount, coveredCount] = countFlagsCoveredAround(
 				x,
@@ -226,31 +252,22 @@ export const handleClickTile = (
 				width,
 				height,
 				flags,
-				revealed,
+				board,
 			);
 
-			/* do nothing on random number click */
-			if (flagCount !== value || coveredCount === 0) return;
+			/* chord doesn't match flagged tiles or no tiles to reveal */
+			if (flagCount !== value || coveredCount === 0) return undefined;
 
-			/* chord */
-			reveal(x, y, draftGame, draftTeamData, true);
-			//Sender.revealTile(x, y, true);
-		} else {
-			reveal(x, y, draftGame, draftTeamData, false);
-			//Sender.revealTile(x, y, false);
+			return { type: ClickResultType.REVEAL, isChord: true, x, y };
 		}
 	} else if (button === 1 || button === 2) {
+		if (!isCovered(board[clickIndex])) return undefined;
+
 		const isPencil = button === 1;
-		const placedFlagId = isPencil ? -playerId : playerId;
+		const isAdd = !isAnyFlagged(flags[clickIndex]);
 
-		if (revealed[clickIndex]) return;
-
-		if (isAnyFlagged(flags[clickIndex])) {
-			draftTeamData.flags[clickIndex] = 0;
-			//Sender.flagTile(x, y, false, false);
-		} else {
-			draftTeamData.flags[clickIndex] = placedFlagId;
-			//Sender.flagTile(x, y, true, isPencil);
-		}
+		return { type: ClickResultType.FLAG, isAdd, isPencil, x, y };
+	} else {
+		return undefined;
 	}
 };

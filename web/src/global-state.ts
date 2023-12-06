@@ -24,14 +24,6 @@ export type Team = Immutable<{
 	name: string;
 }>;
 
-export type Board = Immutable<{
-	width: number;
-	height: number;
-	board: number[];
-	startX: number | undefined;
-	startY: number | undefined;
-}>;
-
 export type Cursor = Immutable<{
 	x: number;
 	y: number;
@@ -45,7 +37,7 @@ export type PlayerDatas = Immutable<Record<number, PlayerData>>;
 
 export type TeamProgress = Immutable<{
 	flags: number[];
-	revealed: boolean[];
+	board: number[];
 }>;
 
 export type TeamData = Immutable<{
@@ -58,9 +50,11 @@ export type HiddenTeamData = Undefine<TeamData, keyof TeamProgress>;
 export type ShownTeamData = Define<TeamData, keyof TeamProgress>;
 export type TeamDatas = Immutable<Record<number, TeamData>>;
 
+export type StartingPosition = Immutable<[number, number]>;
+
 export type Game = Immutable<{
-	board: Board;
 	settings: GameSettings;
+	startingPosition: StartingPosition | undefined;
 	startTime: number;
 	cursors: Cursor[];
 	playerDatas: { [id: number]: PlayerData };

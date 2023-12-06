@@ -1,6 +1,12 @@
 import React from 'react';
 import { BoardStyle } from './BoardComponent.css.js';
-import { Board, Player } from '../global-state.js';
+import {
+	GameSettings,
+	Player,
+	ShownTeamData,
+	StartingPosition,
+	TeamData,
+} from '../global-state.js';
 import { rgbToHex } from '../util.js';
 
 const Revealed = ({ x, y }: { x: number; y: number }) => {
@@ -202,23 +208,24 @@ const Tile = ({
 };
 
 export type BoardProps = {
-	board: Board;
-	flags: readonly number[];
-	revealed: readonly boolean[];
+	gameSettings: GameSettings;
+	teamData: ShownTeamData;
+	startingPosition: StartingPosition | undefined;
 	showMines: boolean;
 	players: readonly Player[];
 	onClick: (x: number, y: number, button: number) => void;
 };
 
 export const BoardComponent = ({
-	board: inBoard,
-	flags,
-	revealed,
+	gameSettings,
+	startingPosition,
+	teamData,
 	showMines,
 	players,
 	onClick,
 }: BoardProps) => {
-	const { width, height, board, startX, startY } = inBoard;
+	const { board, flags } = teamData;
+	const { width, height } = gameSettings;
 
 	const flagColors = React.useMemo(
 		() =>
@@ -271,12 +278,16 @@ export const BoardComponent = ({
 						key={index}
 						flagColor={flagColors[flags[index]]}
 						isPencil={flags[index] < 0}
-						revealed={revealed[index]}
+						revealed={board[index] !== 10}
 						showMines={showMines}
 						value={value}
 						x={x * 16}
 						y={y * 16}
-						isStarting={x === startX && y === startY}
+						isStarting={
+							startingPosition !== undefined &&
+							x === startingPosition[0] &&
+							y === startingPosition[1]
+						}
 					/>
 				);
 			})}
