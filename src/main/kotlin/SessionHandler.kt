@@ -168,10 +168,10 @@ class SessionHandler {
 			board!!.revealSquare(x, y, team.progress!!, updateFun)
 		}
 		if (positions.isEmpty()) return
-		val rectWidth = maxRectX - minRectX
-		val rectHeight = maxRectY - minRectY
+		val rectWidth = maxRectX - minRectX + 1
+		val rectHeight = maxRectY - minRectY + 1
 
-		val diffRect = ByteArray((rectWidth + 1) * (rectHeight + 1)) { 10 }
+		val diffRect = ByteArray(rectWidth * rectHeight) { 10 }
 
 		positions.forEach { (modX, modY) -> diffRect[modX - minRectX + rectWidth * (modY - minRectY)] = board!![modX, modY] }
 
