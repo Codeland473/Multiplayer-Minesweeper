@@ -35,7 +35,7 @@ class MessageBuffer(private val initialMax : Int = 1024) {
 	}
 
 	fun reset() {
-		while (internalBuffers.size > 1) internalBuffers.removeLast()
+		while (internalBuffers.size > 1) internalBuffers.removeLastOrNull()
 		internalBuffers[0].position(0)
 	}
 

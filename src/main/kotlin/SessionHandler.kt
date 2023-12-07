@@ -42,6 +42,7 @@ class SessionHandler {
 			Color.random() else requestedColor
 		if (!teams.any {it.id == team}) team = 0
 		val gamer = Gamer(sender, givenID, color, name)
+		gamer.team = team
 		gamer.hasLost = hasLost
 
 		broadcast(Messages.gamerJoined(gamer))
