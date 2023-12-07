@@ -4,6 +4,7 @@ import Gamer
 import Settings
 import TeamProgress
 import java.nio.ByteBuffer
+import kotlin.math.abs
 import kotlin.math.ceil
 import java.util.Random as JRandom
 import kotlin.random.asKotlinRandom
@@ -92,7 +93,7 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 	}
 
 	fun isSatisfied(x : Int, y : Int, team : TeamProgress, acceptPencils : Boolean = false) : Boolean {
-		return neighborFlags(x, y, team, acceptPencils) == get(x, y).toInt()
+		return neighborFlags(x, y, team, acceptPencils) + adjacents(x, y).count { (ax, ay) -> isMine(ax, ay) && isRevealed(ax, ay, team) } == get(x, y).toInt()
 	}
 
 	fun neighborUnknowns(x : Int, y : Int, team : TeamProgress, acceptPencils : Boolean = false) : Int {
@@ -120,10 +121,12 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 	fun isCompleted(team : TeamProgress) : Boolean = mineCounts.indices.all { isMine(it) || team.boardMask[it] }
 
 	fun flagSquare(x : Int, y : Int, gamer : Gamer, team : TeamProgress, place : Boolean, isPencil : Boolean) {
+		val idx = x + y * width
 		if (!place) {
-			team.flagStates[x + y * width] = 0
+			team.flagStates[idx] = 0
 		} else {
-			team.flagStates[x + y * width] = if (isPencil) -gamer.id else gamer.id
+			team.flagStates[idx] = if (isPencil) -gamer.id else gamer.id
+			team.flagTimes[idx] = System.currentTimeMillis()
 		}
 	}
 

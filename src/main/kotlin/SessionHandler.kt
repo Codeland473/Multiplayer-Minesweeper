@@ -9,6 +9,7 @@ import java.lang.Integer.min
 import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.LinkedHashSet
+import kotlin.math.abs
 import kotlin.math.max
 
 class SessionHandler {
@@ -195,9 +196,16 @@ class SessionHandler {
 		val isPencil = message.getBool()
 
 		val team = teams.find { it.id == sender.team } ?: return
+		if (sender.hasLost || team.hasLost) return
 		board ?: return
 		if (!board!!.inBounds(x, y)) return
 		if (team.progress == null) team.progress = TeamProgress(board!!)
+		if (board!!.isRevealed(x, y, team.progress!!)) return
+
+		val time = System.currentTimeMillis()
+		val idx = x + board!!.width * y
+		if (!add && (time - team.progress!!.flagTimes[idx] > settings.flagProtectionTime.toLong() ||
+					abs(team.progress!!.flagStates[idx]) == sender.id)) return
 
 		board!!.flagSquare(x, y, sender, team.progress!!, add, isPencil)
 
@@ -218,7 +226,7 @@ class SessionHandler {
 
 	suspend fun onBoardClearMessage(sender : Gamer, message : ByteBuffer) {
 		gamers.forEach {it.hasLost = false}
-		teams.forEach { it.progress = null }
+		teams.forEach { it.reset() }
 		board = null
 		broadcast(Messages.boardClear())
 	}

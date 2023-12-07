@@ -25,4 +25,5 @@ class TeamProgress(width : Int, height : Int) {
 
 	var boardMask : BooleanArray = BooleanArray(width * height) {false}
 	var flagStates : IntArray = IntArray(width * height) {0}
+	var flagTimes : LongArray = LongArray(width * height) {0}
 }
