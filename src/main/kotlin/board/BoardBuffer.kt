@@ -36,9 +36,10 @@ class BoardBuffer {
 	fun isEmpty() = size == 0
 
 	fun increaseSize(newSize : Int = size + 1) {
-		val newBuffer = ByteBuffer.allocate(boardSize * newSize)
+		val newBuffer = ByteBuffer.allocate(boardSize * newSize + 4)
 
 		newBuffer.put(internalBuffer.array().sliceArray(0 until (4 + size * boardSize)))
+		internalBuffer = newBuffer
 	}
 
 	operator fun set(offset : Int, b : Board) {
@@ -59,4 +60,6 @@ class BoardBuffer {
 		b.setMinecounts()
 		return b
 	}
+
+	fun write(path : String) = File(path).writeBytes(internalBuffer.array())
 }

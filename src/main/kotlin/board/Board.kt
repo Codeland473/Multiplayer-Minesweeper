@@ -117,7 +117,7 @@ class Board(var width : Int, var height : Int, var mineCounts : ByteArray = Byte
 		}
 	}
 
-	fun isCompleted(team : TeamProgress) : Boolean = team.boardMask.all { it }
+	fun isCompleted(team : TeamProgress) : Boolean = mineCounts.indices.all { isMine(it) || team.boardMask[it] }
 
 	fun flagSquare(x : Int, y : Int, gamer : Gamer, team : TeamProgress, place : Boolean, isPencil : Boolean) {
 		if (!place) {

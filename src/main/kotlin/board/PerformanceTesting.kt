@@ -1,5 +1,8 @@
 package board
 
+import io.ktor.util.*
+import java.io.File
+import java.nio.ByteBuffer
 import kotlin.math.max
 import kotlin.random.Random
 
@@ -107,13 +110,16 @@ fun main() {
 		"""
 	).map{it.filter { it in "-x" }}
 
-	for (boardStr in boardStrs) {
+	/*for (boardStr in boardStrs) {
 		val board = Board(30, 15, boardStr.map { (if (it == 'x') 9 else 0).toByte() }.toByteArray())
 		board.setMinecounts()
 		println(board.printableStr())
-		println(Solver(board).solve())//*/
+		println(Solver(board).solve())//
 	}
-	/*val r = Random(1)
+	*/
+	val solvableBoards = BoardBuffer("boards/evilSolvable.bds")
+
+	val r = Random(0)
 	val n = 100000
 	val boards = Array(n) {
 		val b = Board(30, 20)
@@ -132,6 +138,8 @@ fun main() {
 	//val (avg, min, q1, med, q3, max) = measurePerformance(1, 1000, 30, 20, 130)
 //16304
 	//println("$min, $q1, $med, $q3, $max, $avg")
+	val evilBoards = BoardBuffer(30, 20)
+	val priceyBoards = BoardBuffer(30, 20)
 	for (i in 0 until n) {
 		//s.watchSolve(boards[i])
 		val s = Solver(boards[i], Random(0))
@@ -140,17 +148,25 @@ fun main() {
 		maxT = max(t, maxT)
 		totalT += t
 		if (t > 1) {
-			if (isSolvable) ++totalSolvable
 			println("board[$i] isSolvable $isSolvable found in $t s")
 			lastPrintedI = i
+			priceyBoards += boards[i]
 		}
-		if (i - lastPrintedI >= 1000) {
+		if (isSolvable) {
+
+			++totalSolvable
+			evilBoards += boards[i]
+		}
+		/*if (i - lastPrintedI >= 1000) {
 			println("nothing new in last 1000 boards, current board : #$i, current average : ${totalT / i}")
 			lastPrintedI = i
-		}
+		}*/
 	}
 
 	println("$totalSolvable / $n solvable avg ${totalT / n}, max time spend on one: $maxT")
+
+	File("boards/evilSolvable.bds").writeBytes(evilBoards.internalBuffer.array())
+	File("boards/evilPricey.bds").writeBytes(priceyBoards.internalBuffer.array())
 
 	val boardsOfInterest = arrayOf(
 		63, // : 1.6s
@@ -163,7 +179,7 @@ fun main() {
 		6047, // : 1528
 		56725, // : 9049s
 		72767, // : 3336s
-	)*/
+	)
 
 	/*for (boardI in boardsOfInterest) {
 		val s = Solver(boards[boardI], Random(0))

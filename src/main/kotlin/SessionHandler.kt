@@ -138,6 +138,7 @@ class SessionHandler {
 		val isChord = message.getBool()
 
 		val team = teams.find { it.id == sender.team } ?: return
+		if (sender.hasLost || team.hasLost) return
 		board ?: return
 		if (!board!!.inBounds(x, y)) return
 		if (team.progress == null) team.progress = TeamProgress(board!!)
@@ -249,6 +250,7 @@ class SessionHandler {
 		if (teamHasLost) {
 			team.hasLost = true
 			team.endTime = time
+			gamers.filter { it.team == team.id }.forEach { it.hasLost = true }
 		}
 
 		broadcast(Messages.gamerLost(gamer, teamHasLost, time)) {it.team != gamer.team && it.team != 0}
