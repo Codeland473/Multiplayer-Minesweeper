@@ -4,6 +4,7 @@ import { hexToRgb, randIntRange, rgbToHex } from '../util.js';
 import { PageStyle } from './Page.css.js';
 import { IntroScreenStyle } from './IntroScreen.css.js';
 import { Sender } from '../socket/sender.js';
+import { useGlobalState } from '../global-state.js';
 
 type PlayerSetup = {
 	red: number;

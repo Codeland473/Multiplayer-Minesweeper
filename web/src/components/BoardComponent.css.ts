@@ -1,8 +1,11 @@
 import { style, styleVariants } from '@vanilla-extract/css';
 
 export namespace BoardStyle {
-	export const tileBack = style({
-		fill: '#333',
+	export const svg = style({
+		width: '100%',
+		height: '100%',
+		backgroundColor: '#333',
+		objectFit: 'contain',
 	});
 
 	export const tileLight = style({

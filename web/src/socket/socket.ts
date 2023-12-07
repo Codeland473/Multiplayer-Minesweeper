@@ -1,8 +1,10 @@
-import { update, useGlobalState } from '../global-state.js';
+import { Draft } from 'immer';
+import { GlobalState, update, useGlobalState } from '../global-state.js';
 import { Data } from './data.js';
+import { Sender } from './sender.js';
 
 export namespace Socket {
-	const globalSocket: [WebSocket] = [undefined as any];
+	const globalSocket: [WebSocket | undefined] = [undefined];
 	let timerId: number;
 
 	const INITIAL_ERROR_TIME = 10;
@@ -11,11 +13,24 @@ export namespace Socket {
 
 	const receivers: { [receiveCode: number]: Receiver } = {};
 
+	const clearState = (state: Draft<GlobalState>) => {
+		state.game = undefined;
+		state.gameSettings = undefined;
+		state.teams = [];
+		state.players = state.players.filter(
+			player => player.id === state.selfPlayerId,
+		);
+		state.log = [];
+	};
+
 	const onError = () => {
 		console.error('could not connect to websocket!');
 
+		globalSocket[0] = undefined;
+
 		update(state => {
 			state.connectionState.status = 'error';
+			clearState(state);
 
 			if (state.connectionState.error === undefined) {
 				state.connectionState.error = {
@@ -48,14 +63,30 @@ export namespace Socket {
 		}, 1000);
 	};
 
-	const onOpen = () => {
+	function onOpen(this: WebSocket) {
+		const { players, selfPlayerId } = useGlobalState.getState();
+		const selfPlayer = players.find(player => player.id === selfPlayerId);
+
 		update(state => {
 			state.connectionState.error = undefined;
-			state.connectionState.status = 'connected';
+			if (selfPlayer === undefined)
+				state.connectionState.status = 'connected';
 		});
 
 		console.log('connected to websocket!');
-	};
+		if (selfPlayer !== undefined) console.log('Rejoining...');
+
+		globalSocket[0] = this;
+		if (selfPlayer !== undefined) {
+			Sender.join(
+				selfPlayer.id,
+				selfPlayer.teamId,
+				selfPlayer.color,
+				true,
+				selfPlayer.name,
+			);
+		}
+	}
 
 	export const onMessage = (event: MessageEvent<any>) => {
 		const data = event.data;
@@ -90,8 +121,6 @@ export namespace Socket {
 		socket.onmessage = onMessage;
 		socket.onerror = onError;
 		socket.onopen = onOpen;
-
-		globalSocket[0] = socket;
 	};
 
 	export const startup = () => {
@@ -108,9 +137,11 @@ export namespace Socket {
 		preSender: PreSender<Params>,
 	): Sender<Params> => {
 		return (...params: Params) => {
+			const socket = globalSocket[0];
+			if (socket === undefined) throw Error('Socket is down!');
 			const buffer = preSender(...params);
 			console.log(`Sending code ${buffer[0]}`);
-			globalSocket[0].send(buffer);
+			socket.send(buffer);
 		};
 	};
 

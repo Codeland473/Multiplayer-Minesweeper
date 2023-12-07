@@ -18,13 +18,7 @@ import { Log } from '../log.js';
 import { Data } from './data.js';
 import { Socket } from './socket.js';
 import { ReceiveCode, SettingCode } from './protocol.js';
-import {
-	isShownTeamData,
-	lose,
-	reveal,
-	setFlag,
-	isInboundsBoard,
-} from '../tiles.js';
+import { isShownTeamData, setFlag, isInboundsBoard } from '../tiles.js';
 import { imm, mapToObject } from '../util.js';
 
 export namespace Receiver {
@@ -320,6 +314,9 @@ export namespace Receiver {
 			: undefined;
 
 		update(state => {
+			state.connectionState.status = 'connected';
+			state.connectionState.error = undefined;
+
 			state.gameSettings = globalSettings;
 
 			state.selfPlayerId = selfPlayerId;

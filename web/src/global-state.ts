@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { combine } from 'zustand/middleware';
+import { combine, createJSONStorage, persist } from 'zustand/middleware';
 import { Draft, Immutable, nothing, produce } from 'immer';
 import { Log } from './log.js';
 import { AllOrNothing, Define, Undefine } from './util.js';
@@ -83,7 +83,6 @@ export type ErrorState = Immutable<{
 }>;
 
 export type GlobalState = Immutable<{
-	playerCache: CachedPlayer[];
 	gameSettings: GameSettings | undefined;
 	players: Player[];
 	teams: Team[];
@@ -94,7 +93,6 @@ export type GlobalState = Immutable<{
 }>;
 
 const initialGlobalState: GlobalState = {
-	playerCache: [],
 	gameSettings: undefined,
 	players: [],
 	teams: [],
@@ -107,8 +105,58 @@ const initialGlobalState: GlobalState = {
 	},
 };
 
+const reconstructPlayer = (raw: unknown): Draft<Player> | undefined => {
+	if (raw === null || typeof raw !== 'object') return undefined;
+
+	const { id, color, name, teamId } = raw as Record<string, unknown>;
+
+	if (
+		typeof id !== 'number' ||
+		!(
+			Array.isArray(color) &&
+			typeof color[0] === 'number' &&
+			typeof color[1] === 'number' &&
+			typeof color[2] === 'number'
+		) ||
+		typeof name !== 'string' ||
+		!(teamId === undefined || typeof teamId === 'number')
+	)
+		return undefined;
+
+	return {
+		id,
+		color: color as [number, number, number],
+		name,
+		teamId,
+	};
+};
+
 export const useGlobalState = create(
-	combine({ ...initialGlobalState }, set => ({})),
+	persist(
+		combine({ ...initialGlobalState }, set => ({})),
+		{
+			name: 'global-state',
+			partialize: state => {
+				const selfPlayer = state.players.find(
+					({ id }) => id === state.selfPlayerId,
+				);
+				if (selfPlayer === undefined) return {};
+				return selfPlayer;
+			},
+			merge: (persisted, current) => {
+				const selfPlayer = reconstructPlayer(persisted);
+				return produce(current, state => {
+					if (selfPlayer !== undefined) {
+						state.players = [selfPlayer];
+						state.selfPlayerId = selfPlayer.id;
+					}
+					state.players =
+						selfPlayer === undefined ? [] : [selfPlayer];
+				});
+			},
+			storage: createJSONStorage(() => localStorage),
+		},
+	),
 );
 
 export const update = (

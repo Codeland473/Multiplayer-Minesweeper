@@ -5,40 +5,12 @@ import {
 	Player,
 	ShownTeamData,
 	StartingPosition,
-	TeamData,
 } from '../global-state.js';
 import { rgbToHex } from '../util.js';
-
-const Revealed = ({ x, y }: { x: number; y: number }) => {
-	return (
-		<>
-			<rect
-				className={BoardStyle.tileBack}
-				x={x + 1}
-				y={y + 1}
-				width="15"
-				height="15"
-			/>
-			<polygon
-				className={BoardStyle.tileDark}
-				points={`${x} ${y} ${x + 16} ${y + 0} ${x + 16} ${y + 1} ${
-					x + 1
-				} ${y + 1} ${x + 1} ${y + 16} ${x} ${y + 16} ${x} ${y}`}
-			/>
-		</>
-	);
-};
 
 const Covered = ({ x, y }: { x: number; y: number }) => {
 	return (
 		<>
-			<rect
-				className={BoardStyle.tileBack}
-				x={x + 2}
-				y={y + 2}
-				width="12"
-				height="12"
-			/>
 			<polygon
 				className={BoardStyle.tileDark}
 				points={`${x + 0} ${y + 16} ${x + 2} ${y + 14} ${x + 14} ${
@@ -175,22 +147,13 @@ const Tile = ({
 	isStarting,
 }: TileProps) => {
 	if (revealed) {
-		return (
-			<>
-				<Revealed x={x} y={y} />
-				{value === 9 ? (
-					<Mine x={x} y={y} />
-				) : isMineCount(value) ? (
-					<text
-						x={x + 8}
-						y={y + 8}
-						className={BoardStyle.number[value]}
-					>
-						{value}
-					</text>
-				) : null}
-			</>
-		);
+		return value === 9 ? (
+			<Mine x={x} y={y} />
+		) : isMineCount(value) ? (
+			<text x={x + 8} y={y + 8} className={BoardStyle.number[value]}>
+				{value}
+			</text>
+		) : null;
 	} else {
 		return (
 			<>
@@ -205,6 +168,36 @@ const Tile = ({
 			</>
 		);
 	}
+};
+
+const GridLines = ({ width, height }: { width: number; height: number }) => {
+	const lines: React.ReactNode[] = [];
+
+	for (let i = 0; i < width; ++i) {
+		lines.push(
+			<rect
+				x={i * 16}
+				y={0}
+				width={1}
+				height={height * 16}
+				className={BoardStyle.tileDark}
+			/>,
+		);
+	}
+
+	for (let j = 0; j < height; ++j) {
+		lines.push(
+			<rect
+				x={0}
+				y={j * 16}
+				width={width * 16}
+				height={1}
+				className={BoardStyle.tileDark}
+			/>,
+		);
+	}
+
+	return lines;
 };
 
 export type BoardProps = {
@@ -268,7 +261,9 @@ export const BoardComponent = ({
 			onContextMenu={preventer}
 			onAuxClick={onClickSVG}
 			viewBox={`0 0 ${width * 16} ${height * 16}`}
+			className={BoardStyle.svg}
 		>
+			<GridLines width={width} height={height} />
 			{board.map((value, index) => {
 				const x = index % width;
 				const y = Math.floor(index / width);
