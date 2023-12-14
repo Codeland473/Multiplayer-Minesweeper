@@ -353,7 +353,9 @@ export namespace Receiver {
 						({ id, finishTime, isAlive }, index) => {
 							const teamProgress = isSpectator
 								? game.teamProgresses[index]
-								: id === players[selfPlayerId].teamId
+								: id ===
+								  players.find(({ id }) => id === selfPlayerId)
+										?.teamId
 								? game.teamProgresses[0]
 								: {};
 

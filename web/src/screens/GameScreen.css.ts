@@ -12,13 +12,20 @@ export const game = style({
 
 export const topBar = style({
 	height: 'auto',
+	display: 'flex',
 	flexDirection: 'row',
 	justifyContent: 'space-between',
+	width: '100%',
 });
 
-export const boardHolder = style({});
+export const boardHolder = style({
+	position: 'relative',
+});
 
 export const dimmer = style({
+	position: 'absolute',
+	left: 0,
+	top: 0,
 	width: '100%',
 	height: '100%',
 	display: 'flex',

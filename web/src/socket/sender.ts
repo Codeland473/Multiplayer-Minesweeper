@@ -222,4 +222,13 @@ export namespace Sender {
 
 		return sendBuffer;
 	});
+
+	export const reset = Socket.registerSender(() => {
+		const sendBuffer = new Uint8Array(1);
+
+		const writer = Data.createWriter(sendBuffer);
+		writer.writeByte(SendCode.RESET);
+
+		return sendBuffer;
+	});
 }

@@ -18,6 +18,7 @@ export enum SendCode {
 	SQUARE_FLAG = 9,
 	CURSOR_UPDATE = 10,
 	TEAM_NAME_UPDATE = 11,
+	RESET = 12,
 
 	SELF_JOIN = 50,
 	RECOVER = 51,

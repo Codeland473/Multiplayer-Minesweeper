@@ -1,8 +1,6 @@
 import React from 'react';
 import {
 	GameSettings,
-	PlayerData,
-	ShownTeamData,
 	StartingPosition,
 	TeamData,
 	update,
@@ -154,7 +152,7 @@ const Game = ({
 };
 
 const calcGameSeconds = (baseTime: number, now: number) => {
-	return Math.floor((baseTime - now) / 1000);
+	return Math.floor((now - baseTime) / 1000);
 };
 
 export const GameScreen = () => {
@@ -178,8 +176,13 @@ export const GameScreen = () => {
 		};
 	}, [game.startTime]);
 
+	const reset = React.useCallback(() => {
+		Sender.reset();
+	}, []);
+
 	return (
 		<div className={style.page}>
+			<button onClick={reset}>Reset</button>
 			{Object.entries(game.teamDatas).map(([teamId, teamData]) => (
 				<Game
 					key={teamId}
