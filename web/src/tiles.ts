@@ -271,3 +271,15 @@ export const getClickResult = (
 		return undefined;
 	}
 };
+
+export const getMineCount = (
+	board: readonly number[],
+	flags: readonly number[],
+	numMines: number,
+): number => {
+	let count = numMines;
+	for (let i = 0; i < board.length; ++i) {
+		if (isMarkedAsMine(flags[i], board[i])) --count;
+	}
+	return count;
+};

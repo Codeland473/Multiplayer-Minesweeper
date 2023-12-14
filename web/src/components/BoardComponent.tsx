@@ -176,6 +176,7 @@ const GridLines = ({ width, height }: { width: number; height: number }) => {
 	for (let i = 0; i < width; ++i) {
 		lines.push(
 			<rect
+				key={`x${i}`}
 				x={i * 16}
 				y={0}
 				width={1}
@@ -188,6 +189,7 @@ const GridLines = ({ width, height }: { width: number; height: number }) => {
 	for (let j = 0; j < height; ++j) {
 		lines.push(
 			<rect
+				key={`y${j}`}
 				x={0}
 				y={j * 16}
 				width={width * 16}
