@@ -13,6 +13,7 @@ import {
 	Team,
 	HiddenTeamData,
 	TeamProgress,
+	useGlobalState,
 } from '../global-state.js';
 import { Log } from '../log.js';
 import { Data } from './data.js';
@@ -475,13 +476,18 @@ export namespace Receiver {
 	};
 
 	Socket.registerReceiver(ReceiveCode.TILE_REVEAL, reader => {
-		const _playerId = reader.getInt();
+		const playerId = reader.getInt();
 		const teamId = reader.getInt();
 		const x = reader.getInt();
 		const y = reader.getInt();
 		const width = reader.getInt();
 		const height = reader.getInt();
 		const tiles = reader.getByteArray(width * height);
+		const time = reader.getLong();
+
+		const didLose =
+			playerId === useGlobalState.getState().selfPlayerId &&
+			tiles.some(tile => tile === 9);
 
 		update(draftState => {
 			if (draftState.game === undefined) return;
@@ -498,6 +504,10 @@ export namespace Receiver {
 							(j + y) * game.settings.width + (i + x)
 						] = inputTile;
 				}
+			}
+
+			if (didLose) {
+				losePlayer(draftState, playerId, time);
 			}
 		});
 	});
@@ -563,14 +573,44 @@ export namespace Receiver {
 		});
 	});
 
+	const losePlayer = (
+		draftState: Draft<GlobalState>,
+		playerId: number,
+		time: number,
+	) => {
+		const state = imm(draftState);
+		if (draftState.game === undefined || state.game === undefined) return;
+		const { game } = state;
+
+		const playerData = draftState.game.playerDatas[playerId];
+		playerData.isAlive = false;
+
+		const [, player] = findPlayerIndex(draftState, playerId);
+		const { teamId } = player;
+		if (teamId === undefined) return;
+
+		const teamPlayers = state.players.filter(
+			player => player.teamId === teamId,
+		);
+		if (
+			teamPlayers.every(
+				player =>
+					player.id === playerId ||
+					!game.playerDatas[player.id].isAlive,
+			)
+		) {
+			draftState.game.teamDatas[teamId].isAlive = false;
+			draftState.game.teamDatas[teamId].finishTime = time;
+		}
+	};
+
 	Socket.registerReceiver(ReceiveCode.PLAYER_LOSE, reader => {
 		const playerId = reader.getInt();
+		const _teamId = reader.getInt();
+		const time = reader.getLong();
 
 		update(draftState => {
-			if (draftState.game === undefined) return;
-
-			const playerData = draftState.game.playerDatas[playerId];
-			playerData.isAlive = false;
+			losePlayer(draftState, playerId, time);
 		});
 	});
 

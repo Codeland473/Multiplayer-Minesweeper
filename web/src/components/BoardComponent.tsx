@@ -241,12 +241,36 @@ export const BoardComponent = ({
 			if (event.button < 0 || event.button > 2) return;
 
 			const rect = event.currentTarget.getBoundingClientRect();
+
+			const rectRatio = rect.width / rect.height;
+			const boardRatio = width / height;
+
+			let offX = 0;
+			let offY = 0;
+			let displayWidth = 0;
+			let displayHeight = 0;
+
+			if (rectRatio > boardRatio) {
+				offY = 0;
+				displayHeight = rect.height;
+				displayWidth = displayHeight * boardRatio;
+				offX = (rect.width - displayWidth) / 2;
+			} else {
+				offX = 0;
+				displayWidth = rect.width;
+				displayHeight = displayWidth * (1 / boardRatio);
+				offY = (rect.height - displayHeight) / 2;
+			}
+
 			const x = Math.floor(
-				((event.clientX - rect.x) / rect.width) * width,
+				((event.clientX - rect.x - offX) / displayWidth) * width,
 			);
 			const y = Math.floor(
-				((event.clientY - rect.y) / rect.height) * height,
+				((event.clientY - rect.y - offY) / displayHeight) * height,
 			);
+
+			if (x < 0 || x >= width || y < 0 || y >= height) return;
+
 			onClick(x, y, event.button);
 		},
 		[height, onClick, width],

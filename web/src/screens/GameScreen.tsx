@@ -33,6 +33,13 @@ const sendClickResult = async (clickResult: ClickResult) => {
 	}
 };
 
+const threeDigitNumber = (number: number): string => {
+	if (number >= 1000) return '999';
+	if (number >= 100) return number.toString();
+	if (number >= 10) return '0' + number.toString();
+	return '00' + number.toString();
+};
+
 const Game = ({
 	startTime,
 	settings,
@@ -110,10 +117,18 @@ const Game = ({
 		return getMineCount(teamData.board, teamData.flags, settings.mineCount);
 	}, [settings.mineCount, teamData]);
 
+	const reset = React.useCallback(() => {
+		Sender.reset();
+	}, []);
+
 	return (
 		<div className={style.game}>
 			<div className={style.topBar}>
-				<div>{mineCount ?? '??'}</div>
+				<div className={style.numberHolder}>
+					{mineCount !== undefined
+						? threeDigitNumber(mineCount)
+						: '???'}
+				</div>
 				<div>
 					{teamPlayers.map(({ color, id, name }) => (
 						<PlayerDisplay
@@ -125,10 +140,12 @@ const Game = ({
 						/>
 					))}
 				</div>
-				<div>
+				<div onClick={reset}>
 					{isTeamAlive ? <Icon name="mood" /> : <Icon name="skull" />}
 				</div>
-				<div>{gameSeconds < 0 ? 0 : gameSeconds}</div>
+				<div className={style.numberHolder}>
+					{threeDigitNumber(gameSeconds < 0 ? 0 : gameSeconds)}
+				</div>
 			</div>
 			{isShownTeamData(teamData) ? (
 				<div className={style.boardHolder}>
@@ -160,6 +177,8 @@ export const GameScreen = () => {
 	const selfPlayerId = useGlobalState(state => state.selfPlayerId);
 	const players = useGlobalState(state => state.players);
 
+	const selfTeamId = players.find(({ id }) => id === selfPlayerId)?.teamId;
+
 	const [gameSeconds, setGameSeconds] = React.useState(
 		calcGameSeconds(game.startTime, Date.now()),
 	);
@@ -176,25 +195,40 @@ export const GameScreen = () => {
 		};
 	}, [game.startTime]);
 
-	const reset = React.useCallback(() => {
-		Sender.reset();
-	}, []);
+	const selfTeamData = Object.entries(game.teamDatas).find(
+		([teamId]) => +teamId === selfTeamId,
+	);
+	const otherTeamDatas = Object.entries(game.teamDatas).filter(
+		([teamId]) => +teamId !== selfTeamId,
+	);
+
+	if (selfTeamData === undefined) throw Error('spec not impl');
 
 	return (
-		<div className={style.page}>
-			<button onClick={reset}>Reset</button>
-			{Object.entries(game.teamDatas).map(([teamId, teamData]) => (
-				<Game
-					key={teamId}
-					gameSeconds={gameSeconds}
-					playerId={selfPlayerId}
-					settings={game.settings}
-					startTime={game.startTime}
-					startingPosition={game.startingPosition}
-					teamData={teamData}
-					teamId={+teamId}
-				/>
-			))}
+		<div className={style.mainView}>
+			<Game
+				gameSeconds={gameSeconds}
+				playerId={selfPlayerId}
+				settings={game.settings}
+				startTime={game.startTime}
+				startingPosition={game.startingPosition}
+				teamData={selfTeamData[1]}
+				teamId={+selfTeamData[0]}
+			/>
+			<div className={style.lowerScroller}>
+				{otherTeamDatas.map(([teamId, teamData]) => (
+					<Game
+						key={teamId}
+						gameSeconds={gameSeconds}
+						playerId={selfPlayerId}
+						settings={game.settings}
+						startTime={game.startTime}
+						startingPosition={game.startingPosition}
+						teamData={teamData}
+						teamId={+teamId}
+					/>
+				))}
+			</div>
 		</div>
 	);
 };
