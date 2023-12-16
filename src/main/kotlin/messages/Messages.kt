@@ -128,7 +128,6 @@ object Messages {
 			val (startX, startY) = board.startPos ?: Pair(-1, -1)
 			put(startX)
 			put(startY)
-			put(board.mineCounts)
 			val gamersTeam = teams.find { it.id == newGamer.team }
 			if (gamersTeam != null) {
 				if (gamersTeam.progress == null) gamersTeam.progress = TeamProgress(board)
