@@ -122,7 +122,7 @@ class SessionHandler {
 		currentGameSettings = settings.copy()
 		teams.forEach {it.progress = TeamProgress(settings.boardWidth, settings.boardHeight)}
 		if (settings.isNoGuessing) {
-			val (newBoard, startPos) = Solver.generateBoard(settings.boardWidth, settings.boardHeight, settings.mineCount)
+			val (newBoard, startPos) = Solver.generateBoard(settings.boardWidth, settings.boardHeight, settings.mineCount, settings.diffSolveRequirement, settings.bruteSolveRequirement)
 			board = newBoard
 			board!!.resetTime(settings)
 			broadcast(Messages.gameStart(sender.id, startPos, currentSettings, board!!))
@@ -204,12 +204,16 @@ class SessionHandler {
 
 		val time = System.currentTimeMillis()
 		val idx = x + board!!.width * y
-		if (!add && (time - team.progress!!.flagTimes[idx] > settings.flagProtectionTime.toLong() ||
-					abs(team.progress!!.flagStates[idx]) == sender.id)) return
+		if (!add && time - team.progress!!.flagTimes[idx] < settings.flagProtectionTime.toLong() &&
+					abs(team.progress!!.flagStates[idx]) != sender.id) {
+			sender.connection.send(Messages.squareFlag(abs(team.progress!!.flagStates[idx]), sender.team, x, y,
+				true, team.progress!!.flagStates[idx] > 0))
+			return
+		}
 
 		board!!.flagSquare(x, y, sender, team.progress!!, add, isPencil)
 
-		broadcast(Messages.squareFlag(sender, x, y, add, isPencil)) {it.team == sender.team || it.team == 0}
+		broadcast(Messages.squareFlag(sender.id, sender.team, x, y, add, isPencil)) {it.team == sender.team || it.team == 0}
 	}
 	fun onCursorUpdateMessage(sender : Gamer, message : ByteBuffer) {
 		sender.cursorLocation.x = message.getFloat()

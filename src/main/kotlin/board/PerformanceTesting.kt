@@ -2,7 +2,6 @@ package board
 
 import io.ktor.util.*
 import java.io.File
-import java.nio.ByteBuffer
 import kotlin.math.max
 import kotlin.random.Random
 
@@ -117,7 +116,7 @@ fun main() {
 		println(Solver(board).solve())//
 	}
 	*/
-	val solvableBoards = BoardBuffer("boards/evilSolvable.bds")
+	//val solvableBoards = BoardBuffer("boards/evilSolvable.bds")
 
 	val r = Random(0)
 	val n = 100000
@@ -127,7 +126,6 @@ fun main() {
 		b
 	}
 
-	var lastPrintedI = 0
 	var totalT = 0f
 
 	var totalSolvable = 0
@@ -138,8 +136,14 @@ fun main() {
 	//val (avg, min, q1, med, q3, max) = measurePerformance(1, 1000, 30, 20, 130)
 //16304
 	//println("$min, $q1, $med, $q3, $max, $avg")
-	val evilBoards = BoardBuffer(30, 20)
-	val priceyBoards = BoardBuffer(30, 20)
+	//val evilBoards = BoardBuffer(30, 20)
+	//val priceyBoards = BoardBuffer(30, 20)
+	val ng3bvs = ArrayList<Int>()
+	val trivials = ArrayList<Int>()
+	val diffs = ArrayList<Int>()
+	val brutes = ArrayList<Int>()
+	val guessing3bvs = ArrayList<Int>()
+	
 	for (i in 0 until n) {
 		//s.watchSolve(boards[i])
 		val s = Solver(boards[i], Random(0))
@@ -147,15 +151,19 @@ fun main() {
 		val (t, isSolvable) = time {s.solve() != null}
 		maxT = max(t, maxT)
 		totalT += t
-		if (t > 1) {
-			println("board[$i] isSolvable $isSolvable found in $t s")
-			lastPrintedI = i
-			priceyBoards += boards[i]
-		}
+		//if (t > 1) {
+			//println("board[$i] isSolvable $isSolvable found in $t s")
+			//priceyBoards += boards[i]
+		//}
 		if (isSolvable) {
-
+			trivials.add(s.trivialSolves)
+			diffs.add(s.diffSolves)
+			brutes.add(s.bruteSolves)
+			ng3bvs += s.calculate3BV()
 			++totalSolvable
-			evilBoards += boards[i]
+			//evilBoards += boards[i]
+		} else {
+			guessing3bvs += s.calculate3BV()
 		}
 		/*if (i - lastPrintedI >= 1000) {
 			println("nothing new in last 1000 boards, current board : #$i, current average : ${totalT / i}")
@@ -165,8 +173,14 @@ fun main() {
 
 	println("$totalSolvable / $n solvable avg ${totalT / n}, max time spend on one: $maxT")
 
-	File("boards/evilSolvable.bds").writeBytes(evilBoards.internalBuffer.array())
-	File("boards/evilPricey.bds").writeBytes(priceyBoards.internalBuffer.array())
+	//File("boards/evilSolvable.bds").writeBytes(evilBoards.internalBuffer.array())
+	//File("boards/evilPricey.bds").writeBytes(priceyBoards.internalBuffer.array())
+
+	println("ng 3bvs: ${NumberSummary(ng3bvs)}")
+	println("ge 3bvs: ${NumberSummary(guessing3bvs)}")
+	println("ng trivial solves: ${NumberSummary(trivials)}")
+	println("ng diff    solves: ${NumberSummary(diffs)}")
+	println("ng brute   solves: ${NumberSummary(brutes)}")
 
 	val boardsOfInterest = arrayOf(
 		63, // : 1.6s
@@ -327,7 +341,6 @@ fun watchSolve(b : Board, s : Solver = Solver(b)) {
 		s.rewind()
 	}
 }
-
 fun genBoards(width : Int, height : Int, mineCount : Int, numBoards : Int) {
 
 	//board.measurePerformance(10, 30, 16, 240)
@@ -361,7 +374,29 @@ fun genBoards(width : Int, height : Int, mineCount : Int, numBoards : Int) {
 	println("$totalUnsolvableTime seconds spent examining unsolvable boards (average ${totalUnsolvableTime / (numBoards - numSolvable)})")
 }
 
-data class PerformanceSummary(val average : Double, val min : Float, val q1 : Float, val median : Float, val q3 : Float, val max : Float)
+data class NumberSummary(val average : Double, val min : Float, val q1 : Float, val median : Float, val q3 : Float, val max : Float) {
+	constructor(ns : List<Number>) : this(
+		ns.sumOf { it.toDouble() } / ns.size,
+		ns.minOf { it.toFloat() },
+		ns.sortedBy { it.toFloat() }[ns.size / 4].toFloat(),
+		ns.sortedBy { it.toFloat() }[ns.size / 2].toFloat(),
+		ns.sortedBy { it.toFloat() }[3 * ns.size / 4].toFloat(),
+		ns.maxOf { it.toFloat() }
+	)
+
+	constructor(ns : Array<Float>) : this(
+		ns.sumOf { it.toDouble() } / ns.size,
+		ns.minOf { it },
+		ns.sortedBy { it }[ns.size / 4],
+		ns.sortedBy { it }[ns.size / 2],
+		ns.sortedBy { it }[3 * ns.size / 4],
+		ns.maxOf { it }
+	)
+
+	override fun toString(): String {
+		return "($min, $q1, $median, $q3, $max), μ: $average"
+	}
+}
 
 fun measurePerformance(
 	threads : Int = 1,
@@ -369,7 +404,7 @@ fun measurePerformance(
 	width : Int = 30,
 	height : Int = 20,
 	mineCount : Int = 130,
-	seed : Long = 0L) : PerformanceSummary
+	seed : Long = 0L) : NumberSummary
 {
 	//val r = KRandom(seed)
 	val timings = Array(repetitions) {
@@ -395,15 +430,7 @@ fun measurePerformance(
 		}
 	}
 
-	val average = timings.average()
-	val sorted = timings.sorted()
-	val min = timings.min()
-	val q1 = sorted[repetitions / 4]
-	val median = sorted[repetitions / 2]
-	val q3 = sorted[3 * repetitions / 4]
-	val max = timings.max()
-
-	return PerformanceSummary(average, min, q1, median, q3, max)
+	return NumberSummary(timings)
 }
 
 

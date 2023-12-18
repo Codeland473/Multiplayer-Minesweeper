@@ -85,9 +85,9 @@ object Messages {
 		put(time)
 	}
 
-	fun squareFlag(gamer : Gamer, posX : Int, posY : Int, isPlacing : Boolean, isPencil : Boolean) = message(9) {
-		put(gamer.id)
-		put(gamer.team)
+	fun squareFlag(gamerID : Int, teamID : Int, posX : Int, posY : Int, isPlacing : Boolean, isPencil : Boolean) = message(9) {
+		put(gamerID)
+		put(teamID)
 		put(posX)
 		put(posY)
 		put(isPlacing)

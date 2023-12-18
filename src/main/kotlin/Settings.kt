@@ -6,7 +6,11 @@ class Settings {
 	var boardHeight : Int = 20
 	var mineCount : Int = 130
 	var countdownLength : Int = 5
+
 	var flagProtectionTime : Int = 500
+
+	var diffSolveRequirement : Int = 20
+	var bruteSolveRequirement : Int = 2
 
 	fun copy() : Settings {
 		val r = Settings()

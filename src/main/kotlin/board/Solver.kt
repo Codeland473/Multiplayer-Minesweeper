@@ -21,6 +21,10 @@ class Solver(var board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 	var numPencilFlags = 0
 	var numUnknown = board.width * board.height - 1
 
+	var trivialSolves = 0
+	var diffSolves = 0
+	var bruteSolves = 0
+
 	fun getSolvableBoard() : Pair<Int, Int> {
 		while (true) {
 			solve()?.let { return it }
@@ -32,6 +36,9 @@ class Solver(var board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 	fun reset() {
 		regionIds.fill(-1)
 		rewind()
+		trivialSolves = 0
+		diffSolves = 0
+		bruteSolves = 0
 	}
 
 	fun rewind() {
@@ -139,6 +146,7 @@ class Solver(var board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 	fun trivialSolveList(pencil : Boolean = false, edge : List<FrontSquare> = squares.filter {it.knowledgeState == KnowledgeState.EDGE }) : Boolean {
 		var steps = 0
 		while (trivialSolveStep(pencil, edge)) ++steps
+		if (!pencil) trivialSolves += steps
 		return steps > 0
 	}
 
@@ -215,7 +223,10 @@ class Solver(var board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 						.map { (ax, ay) -> squares[idx(ax, ay)] }
 						.filter { it.solverState != SolverState.REVEALED }
 						.filterNot { abs(it.x - eSquare.x) <= 1 && abs(it.y - eSquare.y) <= 1 }
-					if (diffSolvePair(eSquare, squares[idx(x, y)], onlyA, overlap, onlyB, pencil)) return true
+					if (diffSolvePair(eSquare, squares[idx(x, y)], onlyA, overlap, onlyB, pencil)) {
+						diffSolves++
+						return true
+					}
 				}
 				++x
 			}
@@ -295,15 +306,22 @@ class Solver(var board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 	fun bruteSolve() : Boolean {
 		val minPencilFlags = if (totalMines - numFlags > numUnknown) {
 			//must do full
-			bruteSolveSegmentWrap(squares.filter { it.knowledgeState == KnowledgeState.FRONT }) ?: return true
+			bruteSolveSegmentWrap(squares.filter { it.knowledgeState == KnowledgeState.FRONT }) ?: run {
+				++bruteSolves
+				return true
+			}
 		} else {
-			segmentedBruteSolve() ?: return true
+			segmentedBruteSolve() ?: run {
+				++bruteSolves
+				return true
+			}
 		}
 		if (minPencilFlags + numFlags == totalMines && numUnknown > 0) {
 			squares.forEach { if (it.knowledgeState == KnowledgeState.UNKNOWN) {
 				--numUnknown
 				revealSquare(it.x, it.y)
 			} }
+			++bruteSolves
 			return true
 		}
 		return false
@@ -540,17 +558,17 @@ class Solver(var board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 
 	companion object {
 
-		fun generateBoard(width : Int, height : Int, mineCount : Int, r : KRandom = JRandom().asKotlinRandom()) : Pair<Board, Pair<Int, Int>> {
+		fun generateBoard(width : Int, height : Int, mineCount : Int, diffSolveRequirement : Int = 0, bruteSolveRequirement : Int = 0, r : KRandom = JRandom().asKotlinRandom()) : Pair<Board, Pair<Int, Int>> {
 			val density = mineCount.toFloat() / (width * height).toFloat()
 			return when {
-				density >= 0.17 -> generateBoardMultithreaded(width, height, mineCount, r, 4)
-				density >= 0.15 -> generateBoardMultithreaded(width, height, mineCount, r, 3)
-				density >= 0.1 -> generateBoardMultithreaded(width, height, mineCount, r, 2)
-				else -> generateBoardMultithreaded(width, height, mineCount, r, 1)
+				density >= 0.17 -> generateBoardMultithreaded(width, height, mineCount, diffSolveRequirement, bruteSolveRequirement, r, 4)
+				density >= 0.15 -> generateBoardMultithreaded(width, height, mineCount, diffSolveRequirement, bruteSolveRequirement, r, 3)
+				density >= 0.1 -> generateBoardMultithreaded(width, height, mineCount, diffSolveRequirement, bruteSolveRequirement, r, 2)
+				else -> generateBoardMultithreaded(width, height, mineCount, diffSolveRequirement, bruteSolveRequirement, r, 1)
 			}
 		}
 
-		fun generateBoardMultithreaded(width : Int, height : Int, mineCount : Int, r : KRandom = JRandom().asKotlinRandom(), numThreads : Int = 4) : Pair<Board, Pair<Int, Int>> {
+		fun generateBoardMultithreaded(width : Int, height : Int, mineCount : Int, diffSolveRequirement : Int = 0, bruteSolveRequirement : Int = 0, r : KRandom = JRandom().asKotlinRandom(), numThreads : Int = 4) : Pair<Board, Pair<Int, Int>> {
 			val boards = Collections.synchronizedSet<Pair<Board, Pair<Int, Int>>>(LinkedHashSet())
 			val f = { ->
 				val threadR = KRandom(r.nextLong())
@@ -560,7 +578,7 @@ class Solver(var board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 
 				while (boards.isEmpty()) {
 					val startPos = solver.solve()
-					if (startPos != null) {
+					if (startPos != null && solver.diffSolves >= diffSolveRequirement && solver.bruteSolves >= bruteSolveRequirement) {
 						synchronized(boards) {
 							boards.add(Pair(board, startPos))
 						}
