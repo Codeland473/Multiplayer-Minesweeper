@@ -411,7 +411,7 @@ fun measurePerformance(
 		val r = Random(seed + it)
 		if (threads > 1) {
 			val (t, _) = time {
-				val (board, startPos) = Solver.generateBoardMultithreaded(width, height, mineCount, r, threads)
+				val (board, startPos) = Solver.generateBoardMultithreaded(width, height, mineCount, 0, 0, r, threads)
 				//println(board.printableStr())
 			}
 			t
@@ -424,7 +424,7 @@ fun measurePerformance(
 			t
 		} else {
 			val (t, _) = time {
-				val (board, startPos) = Solver.generateBoard(width, height, mineCount, r)
+				val (board, startPos) = Solver.generateBoard(width, height, mineCount, 0, 0, r)
 			}
 			t
 		}
