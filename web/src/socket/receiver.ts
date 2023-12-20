@@ -73,7 +73,7 @@ export namespace Receiver {
 			id,
 			name,
 			isAlive: !isDead,
-			finishTime: isFinished ? undefined : finishTime,
+			finishTime: isFinished ? finishTime : undefined,
 		};
 	};
 

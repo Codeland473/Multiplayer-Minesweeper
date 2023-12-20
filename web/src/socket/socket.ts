@@ -103,6 +103,8 @@ export namespace Socket {
 
 		console.log(`received code ${messageId}`);
 		receiver(reader);
+
+		console.log(useGlobalState.getState());
 	};
 
 	export const newSocket = () => {
