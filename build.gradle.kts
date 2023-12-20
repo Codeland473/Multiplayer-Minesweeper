@@ -21,7 +21,7 @@ dependencies {
 	implementation("io.ktor:ktor-server-core-jvm")
 	implementation("io.ktor:ktor-server-websockets-jvm")
 	implementation("io.ktor:ktor-server-netty-jvm")
-	implementation("ch.qos.logback:logback-classic:1.4.11")
+	implementation("org.slf4j", "slf4j-nop", "1.7.36")
 
 }
 
