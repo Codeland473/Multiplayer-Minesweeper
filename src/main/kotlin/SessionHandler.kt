@@ -51,6 +51,8 @@ class SessionHandler {
 		gamer.team = team
 		gamer.hasLost = hasLost
 
+		gamers.removeIf { !it.isConnected && it.id == givenID }
+
 		broadcast(Messages.gamerJoined(gamer))
 
 		gamers += gamer
@@ -258,7 +260,7 @@ class SessionHandler {
 	//utils
 	
 	suspend fun broadcast(message : ByteArray, filter : (Gamer) -> Boolean = {true}) {
-		for (gamer in gamers.filter(filter)) {
+		for (gamer in gamers.filter { it.isConnected }.filter(filter)) {
 			gamer.connection.send(message)
 		}
 	}
