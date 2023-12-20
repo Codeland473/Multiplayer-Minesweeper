@@ -105,7 +105,10 @@ object Messages {
 		put(name)
 	}
 
-	fun boardClear() = message(12) {}
+	fun boardClear(gamers : Array<Gamer>) = message(12) {
+		put(gamers.size)
+		for (gamer in gamers) put(gamer)
+	}
 
 	fun lobbyState(
 		settings : Settings,

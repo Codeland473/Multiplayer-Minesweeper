@@ -11,6 +11,7 @@ class Gamer(
 	var cursorLocation  = CursorLocation(0f, 0f)
 	var cursorUpdated = false
 	var hasLost = false
+	var isConnected = true
 }
 
 data class Color(val r : Byte, val g : Byte, val b : Byte) {

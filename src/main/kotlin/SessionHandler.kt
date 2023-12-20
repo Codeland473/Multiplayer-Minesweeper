@@ -11,10 +11,9 @@ import java.util.*
 import kotlin.collections.LinkedHashSet
 import kotlin.math.abs
 import kotlin.math.max
+import kotlin.random.Random
 
 class SessionHandler {
-	var nextID = 1
-
 	val gamers = Collections.synchronizedSet<Gamer>(LinkedHashSet())
 	val teams = Collections.synchronizedSet<Team>(LinkedHashSet())
 	val settings = Settings()
@@ -38,7 +37,13 @@ class SessionHandler {
 		val hasLost = message.getBool()
 		val name = message.getString()
 
-		val givenID = if (requestedID <= 0 || gamers.any {it.id == requestedID}) ++nextID else requestedID
+		val givenID = if (requestedID <= 0 || gamers.any {it.id == requestedID && it.isConnected}) {
+			var newID = Random.nextInt(1, Int.MAX_VALUE)
+			while (gamers.any { it.id == newID}) {
+				newID = Random.nextInt(1, Int.MAX_VALUE)
+			}
+			newID
+		} else requestedID
 		val color = if (requestedColor.r == 0.toByte() && requestedColor.g == 0.toByte() && requestedColor.b == 0.toByte())
 			Color.random() else requestedColor
 		if (!teams.any {it.id == team}) team = 0
@@ -232,12 +237,13 @@ class SessionHandler {
 		gamers.forEach {it.hasLost = false}
 		teams.forEach { it.reset() }
 		board = null
-		broadcast(Messages.boardClear())
+		gamers.removeIf { !it.isConnected }
+		broadcast(Messages.boardClear(gamers))
 	}
 
 	suspend fun onGamerLeave(quitter : Gamer?) {
 		quitter ?: return
-		gamers -= quitter
+		quitter.isConnected = false
 		broadcast(Messages.gamerRemove(quitter))
 	}
 

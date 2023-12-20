@@ -24,16 +24,17 @@ also used for board size, where x is width and y is height.
 | 4         | Int      | Mine Count                                  |
 | 4         | Int      | Countdown Length                            |
 
-### Player
+### Gamer
 
-| Size      | Type           | Description                                     |
-|-----------|----------------|-------------------------------------------------|
-| 4         | Int            | Id                                              |
-| 3         | Color          | Color                                           |
-| Dependant | String         | Name                                            |
-| 1         | Bool           | True if they have lost                          |
-| 4         | Int            | Team                                            |
-| 8         | (Float, Float) | Cursor location                                 |
+| Size      | Type           | Description            |
+|-----------|----------------|------------------------|
+| 4         | Int            | Id                     |
+| 3         | Color          | Color                  |
+| Dependant | String         | Name                   |
+| 1         | Bool           | True if they have lost |
+| 4         | Int            | Team                   |
+| 8         | (Float, Float) | Cursor location        |
+| 1         | Bool           | Is Connected           |
 
 ### Color (3 bytes)
 
@@ -344,8 +345,8 @@ I'll let the exact meaning of the cursor positions be handled by the client.
 
 ### Ending The Game
 
-When players are ready to move onto the next game or exit to lobby, one player should send an empty message with ID 12 
-to the server. The server will then relay a similar message to all the players, this should clear the board and team 
+When gamers are ready to move onto the next game or exit to lobby, one gamer should send an empty message with ID 12 
+to the server. The server will then relay a similar message to all the gamers, this should clear the board and team 
 progresses, as if the game hadn't started yet. Teams, users, and settings will remain unchanged.
 
 #### Client -> Server
@@ -356,9 +357,11 @@ progresses, as if the game hadn't started yet. Teams, users, and settings will r
 
 #### Server -> Client
 
-| Size     | Type   | Description                         |
-|----------|--------|-------------------------------------|
-| 1        | Byte   | Message type (Team Name Update: 12) |
+| Size      | Type    | Description                         |
+|-----------|---------|-------------------------------------|
+| 1         | Byte    | Message type (Team Name Update: 12) |
+| 4         | Int     | Number of gamers still connected    |
+| Dependant | [Gamer] | Connected gamers                    |
 
 ## Exclusive Messages (Client -> Server)
 

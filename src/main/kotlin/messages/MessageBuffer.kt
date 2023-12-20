@@ -96,6 +96,7 @@ class MessageBuffer(private val initialMax : Int = 1024) {
 		put(v.hasLost)
 		put(v.team)
 		put(v.cursorLocation)
+		put(v.isConnected)
 	}
 
 	fun put(v : TeamProgress, board : Board) {
