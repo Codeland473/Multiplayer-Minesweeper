@@ -238,7 +238,7 @@ class SessionHandler {
 		teams.forEach { it.reset() }
 		board = null
 		gamers.removeIf { !it.isConnected }
-		broadcast(Messages.boardClear(gamers))
+		broadcast(Messages.boardClear(gamers.toTypedArray()))
 	}
 
 	suspend fun onGamerLeave(quitter : Gamer?) {
