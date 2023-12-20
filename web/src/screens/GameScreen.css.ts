@@ -35,6 +35,12 @@ export const numberHolder = style({
 	color: 'red',
 });
 
+export const playerHolder = style({
+	display: 'flex',
+	flexDirection: 'row',
+	columnGap: '0.5rem',
+});
+
 export const boardHolder = style({
 	position: 'relative',
 	padding: '1rem',

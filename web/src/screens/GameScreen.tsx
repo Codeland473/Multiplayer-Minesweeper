@@ -130,7 +130,7 @@ const Game = ({
 						? threeDigitNumber(mineCount)
 						: '???'}
 				</div>
-				<div>
+				<div className={style.playerHolder}>
 					{teamPlayers.map(({ color, id, name }) => (
 						<PlayerDisplay
 							color={color}
