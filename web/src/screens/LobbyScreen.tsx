@@ -1,9 +1,14 @@
 import React from 'react';
 import { PageStyle } from './Page.css.js';
-import { Color, Player, Team, useGlobalState } from '../global-state.js';
+import {
+	Player,
+	Team,
+	useConnectedPlayers,
+	useGlobalState,
+} from '../global-state.js';
 import { LobbyStyle } from './LobbyScreen.css.js';
 import { Icon } from '../components/Icon.js';
-import { AllOrNothing, groupBy, rgbToHex } from '../util.js';
+import { AllOrNothing } from '../util.js';
 import { Updater, useImmer } from 'use-immer';
 import { Modal } from '../components/Modal.js';
 import { Sender } from '../socket/sender.js';
@@ -169,7 +174,7 @@ const groupPlayersByTeam = (
 
 export const LobbyScreen = () => {
 	const selfPlayerId = useGlobalState(state => state.selfPlayerId)!;
-	const players = useGlobalState(state => state.players);
+	const players = useConnectedPlayers();
 	const teams = useGlobalState(state => state.teams);
 
 	const selfPlayer = players.find(({ id }) => id === selfPlayerId)!;

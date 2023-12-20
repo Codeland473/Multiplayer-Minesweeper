@@ -14,6 +14,7 @@ import {
 	HiddenTeamData,
 	TeamProgress,
 	useGlobalState,
+	Color,
 } from '../global-state.js';
 import { Log } from '../log.js';
 import { Data } from './data.js';
@@ -38,18 +39,23 @@ export namespace Receiver {
 
 	const readPlayer = (
 		reader: Data.Reader,
-	): Player & { isAlive: boolean; cursorX: number; cursorY: number } => {
+	): Draft<Player> & {
+		isAlive: boolean;
+		cursorX: number;
+		cursorY: number;
+	} => {
 		const id = reader.getInt();
-		const color = [
+		const color: Draft<Color> = [
 			reader.getByte(),
 			reader.getByte(),
 			reader.getByte(),
-		] as const;
+		];
 		const name = reader.getString();
 		const isDead = reader.getBool();
 		const inputTeamId = reader.getInt();
 		const cursorX = reader.getInt();
 		const cursorY = reader.getInt();
+		const isConnected = reader.getBool();
 
 		return {
 			id,
@@ -59,6 +65,7 @@ export namespace Receiver {
 			teamId: inputTeamId === 0 ? undefined : inputTeamId,
 			cursorX,
 			cursorY,
+			isConnected,
 		};
 	};
 
@@ -180,7 +187,8 @@ export namespace Receiver {
 	});
 
 	Socket.registerReceiver(ReceiveCode.PLAYER_CREATE, reader => {
-		const { isAlive, color, id, name, teamId } = readPlayer(reader);
+		const { isAlive, color, id, name, teamId, isConnected } =
+			readPlayer(reader);
 
 		update(state => {
 			const [existingIndex] = findPlayerIndex(state, id);
@@ -195,12 +203,14 @@ export namespace Receiver {
 					color: castDraft(color),
 					name,
 					teamId: checkedTeamId,
+					isConnected,
 				});
 			} else {
 				const player = state.players[existingIndex];
 				player.name = name;
 				player.color = castDraft(color);
 				player.teamId = checkedTeamId;
+				player.isConnected = isConnected;
 			}
 
 			if (state.game !== undefined) {
@@ -217,7 +227,7 @@ export namespace Receiver {
 			const [removeIndex] = findPlayerIndex(state, playerId);
 			if (removeIndex === -1) return;
 
-			state.players.splice(removeIndex, 1);
+			state.players[removeIndex].isConnected = false;
 		});
 	});
 
@@ -327,6 +337,7 @@ export namespace Receiver {
 				color: castDraft(player.color),
 				name: player.name,
 				teamId: player.teamId,
+				isConnected: player.isConnected,
 			}));
 
 			state.teams = teams.map(team => ({
@@ -635,8 +646,12 @@ export namespace Receiver {
 	});
 
 	Socket.registerReceiver(ReceiveCode.BOARD_CLEAR, reader => {
+		const numPlayers = reader.getInt();
+		const players = Data.readArray(numPlayers, () => readPlayer(reader));
+
 		update(draftState => {
 			draftState.game = undefined;
+			draftState.players = players;
 		});
 	});
 }

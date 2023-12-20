@@ -3,6 +3,7 @@ import { combine, createJSONStorage, persist } from 'zustand/middleware';
 import { Draft, Immutable, nothing, produce } from 'immer';
 import { Log } from './log.js';
 import { AllOrNothing, Define, Undefine } from './util.js';
+import React from 'react';
 
 export type Color = Immutable<[number, number, number]>;
 
@@ -11,6 +12,7 @@ export type Player = Immutable<{
 	color: Color;
 	name: string;
 	teamId: number | undefined;
+	isConnected: boolean;
 }>;
 
 export type CachedPlayer = Immutable<
@@ -128,6 +130,7 @@ const reconstructPlayer = (raw: unknown): Draft<Player> | undefined => {
 		color: color as [number, number, number],
 		name,
 		teamId,
+		isConnected: true,
 	};
 };
 
@@ -163,4 +166,14 @@ export const update = (
 	updater: (state: Draft<GlobalState>) => void | GlobalState | typeof nothing,
 ) => {
 	useGlobalState.setState(produce(updater));
+};
+
+export const useConnectedPlayers = (): Player[] => {
+	const players = useGlobalState(state => state.players);
+	const connectedPlayers = React.useMemo(
+		() => players.filter(({ isConnected }) => isConnected),
+		[players],
+	);
+
+	return connectedPlayers;
 };
