@@ -33,6 +33,7 @@ export const numberHolder = style({
 	justifyContent: 'center',
 	alignItems: 'center',
 	color: 'red',
+	fontFamily: 'monospace',
 });
 
 export const playerHolder = style({

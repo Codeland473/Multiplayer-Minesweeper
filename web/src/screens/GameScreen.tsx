@@ -40,7 +40,7 @@ const threeDigitNumber = (number: number): string => {
 	if (number >= 10) return '0' + number.toString();
 	if (number >= 0) return '00' + number.toString();
 	if (number >= -9) return '-0' + (-number).toString();
-	if (number >= -99) return (-number).toString();
+	if (number >= -99) return number.toString();
 	return '-99';
 };
 
