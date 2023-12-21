@@ -71,6 +71,7 @@ class Solver(var board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 				if (satisfied()) {
 					val startPos = xy(regionIds.indices.filter { regionIds[it] == region && board[it] == 0.toByte() }.random(r))
 					board.startPos = startPos
+					board.stats = BoardStats(calculate3BV(), diffSolves, bruteSolves)
 					return startPos
 				}
 			} while (bruteSolve())

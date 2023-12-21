@@ -7,6 +7,7 @@ import Settings
 import Team
 import TeamProgress
 import board.Board
+import board.BoardStats
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.text.toByteArray
@@ -122,5 +123,16 @@ class MessageBuffer(private val initialMax : Int = 1024) {
 	}
 	fun put(v : IntArray) {
 		for (value in v) put(value)
+	}
+	fun put(v : BoardStats?) {
+		if (v != null) {
+			put(v.tBV)
+			put(v.diffSolves)
+			put(v.bruteSolves)
+		} else {
+			put(-1)
+			put(-1)
+			put(-1)
+		}
 	}
 }

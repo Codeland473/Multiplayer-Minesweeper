@@ -202,6 +202,9 @@ class SessionHandler {
 			team.hasFinished = true
 			team.endTime = System.currentTimeMillis()
 			broadcast(Messages.teamFinish(team, team.endTime!!))
+			broadcast(Messages.boardStats(board!!.stats)) { it.team == team.id }
+		} else if (team.hasLost) {
+			broadcast(Messages.boardStats(board!!.stats)) { it.team == team.id }
 		}
 	}
 	suspend fun onSquareFlagMessage(sender : Gamer, message : ByteBuffer) {

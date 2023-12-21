@@ -72,6 +72,14 @@ otherwise it is the ID of the gamer that placed the flag. Negative values repres
 | Dependant | [Byte] | board                   |
 | Dependant | [Int]  | Flags (described above) |
 
+### BoardStats (12 bytes)
+
+| Size      | Type   | Description  |
+|-----------|--------|--------------|
+| 4         | Int    | 3BV          |
+| 4         | Int    | Diff solves  |
+| 4         | Int    | Brute solves |
+
 # Messages
 
 the first char/byte in any message should be an id for what kind of message it is, as shown below.
@@ -97,25 +105,26 @@ Client -> Server
 
 Server -> Client events
 
-| ID  | Type                                    |
-|-----|-----------------------------------------|
-| 1   | [Team Create](#Creating-a-Team)         |
-| 2   | [Team Remove](#Removing-a-Team)         |
-| 3   | [Gamer Name Update](#Changing-Names)    |
-| 4   | [Gamer Color Update](#Changing-Colors)  |
-| 5   | [Gamer Team Update](#Changing-Teams)    |
-| 6   | [Setting Update](#Changing-Settings)    |
-| 7   | [Game Start](#Starting-Game)            |
-| 8   | [Square Reveal](#Revealing-Squares)     |
-| 9   | [Square Flag](#Flagging-Squares)        |
-| 10  | [Cursor Update](#Cursor-Location)       |
-| 11  | [Team Name Update](#Changing-Team-Name) |
-| 12  | [Board Clear](#Ending-The-Game)         |
-| 50  | [Lobby State](#Lobby-State)             |
-| 51  | [Gamer Create](#Gamer-Joined)           |
-| 52  | [Gamer Remove](#Gamer-Left)             |
-| 53  | [Team Finish](#Team-Finished)           |
-| 54  | [Gamer Lost](#Gamer-Lost)               |
+| ID | Type                                    |
+|----|-----------------------------------------|
+| 1  | [Team Create](#Creating-a-Team)         |
+| 2  | [Team Remove](#Removing-a-Team)         |
+| 3  | [Gamer Name Update](#Changing-Names)    |
+| 4  | [Gamer Color Update](#Changing-Colors)  |
+| 5  | [Gamer Team Update](#Changing-Teams)    |
+| 6  | [Setting Update](#Changing-Settings)    |
+| 7  | [Game Start](#Starting-Game)            |
+| 8  | [Square Reveal](#Revealing-Squares)     |
+| 9  | [Square Flag](#Flagging-Squares)        |
+| 10 | [Cursor Update](#Cursor-Location)       |
+| 11 | [Team Name Update](#Changing-Team-Name) |
+| 12 | [Board Clear](#Ending-The-Game)         |
+| 50 | [Lobby State](#Lobby-State)             |
+| 51 | [Gamer Create](#Gamer-Joined)           |
+| 52 | [Gamer Remove](#Gamer-Left)             |
+| 53 | [Team Finish](#Team-Finished)           |
+| 54 | [Gamer Lost](#Gamer-Lost)               |
+| 55 | [Board Stats](#Board-Stats)             |
 
 ### Creating a Team
 
@@ -250,13 +259,13 @@ Settings are Listed below
 
 #### Server -> Client
 
-| Size      | Type     | Description                   |
-|-----------|----------|-------------------------------|
-| 1         | Byte     | Message type (Game Start: 7)  |
-| 4         | Int      | Sender ID                     |
-| 8         | Long     | Start time (Unix time millis) |
-| 8         | BoardPos | Start position                |
-| 22        | Settings | Game Settings                 |
+| Size | Type       | Description                                                |
+|------|------------|------------------------------------------------------------|
+| 1    | Byte       | Message type (Game Start: 7)                               |
+| 4    | Int        | Sender ID                                                  |
+| 8    | Long       | Start time (Unix time millis)                              |
+| 8    | BoardPos   | Start position                                             |
+| 22   | Settings   | Game Settings                                              |
 
 ### Revealing Squares
 
@@ -396,20 +405,21 @@ the server receives this, it will send back a [Lobby State](#Lobby-State) messag
 The team progresses will only show the state for the team the new gamer is on unless the gamer is on the spectator team,
 in which case the gamer will be given all the board states for each team in the same order as the team IDs.
 
-| Size      | Type             | Description                                                              |
-|-----------|------------------|--------------------------------------------------------------------------|
-| 1         | Byte             | Message type (Lobby State: 50)                                           |
-| 22        | Settings         | Settings                                                                 |
-| 4         | Int              | Number of gamers (g)                                                     |
-| 4         | Int              | Number of teams (t)                                                      |
-| 4         | Int              | ID of new gamer                                                          |
-| Dependant | [Gamer]          | Active gamers                                                            |
-| Dependant | [Team]           | Active teams                                                             |
-| 1         | Bool             | True if a game is going (if false, the rest of this message is not sent) |
-| 22        | Settings         | Current game settings                                                    |
-| 8         | Long             | Game start time                                                          |
-| 8         | BoardPos         | Start position                                                           |
-| Dependant | [TeamProgress]   | Each teams board progression                                             |
+| Size      | Type           | Description                                                              |
+|-----------|----------------|--------------------------------------------------------------------------|
+| 1         | Byte           | Message type (Lobby State: 50)                                           |
+| 22        | Settings       | Settings                                                                 |
+| 4         | Int            | Number of gamers (g)                                                     |
+| 4         | Int            | Number of teams (t)                                                      |
+| 4         | Int            | ID of new gamer                                                          |
+| Dependant | [Gamer]        | Active gamers                                                            |
+| Dependant | [Team]         | Active teams                                                             |
+| 1         | Bool           | True if a game is going (if false, the rest of this message is not sent) |
+| 22        | Settings       | Current game settings                                                    |
+| 8         | Long           | Game start time                                                          |
+| 8         | BoardPos       | Start position                                                           |
+| Dependant | [TeamProgress] | Each teams board progression                                             |
+| 12        | BoardStats     | Board stats (only sent to spectators                                     |
 
 ### Gamer Joined
 
@@ -445,3 +455,11 @@ handled by the client when they receive a square reveal message that has a mine 
 | 4    | Int  | ID of team that Lost          |
 | 8    | Long | Time the loss was processed   |
 
+### Board Stats
+
+When a team loses, stats become visible to the player about the board, they are listed here
+
+| Size | Type       | Description                    |
+|------|------------|--------------------------------|
+| 1    | Byte       | Message type (Board Stats: 55) |
+| 12   | BoardStats | statistics about the board     |

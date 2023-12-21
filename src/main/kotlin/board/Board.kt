@@ -13,6 +13,7 @@ import kotlin.random.Random as KRandom
 class Board(var width : Int, var height : Int, var mineCounts : ByteArray = ByteArray(width * height)) {
 	var startTime : Long = System.currentTimeMillis()
 	var startPos : Pair<Int, Int>? = null
+	var stats : BoardStats? = null
 
 	fun currentTime() : Float = (System.currentTimeMillis() - startTime).toFloat() / 1000f
 	fun resetTime(settings : Settings) {

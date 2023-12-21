@@ -12,6 +12,7 @@ import SETTING_UPDATE_RATE
 import Settings
 import Team
 import TeamProgress
+import board.BoardStats
 
 object Messages {
 	private val buffer = MessageBuffer()
@@ -140,6 +141,7 @@ object Messages {
 					if (team.progress == null) team.progress = TeamProgress(board)
 					put(team.progress!!, board)
 				}
+				put(board.stats)
 			}
 		} else {
 			put(false)
@@ -159,5 +161,9 @@ object Messages {
 		put(loser.id)
 		put(if (teamLost) loser.team else 0)
 		put(time)
+	}
+
+	fun boardStats(stats : BoardStats?) = message(55) {
+		put(stats)
 	}
 }
