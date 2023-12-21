@@ -177,6 +177,18 @@ class SessionHandler {
 		} else {
 			board!!.revealSquare(x, y, team.progress!!, updateFun)
 		}
+
+		val time = System.currentTimeMillis()
+
+		if (positions.any { (x, y) -> board!!.isMine(x, y) }) onMineClicked(sender, team, time)
+
+		if (team.hasLost) {
+			for (pos in board!!.mineCounts.indices) {
+				if (board!!.isMine(pos)) {
+					updateFun(pos % board!!.width, pos / board!!.width)
+				}
+			}
+		}
 		if (positions.isEmpty()) return
 		val rectWidth = maxRectX - minRectX + 1
 		val rectHeight = maxRectY - minRectY + 1
@@ -184,10 +196,6 @@ class SessionHandler {
 		val diffRect = ByteArray(rectWidth * rectHeight) { 10 }
 
 		positions.forEach { (modX, modY) -> diffRect[modX - minRectX + rectWidth * (modY - minRectY)] = board!![modX, modY] }
-
-		val time = System.currentTimeMillis()
-
-		if (diffRect.any { it == 9.toByte() }) onMineClicked(sender, team, time)
 
 		broadcast(Messages.squareReveal(sender, minRectX, minRectY, rectWidth, rectHeight, diffRect, time)) {it.team == sender.team || it.team == 0}
 		if (board!!.isCompleted(team.progress!!)) {
@@ -266,8 +274,8 @@ class SessionHandler {
 	}
 
 	suspend fun onMineClicked(gamer : Gamer, team : Team, time : Long) {
-		val teamHasLost = currentSettings.isAllForOne || gamers.all { it.team != gamer.team || it.hasLost }
 		gamer.hasLost = true
+		val teamHasLost = currentSettings.isAllForOne || gamers.all { it.team != gamer.team || it.hasLost }
 		if (teamHasLost) {
 			team.hasLost = true
 			team.endTime = time
