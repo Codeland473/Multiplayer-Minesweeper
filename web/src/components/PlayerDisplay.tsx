@@ -37,7 +37,7 @@ export const PlayerDisplay = ({
 						className={PlayerStyle.playerIcon}
 						style={style}
 						name={
-							isConnected
+							!isConnected
 								? 'wifi_off'
 								: isAlive
 								? 'person'
