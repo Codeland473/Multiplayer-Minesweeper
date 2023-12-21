@@ -9,6 +9,7 @@ export type PlayerDisplayProps = AllOrNothing<{
 	name: string;
 	isSelf: boolean;
 	isAlive: boolean;
+	isConnected: boolean;
 	onClick?: () => void;
 }>;
 
@@ -17,6 +18,7 @@ export const PlayerDisplay = ({
 	name,
 	isSelf,
 	isAlive,
+	isConnected,
 	onClick,
 }: PlayerDisplayProps) => {
 	const style = React.useMemo<React.CSSProperties>(
@@ -34,7 +36,13 @@ export const PlayerDisplay = ({
 					<Icon
 						className={PlayerStyle.playerIcon}
 						style={style}
-						name={isAlive ? 'person' : 'skull'}
+						name={
+							isConnected
+								? 'wifi_off'
+								: isAlive
+								? 'person'
+								: 'skull'
+						}
 						weight={isSelf ? 'fill' : 'outline'}
 					/>
 				)}

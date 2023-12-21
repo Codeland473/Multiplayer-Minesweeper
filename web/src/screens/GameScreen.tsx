@@ -4,7 +4,6 @@ import {
 	StartingPosition,
 	TeamData,
 	update,
-	useConnectedPlayers,
 	useGlobalState,
 } from '../global-state.js';
 import { BoardComponent } from '../components/BoardComponent.js';
@@ -61,7 +60,7 @@ const Game = ({
 	playerId: number | undefined;
 	gameSeconds: number;
 }) => {
-	const players = useConnectedPlayers();
+	const players = useGlobalState(state => state.players);
 	const playerDatas = useGlobalState(state => state.game!.playerDatas);
 
 	const teamPlayers = players.filter(player => player.teamId === teamId);
@@ -134,13 +133,14 @@ const Game = ({
 						: '???'}
 				</div>
 				<div className={style.playerHolder}>
-					{teamPlayers.map(({ color, id, name }) => (
+					{teamPlayers.map(({ color, id, name, isConnected }) => (
 						<PlayerDisplay
 							color={color}
 							isAlive={playerDatas[id].isAlive}
 							isSelf={id === playerId}
 							name={name}
 							key={id}
+							isConnected={isConnected}
 						/>
 					))}
 				</div>
@@ -179,7 +179,7 @@ const calcGameSeconds = (baseTime: number, now: number) => {
 export const GameScreen = () => {
 	const game = useGlobalState(state => state.game)!;
 	const selfPlayerId = useGlobalState(state => state.selfPlayerId);
-	const players = useConnectedPlayers();
+	const players = useGlobalState(state => state.players);
 
 	const selfTeamId = players.find(({ id }) => id === selfPlayerId)?.teamId;
 

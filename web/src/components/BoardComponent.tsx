@@ -129,45 +129,30 @@ type TileProps = {
 	x: number;
 	y: number;
 	value: number;
-	revealed: boolean;
 	flagColor: string | undefined;
 	isPencil: boolean;
-	showMines: boolean;
 	isStarting: boolean;
 };
 
-const Tile = ({
-	x,
-	y,
-	value,
-	revealed,
-	flagColor,
-	isPencil,
-	showMines,
-	isStarting,
-}: TileProps) => {
-	if (revealed) {
-		return value === 9 ? (
-			<Mine x={x} y={y} />
-		) : isMineCount(value) ? (
-			<text x={x + 8} y={y + 8} className={BoardStyle.number[value]}>
-				{value}
-			</text>
-		) : null;
-	} else {
-		return (
-			<>
-				<Covered x={x} y={y} />
-				{showMines && value === 9 ? (
-					<Mine x={x} y={y} />
-				) : flagColor !== undefined ? (
-					<Flag color={flagColor} x={x} y={y} isPencil={isPencil} />
-				) : !revealed && isStarting ? (
-					<StartingMarker x={x} y={y} />
-				) : null}
-			</>
-		);
-	}
+const Tile = ({ x, y, value, flagColor, isPencil, isStarting }: TileProps) => {
+	const isCovered = value === 10;
+
+	return (
+		<>
+			{isCovered ? <Covered x={x} y={y} /> : null}
+			{value === 9 ? (
+				<Mine x={x} y={y} />
+			) : isMineCount(value) ? (
+				<text x={x + 8} y={y + 8} className={BoardStyle.number[value]}>
+					{value}
+				</text>
+			) : flagColor !== undefined ? (
+				<Flag color={flagColor} x={x} y={y} isPencil={isPencil} />
+			) : isCovered && isStarting ? (
+				<StartingMarker x={x} y={y} />
+			) : null}
+		</>
+	);
 };
 
 const GridLines = ({ width, height }: { width: number; height: number }) => {
@@ -293,14 +278,18 @@ export const BoardComponent = ({
 			{board.map((value, index) => {
 				const x = index % width;
 				const y = Math.floor(index / width);
+				const flagPlayerId =
+					flags[index] === 0 ? undefined : Math.abs(flags[index]);
 
 				return (
 					<Tile
 						key={index}
-						flagColor={flagColors[flags[index]]}
+						flagColor={
+							flagPlayerId === undefined
+								? undefined
+								: flagColors[flagPlayerId]
+						}
 						isPencil={flags[index] < 0}
-						revealed={board[index] !== 10}
-						showMines={showMines}
 						value={value}
 						x={x * 16}
 						y={y * 16}

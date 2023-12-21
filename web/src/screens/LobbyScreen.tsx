@@ -282,6 +282,7 @@ export const LobbyScreen = () => {
 										name={player.name}
 										isAlive={true}
 										isSelf={player.id === selfPlayerId}
+										isConnected={player.isConnected}
 									/>
 								))
 							);
