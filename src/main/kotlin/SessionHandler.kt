@@ -1,5 +1,6 @@
 import board.Board
 import board.Solver
+import io.ktor.http.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.delay
@@ -286,5 +287,62 @@ class SessionHandler {
 		}
 
 		broadcast(Messages.gamerLost(gamer, teamHasLost, time)) {it.team != gamer.team && it.team != 0}
+	}
+
+	suspend fun onSettingsFormUpdate(parameters : Parameters) {
+		for ((param, value) in parameters.entries()) {
+			if (value.isEmpty()) continue
+			if (value[0].isEmpty()) continue
+			val v = value[0]
+			when (param) {
+				"board_width" -> {v.toIntOrNull()?.let { if (it >= 3) {
+					settings.boardWidth = it
+					if (gamers.size > 0) {
+						broadcast(Messages.settingUpdate(SETTING_BOARD_SIZE, gamers.first().id, settings))
+					}
+				}}}
+				"board_height" -> {v.toIntOrNull()?.let { if (it >= 3) {
+					settings.boardHeight = it
+					if (gamers.size > 0) {
+						broadcast(Messages.settingUpdate(SETTING_BOARD_SIZE, gamers.first().id, settings))
+					}
+				}}}
+				"mine_count" -> {v.toIntOrNull()?.let { if (it > 0) {
+					settings.mineCount = it
+					if (gamers.size > 0) {
+						broadcast(Messages.settingUpdate(SETTING_MINE_COUNT, gamers.first().id, settings))
+					}
+				}}}
+				"countdown_length" -> {v.toIntOrNull()?.let { if (it >= 0) {
+					settings.countdownLength = it
+					if (gamers.size > 0) {
+						broadcast(Messages.settingUpdate(SETTING_COUNTDOWN_LENGTH, gamers.first().id, settings))
+					}
+				}}}
+				"no_guessing" -> {
+					val nv = v.lowercase().startsWith("t")
+					settings.isNoGuessing = nv
+					if (gamers.size > 0) {
+						broadcast(Messages.settingUpdate(SETTING_IS_NO_GUESSING, gamers.first().id, settings))
+					}
+				}
+				"all_for_one" -> {
+					val nv = v.lowercase().startsWith("t")
+					settings.isAllForOne = nv
+					if (gamers.size > 0) {
+						broadcast(Messages.settingUpdate(SETTING_IS_ALL_FOR_ONE, gamers.first().id, settings))
+					}
+				}
+				"flag_protection_time" -> {v.toIntOrNull()?.let { if (it >= 0) settings.flagProtectionTime = it }}
+				"diff_solve_requirement" -> {v.toIntOrNull()?.let { if (it >= 0) settings.diffSolveRequirement = it }}
+				"brute_solve_requirement" -> {v.toIntOrNull()?.let { if (it >= 0) settings.flagProtectionTime = it }}
+				"cursor_update_rate" -> {v.toIntOrNull()?.let { if (it > 0) {
+					settings.cursorUpdateRate = it
+					if (gamers.size > 0) {
+						broadcast(Messages.settingUpdate(SETTING_UPDATE_RATE, gamers.first().id, settings))
+					}
+				}}}
+			}
+		}
 	}
 }

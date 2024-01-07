@@ -1,3 +1,5 @@
+import kotlinx.html.*
+
 class Settings {
 	var cursorUpdateRate : Int = 20
 	var isNoGuessing : Boolean = true
@@ -21,7 +23,52 @@ class Settings {
 		r.boardHeight = boardHeight
 		r.mineCount = mineCount
 		r.countdownLength = countdownLength
+
+		r.flagProtectionTime = flagProtectionTime
+
+		r.diffSolveRequirement = diffSolveRequirement
+		r.bruteSolveRequirement = bruteSolveRequirement
 		return r
+	}
+}
+
+fun HTML.settingsForm(currentValues : Settings) {
+	body {
+		form {
+			action = "/settings"
+			method = FormMethod.post
+			val setting = {settingName : String, currentValue : Any ->
+				val programName = settingName.replace(" ", "_").lowercase()
+				label {
+					attributes["for"] = programName
+					text("$settingName: ($currentValue)")
+				}
+				br()
+				input(InputType.text) {
+					name = programName
+					id = programName
+					value = "$currentValue"
+					placeholder = "$currentValue"
+				}
+				br()
+				br()
+			}
+
+			setting("Board Width", currentValues.boardWidth)
+			setting("Board Height", currentValues.boardHeight)
+			setting("Mine Count", currentValues.mineCount)
+			setting("Countdown Length", currentValues.countdownLength)
+			setting("No Guessing", currentValues.isNoGuessing)
+			setting("All For One", currentValues.isAllForOne)
+			setting("Flag Protection Time", currentValues.flagProtectionTime)
+			setting("Diff Solve Requirement", currentValues.diffSolveRequirement)
+			setting("Brute Solve Requirement", currentValues.bruteSolveRequirement)
+			setting("Cursor Update Rate", currentValues.cursorUpdateRate)
+
+			input(InputType.submit) {
+				value = "update settings"
+			}
+		}
 	}
 }
 

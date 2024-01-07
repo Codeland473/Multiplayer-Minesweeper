@@ -21,6 +21,7 @@ dependencies {
 	implementation("io.ktor:ktor-server-core-jvm")
 	implementation("io.ktor:ktor-server-websockets-jvm")
 	implementation("io.ktor:ktor-server-netty-jvm")
+	implementation("io.ktor:ktor-server-html-builder")
 	implementation("org.slf4j", "slf4j-nop", "1.7.36")
 
 }

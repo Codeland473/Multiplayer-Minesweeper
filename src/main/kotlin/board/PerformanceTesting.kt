@@ -16,7 +16,7 @@ fun<T> time(f : () -> T) : Pair<Float, T> {
 fun main() {
 	//genBoards(32, 32, 300, 100)
 
-	val boardStrs = arrayOf(
+	/*val boardStrs = arrayOf(
 		/*"""
 			--x-----xx
 			-xxx-xxx--
@@ -107,7 +107,7 @@ fun main() {
 			x-----x------------x-x-x-xx---
 			--x--x------x----x-xx---x-x---
 		"""
-	).map{it.filter { it in "-x" }}
+	).map{it.filter { it in "-x" }}*/
 
 	/*for (boardStr in boardStrs) {
 		val board = Board(30, 15, boardStr.map { (if (it == 'x') 9 else 0).toByte() }.toByteArray())
@@ -118,121 +118,60 @@ fun main() {
 	*/
 	//val solvableBoards = BoardBuffer("boards/evilSolvable.bds")
 
-	val r = Random(0)
-	val n = 100000
-	val boards = Array(n) {
-		val b = Board(30, 20)
-		b.generateBoard(130, false, r)
-		b
-	}
+	val perfSummaryFile = File("docs/performanceSummary30x20.csv").bufferedWriter()
 
-	var totalT = 0f
+	perfSummaryFile.write("Mine Count, Density, N, " +
+			"Time Min, Time Q1, Time Median, Time Q3, Time Max, Time Mean, " +
+			"3BV Min, 3BV Q1, 3BV Median, 3BV Median, 3BV Max, 3BV Mean, " +
+			"Diff Solves Min, Diff Solves Q1, Diff Solves Median, Diff Solves Q3, Diff Solves Max, Diff Solves Mean, " +
+			"Brute Solves Min, Brute Solves Q1, Brute Solves Median, Brute Solves Q3, Brute Solves Max, Brute Solves Mean\n")
 
-	var totalSolvable = 0
+	val width = 30
+	val height = 20
+	var mineCount = 30
+	var n = 10000
+	do {
+		val times = Array(n) {0f}
+		val tbvs = Array(n) {0}
+		val diffSolves = Array(n) {0}
+		val bruteSolves = Array(n) {0}
 
-	var maxT = 0f
-
-
-	//val (avg, min, q1, med, q3, max) = measurePerformance(1, 1000, 30, 20, 130)
-//16304
-	//println("$min, $q1, $med, $q3, $max, $avg")
-	//val evilBoards = BoardBuffer(30, 20)
-	//val priceyBoards = BoardBuffer(30, 20)
-	val ng3bvs = ArrayList<Int>()
-	val trivials = ArrayList<Int>()
-	val diffs = ArrayList<Int>()
-	val brutes = ArrayList<Int>()
-	val guessing3bvs = ArrayList<Int>()
-	
-	for (i in 0 until n) {
-		//s.watchSolve(boards[i])
-		val s = Solver(boards[i], Random(0))
-
-		val (t, isSolvable) = time {s.solve() != null}
-		maxT = max(t, maxT)
-		totalT += t
-		//if (t > 1) {
-			//println("board[$i] isSolvable $isSolvable found in $t s")
-			//priceyBoards += boards[i]
-		//}
-		if (isSolvable) {
-			trivials.add(s.trivialSolves)
-			diffs.add(s.diffSolves)
-			brutes.add(s.bruteSolves)
-			ng3bvs += s.calculate3BV()
-			++totalSolvable
-			//evilBoards += boards[i]
-		} else {
-			guessing3bvs += s.calculate3BV()
+		measurePerformance(1, n, width, height, mineCount, 0L) {board, time, i ->
+			times[i] = time
+			tbvs[i] = board.stats!!.tBV
+			diffSolves[i] = board.stats!!.diffSolves
+			bruteSolves[i] = board.stats!!.bruteSolves
 		}
-		/*if (i - lastPrintedI >= 1000) {
-			println("nothing new in last 1000 boards, current board : #$i, current average : ${totalT / i}")
-			lastPrintedI = i
-		}*/
-	}
-
-	println("$totalSolvable / $n solvable avg ${totalT / n}, max time spend on one: $maxT")
-
-	//File("boards/evilSolvable.bds").writeBytes(evilBoards.internalBuffer.array())
-	//File("boards/evilPricey.bds").writeBytes(priceyBoards.internalBuffer.array())
-
-	println("ng 3bvs: ${NumberSummary(ng3bvs)}")
-	println("ge 3bvs: ${NumberSummary(guessing3bvs)}")
-	println("ng trivial solves: ${NumberSummary(trivials)}")
-	println("ng diff    solves: ${NumberSummary(diffs)}")
-	println("ng brute   solves: ${NumberSummary(brutes)}")
-
-	val boardsOfInterest = arrayOf(
-		63, // : 1.6s
-		371, // : 285s
-		1039, // : 15.6s
-		1577, // : 7.4s
-		1893, // : 153s
-		2630, // : 66.8s
-		3517, // : 39.3s
-		6047, // : 1528
-		56725, // : 9049s
-		72767, // : 3336s
-	)
-
-	/*for (boardI in boardsOfInterest) {
-		val s = Solver(boards[boardI], Random(0))
-
-		val (t, isSolvable) = time {s.solve() != null}
-		println("board[$boardI] isSolvable $isSolvable found in $t s")
-
-	}*/
-	/*
-	63 : 1.6s
-	371 : 285s
-	1039 : 15.6s
-	1577 : 7.4s
-	1893 : 153s
-	2630 : 66.8s
-	3517 : 39.3s
-	6047 : 1528
-	56725 : 9049s
-	72767 : 3336s
-
-	24810 : solvable
-	*/
-
-	//val f = File("docs/brutePerformance.csv").bufferedWriter()
-	//f.write("front size, time (seconds), progress\n")
-	//for ((frontSize, speed, progress) in bruteEvalPerformancePairs) {
-	//	f.write("$frontSize, $speed, $progress\n")
-	//}
-	//f.flush()
-	//f.close()
-
-
-	/*do {
-		val (avg, min, q1, med, q3, max) = measurePerformance(1, 5, width, height, mineCount)
 		val density = mineCount.toFloat() / (width * height).toFloat()
-		println("$mineCount, $density, $min, $q1, $med, $q3, $max, $avg")
+		val timeNS = NumberSummary(times)
+		val tbvNS = NumberSummary(tbvs)
+		val diffNS = NumberSummary(diffSolves)
+		val bruteNS = NumberSummary(bruteSolves)
+		perfSummaryFile.write("$mineCount, $density, $n, ${timeNS.csvString()}, ${tbvNS.csvString()}, ${diffNS.csvString()}, ${bruteNS.csvString()}\n")
+		perfSummaryFile.flush()
+		println("""
+			
+			
+------------------------------------------------------------------------------------------------------------------------
+			Finished Measuring performance for $mineCount mines
+			
+			Density: $density
+			N: $n
+			
+			Statistic summaries:
+			Time         : $timeNS
+			3BV          : $tbvNS
+			Diff Solves  : $diffNS
+			Brute Solves : $bruteNS
+		""".trimIndent())
+
+		while (n > 100 && timeNS.average * n > 60 * 5) {
+			n -= 100
+		}
+
 		++mineCount
 
-	} while (q3 < 0)*/
+	} while (timeNS.average < 60)
 }
 
 fun Solver.solveMeasuringTime(b : Board) : Pair<Int, Int>? {
@@ -384,6 +323,15 @@ data class NumberSummary(val average : Double, val min : Float, val q1 : Float, 
 		ns.maxOf { it.toFloat() }
 	)
 
+	constructor(ns : Array<Int>) : this(
+		ns.sumOf { it.toDouble() } / ns.size,
+		ns.minOf { it.toFloat() },
+		ns.sortedBy { it.toFloat() }[ns.size / 4].toFloat(),
+		ns.sortedBy { it.toFloat() }[ns.size / 2].toFloat(),
+		ns.sortedBy { it.toFloat() }[3 * ns.size / 4].toFloat(),
+		ns.maxOf { it.toFloat() }
+	)
+
 	constructor(ns : Array<Float>) : this(
 		ns.sumOf { it.toDouble() } / ns.size,
 		ns.minOf { it },
@@ -396,6 +344,10 @@ data class NumberSummary(val average : Double, val min : Float, val q1 : Float, 
 	override fun toString(): String {
 		return "($min, $q1, $median, $q3, $max), μ: $average"
 	}
+
+	fun csvString() : String {
+		return "$min, $q1, $median, $q3, $max, $average"
+	}
 }
 
 fun measurePerformance(
@@ -404,33 +356,33 @@ fun measurePerformance(
 	width : Int = 30,
 	height : Int = 20,
 	mineCount : Int = 130,
-	seed : Long = 0L) : NumberSummary
+	seed : Long = 0L, f : (Board, Float, Int) -> Unit)
 {
 	//val r = KRandom(seed)
-	val timings = Array(repetitions) {
+	repeat(repetitions) {
 		val r = Random(seed + it)
 		if (threads > 1) {
-			val (t, _) = time {
-				val (board, startPos) = Solver.generateBoardMultithreaded(width, height, mineCount, 0, 0, r, threads)
-				//println(board.printableStr())
+			val (t, board) = time {
+				val (board, _) = Solver.generateBoardMultithreaded(width, height, mineCount, 0, 0, r, threads)
+				board
 			}
-			t
+			f(board, t, it)
 		} else if (threads == 1) {
-			val (t, _) = time {
+			val (t, board) = time {
 				val board = Board(width, height)
 				board.generateBoard(mineCount, true, r)
 				//println(board.printableStr())
+				board
 			}
-			t
+			f(board, t, it)
 		} else {
-			val (t, _) = time {
-				val (board, startPos) = Solver.generateBoard(width, height, mineCount, 0, 0, r)
+			val (t, board) = time {
+				val (board, _) = Solver.generateBoard(width, height, mineCount, 0, 0, r)
+				board
 			}
-			t
+			f(board, t, it)
 		}
 	}
-
-	return NumberSummary(timings)
 }
 
 

@@ -1,8 +1,11 @@
 import io.ktor.server.application.*
+import io.ktor.server.html.*
 import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
+import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
+import kotlinx.html.*
 import java.io.File
 import java.nio.ByteOrder
 import java.time.Duration
@@ -12,8 +15,17 @@ fun main(args : Array<String>) {
 }
 
 fun Application.module() {
+	val handler  = SessionHandler()
 	routing {
 		staticFiles("/", File("run/page"))
+		get("/settings") {
+			call.respondHtml {
+				settingsForm(handler.settings)
+			}
+		}
+		post("/settings") {
+			handler.onSettingsFormUpdate(call.receiveParameters())
+		}
 	}
 	install(WebSockets) {
 		pingPeriod = Duration.ofSeconds(15)
@@ -21,7 +33,6 @@ fun Application.module() {
 		maxFrameSize = Long.MAX_VALUE
 		masking = false
 	}
-	val handler  = SessionHandler()
 	routing {
 		webSocket("/") {
 			println("Gamer connected")
