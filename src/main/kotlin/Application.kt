@@ -25,6 +25,7 @@ fun Application.module() {
 		}
 		post("/settings") {
 			handler.onSettingsFormUpdate(call.receiveParameters())
+			call.respondHtml { settingsForm(handler.settings) }
 		}
 	}
 	install(WebSockets) {
