@@ -118,7 +118,24 @@ fun main() {
 	*/
 	//val solvableBoards = BoardBuffer("boards/evilSolvable.bds")
 
-	val perfSummaryFile = File("docs/performanceSummary30x20.csv").bufferedWriter()
+	val boardStr = """
+		--x-----xx
+		-x--------
+		---x------
+		-x--------
+		--x--x----
+		-x----x---
+		-----x----
+		--x-----x-
+		----------
+		-x--x-----
+	""".filter { it in "-x" }
+	val board = Board(10, 10, boardStr.map { (if (it == 'x') 9 else 0).toByte() }.toByteArray())
+	board.setMinecounts()
+	println(board.printableStr())
+	println(Solver(board).solve())
+
+	/*val perfSummaryFile = File("docs/performanceSummary30x20.csv").bufferedWriter()
 
 	perfSummaryFile.write("Mine Count, Density, N, " +
 			"Time Min, Time Q1, Time Median, Time Q3, Time Max, Time Mean, " +
@@ -171,7 +188,7 @@ fun main() {
 
 		++mineCount
 
-	} while (timeNS.average < 60)
+	} while (timeNS.average < 60)*/
 }
 
 fun Solver.solveMeasuringTime(b : Board) : Pair<Int, Int>? {

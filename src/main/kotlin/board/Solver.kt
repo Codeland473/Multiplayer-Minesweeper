@@ -15,7 +15,7 @@ class Solver(var board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 	val regionIds = IntArray(board.width * board.height) {-1}
 	var regionsVisited = Array(0) {false}
 	val squares = Array(board.width * board.height) { FrontSquare(it % board.width, it / board.width, board[it]) }
-	val totalMines = board.mineCounts.count { it == 9.toByte() }
+	var totalMines = board.mineCounts.count { it == 9.toByte() }
 
 	var numFlags = 0
 	var numPencilFlags = 0
@@ -320,6 +320,11 @@ class Solver(var board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 			}
 		}
 		if (minPencilFlags + numFlags == totalMines && numUnknown > 0) {
+			val actualTotalMines = totalMines
+			totalMines = minPencilFlags + numFlags - 1
+			val hasFeasibleSolution = feasable() && bruteStep(squares.filter { it.knowledgeState == KnowledgeState.FRONT })
+			totalMines = actualTotalMines
+			if (hasFeasibleSolution) return false
 			squares.forEach { if (it.knowledgeState == KnowledgeState.UNKNOWN) {
 				--numUnknown
 				revealSquare(it.x, it.y)
@@ -330,16 +335,16 @@ class Solver(var board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 		return false
 	}
 
-	fun bruteSolveSegmentWrap(front : List<FrontSquare>) : Int? {
+	fun bruteSolveSegmentWrap(front : List<FrontSquare>, pencil : Boolean = false) : Int? {
 		return if (front.size > 50) {
 			//printFrontSegments()
-			val (t, r) = time { bruteSolveSegment(front) }
+			val (t, r) = time { bruteSolveSegment(front, pencil) }
 			//println("large segment of size ${front.size} computed as $r in $t s")
 			r
-		} else bruteSolveSegment(front)
+		} else bruteSolveSegment(front, pencil)
 	}
 
-	fun bruteSolveSegment(front : List<FrontSquare>) : Int? {
+	fun bruteSolveSegment(front : List<FrontSquare>, pencil : Boolean = false) : Int? {
 		var minPencilFlags : Int = front.count { it.mineShownPossible }
 		for (i in front.indices) {
 			val fSquare = front[i]
@@ -354,6 +359,7 @@ class Solver(var board : Board, val r : KRandom = JRandom().asKotlinRandom()) {
 			if (!feasable() || !bruteStep(front)) {
 				front.forEach { it.resetPencil(board[it.x, it.y]) }
 				numPencilFlags = 0
+				if (pencil) return null
 				if (board.isMine(fSquare.x, fSquare.y)) flagSquare(fSquare.x, fSquare.y) else revealSquare(fSquare.x, fSquare.y)
 				return null
 			} else {
