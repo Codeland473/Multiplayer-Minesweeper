@@ -132,14 +132,16 @@ type TileProps = {
 	flagColor: string | undefined;
 	isPencil: boolean;
 	isStarting: boolean;
+	isHovered: boolean;
 };
 
-const Tile = ({ x, y, value, flagColor, isPencil, isStarting }: TileProps) => {
+const Tile = ({ x, y, value, flagColor, isPencil, isStarting, isHovered }: TileProps) => {
 	const isCovered = value === 10;
+	const shouldIndent = isCovered && isHovered && flagColor === undefined;
 
 	return (
 		<>
-			{isCovered ? <Covered x={x} y={y} /> : null}
+			{isCovered && !shouldIndent ? <Covered x={x} y={y} /> : null}
 			{value === 9 ? (
 				<Mine x={x} y={y} />
 			) : isMineCount(value) ? (
@@ -207,6 +209,8 @@ export const BoardComponent = ({
 	const { board, flags } = teamData;
 	const { width, height } = gameSettings;
 
+	const [hoverTarget, setHoverTarget] = React.useState<[number, number] | undefined>(undefined);
+
 	const flagColors = React.useMemo(
 		() =>
 			Object.assign(
@@ -218,6 +222,38 @@ export const BoardComponent = ({
 		[players],
 	);
 
+	const getBoardCoordinates = (event: React.MouseEvent) => {
+		const rect = event.currentTarget.getBoundingClientRect();
+
+		const rectRatio = rect.width / rect.height;
+		const boardRatio = width / height;
+
+		let offX = 0;
+		let offY = 0;
+		let displayWidth = 0;
+		let displayHeight = 0;
+
+		if (rectRatio > boardRatio) {
+			offY = 0;
+			displayHeight = rect.height;
+			displayWidth = displayHeight * boardRatio;
+			offX = (rect.width - displayWidth) / 2;
+		} else {
+			offX = 0;
+			displayWidth = rect.width;
+			displayHeight = displayWidth * (1 / boardRatio);
+			offY = (rect.height - displayHeight) / 2;
+		}
+
+		const x = Math.floor(
+			((event.clientX - rect.x - offX) / displayWidth) * width,
+		);
+		const y = Math.floor(
+			((event.clientY - rect.y - offY) / displayHeight) * height,
+		);
+		return {x, y};
+	}
+
 	const onClickSVG = React.useCallback(
 		(event: React.MouseEvent) => {
 			event.preventDefault();
@@ -225,52 +261,39 @@ export const BoardComponent = ({
 
 			if (event.button < 0 || event.button > 2) return;
 
-			const rect = event.currentTarget.getBoundingClientRect();
-
-			const rectRatio = rect.width / rect.height;
-			const boardRatio = width / height;
-
-			let offX = 0;
-			let offY = 0;
-			let displayWidth = 0;
-			let displayHeight = 0;
-
-			if (rectRatio > boardRatio) {
-				offY = 0;
-				displayHeight = rect.height;
-				displayWidth = displayHeight * boardRatio;
-				offX = (rect.width - displayWidth) / 2;
-			} else {
-				offX = 0;
-				displayWidth = rect.width;
-				displayHeight = displayWidth * (1 / boardRatio);
-				offY = (rect.height - displayHeight) / 2;
-			}
-
-			const x = Math.floor(
-				((event.clientX - rect.x - offX) / displayWidth) * width,
-			);
-			const y = Math.floor(
-				((event.clientY - rect.y - offY) / displayHeight) * height,
-			);
+			const {x, y} = getBoardCoordinates(event);
 
 			if (x < 0 || x >= width || y < 0 || y >= height) return;
 
 			onClick(x, y, event.button);
 		},
-		[height, onClick, width],
+		[onClick, width, height],
 	);
+
+	const onMouseMoveEventSVG = React.useCallback((event: React.MouseEvent) => {
+		const leftButtonDown = (event.buttons & 1) > 0
+		const {x, y} = getBoardCoordinates(event);
+		
+		if (!leftButtonDown || x < 0 || x >= width || y < 0 || y >= height) {
+			setHoverTarget(undefined);
+		} else {
+			setHoverTarget([x, y]);
+		}
+
+	}, [width, height])
 
 	const preventer = React.useCallback((event: React.MouseEvent) => {
 		event.preventDefault();
 		event.stopPropagation();
 	}, []);
-
 	return (
 		<svg
 			onClick={onClickSVG}
 			onContextMenu={preventer}
 			onAuxClick={onClickSVG}
+			onMouseMove={onMouseMoveEventSVG}
+			onMouseDown={onMouseMoveEventSVG}
+			onMouseUp={onMouseMoveEventSVG}
 			viewBox={`0 0 ${width * 16} ${height * 16}`}
 			className={BoardStyle.svg}
 		>
@@ -281,6 +304,9 @@ export const BoardComponent = ({
 				const flagPlayerId =
 					flags[index] === 0 ? undefined : Math.abs(flags[index]);
 
+				const [hoverX, hoverY] = hoverTarget === undefined ? [-2, -2] : hoverTarget
+				const isHovered = (x == hoverX && y == hoverY) ||
+					(board[hoverY * width + hoverX] != 10 && Math.abs(x - hoverX) <= 1 && Math.abs(y - hoverY) <= 1)
 				return (
 					<Tile
 						key={index}
@@ -298,6 +324,7 @@ export const BoardComponent = ({
 							x === startingPosition[0] &&
 							y === startingPosition[1]
 						}
+						isHovered={isHovered}
 					/>
 				);
 			})}
