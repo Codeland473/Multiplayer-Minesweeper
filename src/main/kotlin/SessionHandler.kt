@@ -340,7 +340,7 @@ class SessionHandler {
 				}
 				"flag_protection_time" -> {v.toIntOrNull()?.let { if (it >= 0) settings.flagProtectionTime = it }}
 				"diff_solve_requirement" -> {v.toIntOrNull()?.let { if (it >= 0) settings.diffSolveRequirement = it }}
-				"brute_solve_requirement" -> {v.toIntOrNull()?.let { if (it >= 0) settings.flagProtectionTime = it }}
+				"brute_solve_requirement" -> {v.toIntOrNull()?.let { if (it >= 0) settings.bruteSolveRequirement = it }}
 				"cursor_update_rate" -> {v.toIntOrNull()?.let { if (it > 0) {
 					settings.cursorUpdateRate = it
 					if (gamers.size > 0) {
