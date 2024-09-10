@@ -13,6 +13,7 @@ import {
 	Team,
 	HiddenTeamData,
 	TeamProgress,
+	BoardStats,
 	useGlobalState,
 	Color,
 } from '../global-state.js';
@@ -97,6 +98,14 @@ export namespace Receiver {
 			flags,
 		};
 	};
+
+	const readBoardStats = (reader: Data.Reader) : BoardStats => {
+		return {
+			tBV: reader.getInt(),
+			diffSolves: reader.getInt(),
+			bruteSolves: reader.getInt(),
+		};
+	}
 
 	const findTeamIndex = (state: Draft<GlobalState>, teamId: number) => {
 		const { teams } = imm(state);
@@ -380,6 +389,7 @@ export namespace Receiver {
 							};
 						},
 					),
+					boardStats: undefined
 				};
 			}
 		});
@@ -472,6 +482,7 @@ export namespace Receiver {
 				),
 				settings,
 				startTime,
+				boardStats: undefined
 			};
 			draftState.gameSettings = settings;
 		});
@@ -566,7 +577,22 @@ export namespace Receiver {
 
 		update(draftState => {
 			if (draftState.game === undefined) return;
-			draftState.game.cursors = cursors;
+			draftState.game.cursors = draftState.game.cursors.map((cursor) => {
+				const newCursor = cursors.find((c) => {
+					return c.playerId == cursor.playerId;
+				});
+				if (newCursor !== undefined) {
+					return newCursor;
+				} else {
+					return cursor;
+				}
+			});
+			for (const cursor of cursors) {
+				if (cursor.playerId == draftState.selfPlayerId) continue;
+				if (!draftState.game.cursors.some((c) => {return c.playerId == cursor.playerId})) {
+					draftState.game.cursors.push(cursor);
+				}
+			}
 		});
 	});
 
@@ -625,23 +651,13 @@ export namespace Receiver {
 		});
 	});
 
-	Socket.registerReceiver(ReceiveCode.TEAM_LOSE, reader => {
-		const _clickPlayerId = reader.getInt();
-		const teamId = reader.getInt();
-		const loseTime = reader.getLong();
+	Socket.registerReceiver(ReceiveCode.BOARD_STATS, reader => {
+		const stats = readBoardStats(reader);
 
 		update(draftState => {
 			if (draftState.game === undefined) return;
 
-			const teamData = draftState.game.teamDatas[teamId];
-			teamData.isAlive = false;
-			teamData.finishTime = loseTime;
-
-			for (const player of imm(draftState.players)) {
-				if (player.teamId === teamId) {
-					draftState.game.playerDatas[player.id].isAlive = false;
-				}
-			}
+			draftState.game.boardStats = stats;
 		});
 	});
 

@@ -5,6 +5,7 @@ import {
 	Player,
 	ShownTeamData,
 	StartingPosition,
+	Cursor,
 } from '../global-state.js';
 import { rgbToHex } from '../util.js';
 
@@ -120,6 +121,19 @@ const Mine = ({ x, y }: { x: number; y: number }) => {
 	);
 };
 
+const CursorSVG = ({ x, y, color } : { x: number; y: number, color: string }) => {
+	return (
+		<>
+			<circle
+				cx={x * 16.0}
+				cy={y * 16.0}
+				fill={color}
+				r="2"
+			/>
+		</>
+	)
+}
+
 type MineCount = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 const isMineCount = (number: number): number is MineCount => {
 	return number >= 1 && number <= 8;
@@ -195,7 +209,9 @@ export type BoardProps = {
 	startingPosition: StartingPosition | undefined;
 	showMines: boolean;
 	players: readonly Player[];
+	cursors: readonly Cursor[];
 	onClick: (x: number, y: number, button: number) => void;
+	onMouseMove: (x: number, y: number) => void;
 };
 
 export const BoardComponent = ({
@@ -204,7 +220,9 @@ export const BoardComponent = ({
 	teamData,
 	showMines,
 	players,
+	cursors,
 	onClick,
+	onMouseMove,
 }: BoardProps) => {
 	const { board, flags } = teamData;
 	const { width, height } = gameSettings;
@@ -222,37 +240,36 @@ export const BoardComponent = ({
 		[players],
 	);
 
-	const getBoardCoordinates = (event: React.MouseEvent) => {
-		const rect = event.currentTarget.getBoundingClientRect();
+	const getBoardCoordinates = React.useCallback(
+		(event: React.MouseEvent) => {
+			const rect = event.currentTarget.getBoundingClientRect();
 
-		const rectRatio = rect.width / rect.height;
-		const boardRatio = width / height;
+			const rectRatio = rect.width / rect.height;
+			const boardRatio = width / height;
 
-		let offX = 0;
-		let offY = 0;
-		let displayWidth = 0;
-		let displayHeight = 0;
+			let offX = 0;
+			let offY = 0;
+			let displayWidth = 0;
+			let displayHeight = 0;
 
-		if (rectRatio > boardRatio) {
-			offY = 0;
-			displayHeight = rect.height;
-			displayWidth = displayHeight * boardRatio;
-			offX = (rect.width - displayWidth) / 2;
-		} else {
-			offX = 0;
-			displayWidth = rect.width;
-			displayHeight = displayWidth * (1 / boardRatio);
-			offY = (rect.height - displayHeight) / 2;
-		}
+			if (rectRatio > boardRatio) {
+				offY = 0;
+				displayHeight = rect.height;
+				displayWidth = displayHeight * boardRatio;
+				offX = (rect.width - displayWidth) / 2;
+			} else {
+				offX = 0;
+				displayWidth = rect.width;
+				displayHeight = displayWidth * (1 / boardRatio);
+				offY = (rect.height - displayHeight) / 2;
+			}
 
-		const x = Math.floor(
-			((event.clientX - rect.x - offX) / displayWidth) * width,
-		);
-		const y = Math.floor(
-			((event.clientY - rect.y - offY) / displayHeight) * height,
-		);
-		return {x, y};
-	}
+			const x = ((event.clientX - rect.x - offX) / displayWidth) * width
+			const y = ((event.clientY - rect.y - offY) / displayHeight) * height;
+			return {x, y};
+		},
+		[width, height]
+	);
 
 	const onClickSVG = React.useCallback(
 		(event: React.MouseEvent) => {
@@ -261,7 +278,9 @@ export const BoardComponent = ({
 
 			if (event.button < 0 || event.button > 2) return;
 
-			const {x, y} = getBoardCoordinates(event);
+			const coords = getBoardCoordinates(event);
+			const x = Math.floor(coords.x);
+			const y = Math.floor(coords.y);
 
 			if (x < 0 || x >= width || y < 0 || y >= height) return;
 
@@ -272,8 +291,11 @@ export const BoardComponent = ({
 
 	const onMouseMoveEventSVG = React.useCallback((event: React.MouseEvent) => {
 		const leftButtonDown = (event.buttons & 1) > 0
-		const {x, y} = getBoardCoordinates(event);
+		const coords = getBoardCoordinates(event);
+		const x = Math.floor(coords.x);
+		const y = Math.floor(coords.y);
 		
+		onMouseMove(coords.x, coords.y);
 		if (!leftButtonDown || x < 0 || x >= width || y < 0 || y >= height) {
 			setHoverTarget(undefined);
 		} else {
@@ -327,6 +349,15 @@ export const BoardComponent = ({
 						isHovered={isHovered}
 					/>
 				);
+			})}
+			{cursors.map((cursor) => {
+				return (
+					<CursorSVG 
+						x={cursor.x}
+						y={cursor.y}
+						color={flagColors[cursor.playerId]}
+					/>
+				)
 			})}
 		</svg>
 	);

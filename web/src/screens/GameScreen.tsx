@@ -65,6 +65,8 @@ const Game = ({
 
 	const teamPlayers = players.filter(player => player.teamId === teamId);
 
+	const playerCursors = useGlobalState(state => state.game!.cursors)
+
 	const teamStateRef = React.useRef<TeamData>(teamData);
 	teamStateRef.current = teamData;
 
@@ -113,6 +115,17 @@ const Game = ({
 			});
 		},
 		[canInteract, playerId, selfPlayerData, teamId],
+	);
+
+	const onMouseMoveBoard = React.useCallback(
+		(x: number, y: number) => {
+			const state = useGlobalState.getState();
+			if (state.game === undefined) return;
+			if (teamId === undefined) return;
+
+			Sender.updateCursor(x, y);
+		}, 
+		[teamId]
 	);
 
 	const mineCount = React.useMemo(() => {
@@ -164,7 +177,9 @@ const Game = ({
 						startingPosition={startingPosition}
 						showMines={!isTeamAlive}
 						players={players}
+						cursors={playerCursors}
 						onClick={onClickBoard}
+						onMouseMove={onMouseMoveBoard}
 					/>
 				</div>
 			) : null}

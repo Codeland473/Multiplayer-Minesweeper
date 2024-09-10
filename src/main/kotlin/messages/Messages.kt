@@ -97,7 +97,10 @@ object Messages {
 
 	fun cursorUpdate(gamers : Collection<Gamer>) = message(10) {
 		put(gamers.size)
-		for (gamer in gamers) put(gamer.cursorLocation)
+		for (gamer in gamers) {
+			put(gamer.id)
+			put(gamer.cursorLocation)
+		}
 	}
 
 	fun teamNameUpdate(teamID : Int, senderID : Int, name : String) = message(11) {

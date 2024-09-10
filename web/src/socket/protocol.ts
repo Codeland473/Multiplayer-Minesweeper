@@ -43,5 +43,5 @@ export enum ReceiveCode {
 	PLAYER_REMOVE = 52,
 	TEAM_FINISH = 53,
 	PLAYER_LOSE = 54,
-	TEAM_LOSE = 55,
+	BOARD_STATS = 55,
 }

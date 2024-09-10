@@ -42,6 +42,12 @@ export type TeamProgress = Immutable<{
 	board: number[];
 }>;
 
+export type BoardStats = Immutable<{
+	tBV: number;
+	diffSolves: number;
+	bruteSolves: number;
+}>;
+
 export type TeamData = Immutable<{
 	isAlive: boolean;
 	finishTime: number | undefined;
@@ -61,6 +67,7 @@ export type Game = Immutable<{
 	cursors: Cursor[];
 	playerDatas: { [id: number]: PlayerData };
 	teamDatas: { [id: number]: TeamData };
+	boardStats: BoardStats | undefined;
 }>;
 
 export type GameSettings = Immutable<{

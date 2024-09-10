@@ -3,8 +3,13 @@ import board.Solver
 import io.ktor.http.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.launch
 import messages.*
 import java.lang.Integer.min
 import java.nio.ByteBuffer
@@ -23,10 +28,10 @@ class SessionHandler {
 
 	val currentSettings : Settings get() = currentGameSettings ?: settings
 	init {
-		flow {
+		CoroutineScope(Job()).launch {
 			while (true) {
 				delay((1000f / currentSettings.cursorUpdateRate.toFloat()).toLong())
-				emit(onCursorUpdateTick())
+				onCursorUpdateTick()
 			}
 		}
 	}

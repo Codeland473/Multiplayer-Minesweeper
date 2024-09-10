@@ -12,6 +12,7 @@ export namespace Data {
 		getByteArray(length: number): number[];
 		getBooleanArray(length: number): boolean[];
 		getIntArray(length: number): number[];
+		dataSize(): number;
 	};
 
 	export const createReader = (data: ArrayBuffer): Reader => {
@@ -71,6 +72,9 @@ export namespace Data {
 				);
 				offset += length * 4;
 				return value;
+			},
+			dataSize: () => {
+				return data.byteLength;
 			},
 		};
 	};
